@@ -65,7 +65,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
                   placeholder="https://mitienda.com"
                   value={url}
                   onChange={(e) => setUrl(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none text-sm transition-all"
+                  className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none text-sm text-gray-900 transition-all placeholder-gray-400"
                 />
               </div>
             </div>
@@ -80,7 +80,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
                   placeholder="ck_xxxxxxxxxxxxxxxxxxxxxxxx"
                   value={key}
                   onChange={(e) => setKey(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none text-sm transition-all"
+                  className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none text-sm text-gray-900 transition-all placeholder-gray-400"
                 />
               </div>
             </div>
@@ -95,7 +95,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
                   placeholder="cs_xxxxxxxxxxxxxxxxxxxxxxxx"
                   value={secret}
                   onChange={(e) => setSecret(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none text-sm transition-all"
+                  className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none text-sm text-gray-900 transition-all placeholder-gray-400"
                 />
               </div>
             </div>
@@ -116,7 +116,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
           </form>
 
           <p className="text-center text-xs text-gray-400 mt-6">
-            Tus claves se validan directamente contra tu instalación de WordPress. Requiere permisos de admin o shop_manager.
+            Solo se requieren permisos de <strong>Lectura (Read Only)</strong>. 
+            Tus claves se validan directamente contra tu WordPress.
           </p>
         </div>
       </div>
