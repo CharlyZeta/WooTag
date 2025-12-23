@@ -1,0 +1,29 @@
+# Changelog - WooTag AI Generator
+
+## [1.2.0] - 2024-05-24
+### Added
+- Nuevo archivo `changelog.txt` para seguimiento de versiones.
+- Nuevo archivo `readme.md` profesional para documentación en GitHub.
+- Funcionalidad de "Recordar credenciales" en la pantalla de inicio de sesión mediante localStorage.
+
+### Fixed
+- Se corrigió la falta de contraste en elementos de formulario (selects y textboxes) mejorando la legibilidad.
+- Se optimizó el disparador de impresión (`window.print()`) para asegurar compatibilidad en todos los navegadores.
+- Ajuste de estilos CSS en `index.html` para forzar el tamaño A4 real al generar PDFs.
+
+## [1.1.0] - 2024-05-23
+### Added
+- Sistema de "Perfiles de Diseño": Permite guardar y cargar diferentes configuraciones de etiquetas.
+- Integración con Gemini AI (gemini-3-flash-preview) para optimización de descripciones de productos.
+- Soporte para múltiples páginas en la generación de PDF/Impresión.
+
+### Fixed
+- Error de escala en la impresión: Ahora el diseño se imprime a tamaño 1:1 independientemente del zoom de pantalla.
+- Visibilidad de bordes de corte en el modo de impresión.
+
+## [1.0.0] - 2024-05-22
+### Added
+- Lanzamiento inicial de la aplicación.
+- Conexión con la API de WooCommerce.
+- Generador de códigos QR dinámicos por SKU.
+- Panel de control lateral para personalización de colores, fuentes y layout.

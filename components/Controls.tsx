@@ -1,18 +1,9 @@
-import React, { useState } from 'react';
-import { TagConfig, Product, WooConfig, WpUser } from '../types';
-import { fetchProductBySku } from '../services/wooService';
+
+import React, { useState, useEffect } from 'react';
+import { TagConfig, Product, WooConfig, WpUser, WooCategory, DesignProfile } from '../types';
+import { fetchProductBySku, fetchCategories, fetchProductsByCategory } from '../services/wooService';
 import { 
-  Settings, 
-  Layout, 
-  Type, 
-  Palette, 
-  Printer, 
-  Plus, 
-  Trash2, 
-  Sparkles,
-  AlertCircle,
-  LogOut,
-  User
+  Settings, Layout, Type, Palette, Printer, Plus, Trash2, Sparkles, AlertCircle, LogOut, User, Image as ImageIcon, QrCode, Layers, Calculator, Filter, Eye, Save, FolderOpen, Download
 } from 'lucide-react';
 
 interface ControlsProps {
@@ -23,351 +14,390 @@ interface ControlsProps {
   wooConfig: WooConfig;
   user: WpUser | null;
   onOptimize: (productId: string) => void;
-  isOptimizing: boolean;
+  optimizingId: string | null;
   onLogout: () => void;
+  profiles: DesignProfile[];
+  onSaveProfile: (name: string) => void;
+  onLoadProfile: (id: string) => void;
+  onDeleteProfile: (id: string) => void;
 }
 
 export const Controls: React.FC<ControlsProps> = ({ 
-  config, 
-  setConfig, 
-  products, 
-  setProducts,
-  wooConfig,
-  user,
-  onOptimize,
-  isOptimizing,
-  onLogout
+  config, setConfig, products, setProducts, wooConfig, user, onOptimize, optimizingId, onLogout,
+  profiles, onSaveProfile, onLoadProfile, onDeleteProfile
 }) => {
   const [activeTab, setActiveTab] = useState<'layout' | 'design' | 'data'>('data');
   const [newSku, setNewSku] = useState('');
   const [isFetching, setIsFetching] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
+  const [categories, setCategories] = useState<WooCategory[]>([]);
+  const [selectedCat, setSelectedCat] = useState<string>('');
+  const [profileName, setProfileName] = useState('');
+
+  useEffect(() => {
+    if (wooConfig.url && activeTab === 'data') {
+      fetchCategories(wooConfig).then(setCategories);
+    }
+  }, [wooConfig, activeTab]);
 
   const handlePrint = () => {
+    // Llamada directa al sistema de impresión
     window.print();
+  };
+
+  const handleSaveCurrentProfile = () => {
+    if (!profileName.trim()) return;
+    onSaveProfile(profileName.trim());
+    setProfileName('');
+  };
+
+  const addUniqueProduct = (p: Product) => {
+    const isDuplicate = products.some(existing => existing.sku === p.sku);
+    if (isDuplicate) {
+      if (!confirm(`El producto con SKU ${p.sku} ya está en la lista. ¿Deseas agregar otra etiqueta igual?`)) {
+        return;
+      }
+    }
+    const uniqueProduct = { ...p, id: `${p.id}-${Date.now()}-${Math.random()}` };
+    setProducts(prev => [...prev, uniqueProduct]);
   };
 
   const handleAddProduct = async () => {
     if (!newSku) return;
+    setIsFetching(true);
     setFetchError(null);
-
-    // Try fetching from WooCommerce
-    if (wooConfig.url && wooConfig.consumerKey) {
-      setIsFetching(true);
-      try {
-        const wooProduct = await fetchProductBySku(newSku, wooConfig);
-        if (wooProduct) {
-          // Check for duplicate ID
-          if (!products.find(p => p.id === wooProduct.id)) {
-            setProducts([...products, wooProduct]);
-            setNewSku('');
-          } else {
-            setFetchError("El producto ya está en la lista.");
-          }
-        } else {
-          setFetchError("Producto no encontrado en WooCommerce.");
-        }
-      } catch (err) {
-        setFetchError("Error de conexión. Verifica que el SKU exista.");
-      } finally {
-        setIsFetching(false);
+    try {
+      const wooProduct = await fetchProductBySku(newSku, wooConfig);
+      if (wooProduct) {
+        addUniqueProduct(wooProduct);
+        setNewSku('');
+      } else {
+        setFetchError("SKU no encontrado.");
       }
+    } catch (err) {
+      setFetchError("Error de red.");
+    } finally {
+      setIsFetching(false);
     }
   };
 
-  const handleDeleteProduct = (id: string) => {
-    setProducts(products.filter(p => p.id !== id));
+  const handleImportCategory = async () => {
+    if (!selectedCat) return;
+    setIsFetching(true);
+    try {
+      const catProducts = await fetchProductsByCategory(Number(selectedCat), wooConfig);
+      const newItems = catProducts.map(p => ({ ...p, id: `${p.id}-${Date.now()}-${Math.random()}` }));
+      setProducts(prev => [...prev, ...newItems]);
+    } catch (err) {
+      setFetchError("Error al importar categoría.");
+    } finally {
+      setIsFetching(false);
+    }
   };
 
-  const updateConfig = (key: keyof TagConfig, value: any) => {
-    setConfig(prev => ({ ...prev, [key]: value }));
-  };
+  const updateConfig = (key: keyof TagConfig, value: any) => setConfig(prev => ({ ...prev, [key]: value }));
+
+  const VisibilityToggle = ({ label, propKey }: { label: string, propKey: keyof TagConfig }) => (
+    <label className="flex items-center justify-between cursor-pointer py-2 group border-b border-gray-100 last:border-0">
+      <span className="text-sm text-slate-900 group-hover:text-indigo-700 transition-colors font-bold">{label}</span>
+      <input 
+        type="checkbox" 
+        checked={config[propKey] as boolean} 
+        onChange={(e) => updateConfig(propKey, e.target.checked)} 
+        className="rounded text-indigo-600 h-5 w-5 transition-transform active:scale-90 border-slate-300 focus:ring-indigo-500" 
+      />
+    </label>
+  );
+
+  const ColorInput = ({ label, propKey }: { label: string, propKey: keyof TagConfig }) => (
+     <div className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
+        <span className="text-sm text-slate-900 font-bold">{label}</span>
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] font-mono text-slate-500 uppercase font-bold">{config[propKey] as string}</span>
+          <input 
+            type="color" 
+            value={config[propKey] as string}
+            onChange={(e) => updateConfig(propKey, e.target.value)}
+            className="h-8 w-12 block bg-white border border-slate-300 cursor-pointer rounded-md overflow-hidden p-0.5 shadow-sm"
+          />
+        </div>
+     </div>
+  );
 
   return (
-    <div className="bg-white h-screen flex flex-col border-r border-gray-200 w-full max-w-md shadow-xl z-20">
-      
+    <div className="bg-white h-screen flex flex-col border-r border-gray-300 w-full md:w-80 lg:w-96 shadow-2xl z-20 overflow-hidden">
       {/* Header */}
-      <div className="p-4 border-b border-gray-200 bg-gray-50">
-        <div className="flex items-center justify-between mb-3">
-          <h1 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-            <Printer className="w-5 h-5 text-indigo-600" />
-            WooTag Gen
+      <div className="p-4 border-b border-gray-200 bg-slate-100">
+        <div className="flex items-center justify-between mb-4">
+          <h1 className="text-xl font-black text-slate-900 flex items-center gap-2">
+            <Printer className="w-6 h-6 text-indigo-600" /> WooTag
           </h1>
           <button 
-            onClick={handlePrint}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors shadow-sm"
+            type="button"
+            onClick={handlePrint} 
+            disabled={products.length === 0}
+            className="bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-400 text-white px-4 py-2.5 rounded-xl text-sm font-black flex items-center gap-2 transition-all active:scale-95 shadow-lg shadow-indigo-200 cursor-pointer"
           >
-            <Printer className="w-4 h-4" /> Imprimir
+            <Printer className="w-4 h-4" /> IMPRIMIR
           </button>
         </div>
-        
-        {/* User Status Bar */}
-        <div className="flex items-center justify-between bg-white border border-gray-200 rounded-md p-2">
-          <div className="flex items-center gap-2">
-            <div className="bg-indigo-100 p-1.5 rounded-full">
-              <User className="w-3 h-3 text-indigo-600" />
+        <div className="flex items-center justify-between bg-white border-2 border-slate-200 rounded-xl p-3 shadow-sm">
+          <div className="flex items-center gap-2 overflow-hidden">
+            <div className="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center text-white shadow-inner">
+              <User className="w-4 h-4" />
             </div>
-            <div className="flex flex-col">
-              <span className="text-xs font-bold text-gray-700">{user?.name}</span>
-              <span className="text-[10px] text-gray-400 capitalize">{user?.roles[0]}</span>
-            </div>
+            <span className="text-sm font-black text-slate-900 truncate max-w-[140px]">{user?.name}</span>
           </div>
+          <button onClick={onLogout} title="Cerrar Sesión" className="text-slate-500 hover:text-red-600 transition-colors p-2 hover:bg-red-50 rounded-lg"><LogOut className="w-5 h-5" /></button>
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex border-b border-gray-200 bg-white">
+        {[
+          { id: 'data', icon: Layers, label: 'Productos' },
+          { id: 'layout', icon: Settings, label: 'Ajustes' },
+          { id: 'design', icon: Palette, label: 'Diseño' }
+        ].map(tab => (
           <button 
-            onClick={onLogout}
-            className="text-gray-400 hover:text-red-500 hover:bg-red-50 p-1.5 rounded transition-colors"
-            title="Cerrar Sesión"
+            key={tab.id} 
+            onClick={() => setActiveTab(tab.id as any)} 
+            className={`flex-1 py-4 text-[11px] font-black uppercase tracking-widest flex flex-col items-center gap-1.5 transition-all border-b-2 ${activeTab === tab.id ? 'text-indigo-600 border-indigo-600 bg-indigo-50/50' : 'text-slate-400 border-transparent hover:text-slate-600 hover:bg-slate-50'}`}
           >
-            <LogOut className="w-4 h-4" />
+            <tab.icon className={`w-5 h-5 ${activeTab === tab.id ? 'text-indigo-600' : 'text-slate-400'}`} /> {tab.label}
           </button>
-        </div>
+        ))}
       </div>
 
-      <div className="flex border-b border-gray-200">
-        <button 
-          onClick={() => setActiveTab('data')}
-          className={`flex-1 py-3 text-sm font-medium flex justify-center items-center gap-2 ${activeTab === 'data' ? 'text-indigo-600 border-b-2 border-indigo-600 bg-indigo-50' : 'text-gray-500 hover:text-gray-700'}`}
-        >
-          <Layout className="w-4 h-4" /> Productos
-        </button>
-        <button 
-          onClick={() => setActiveTab('layout')}
-          className={`flex-1 py-3 text-sm font-medium flex justify-center items-center gap-2 ${activeTab === 'layout' ? 'text-indigo-600 border-b-2 border-indigo-600 bg-indigo-50' : 'text-gray-500 hover:text-gray-700'}`}
-        >
-          <Settings className="w-4 h-4" /> Estructura
-        </button>
-        <button 
-          onClick={() => setActiveTab('design')}
-          className={`flex-1 py-3 text-sm font-medium flex justify-center items-center gap-2 ${activeTab === 'design' ? 'text-indigo-600 border-b-2 border-indigo-600 bg-indigo-50' : 'text-gray-500 hover:text-gray-700'}`}
-        >
-          <Palette className="w-4 h-4" /> Diseño
-        </button>
-      </div>
-
-      <div className="flex-1 overflow-y-auto p-6 space-y-6">
-        
-        {/* Data Tab */}
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto p-5 space-y-8 bg-white scrollbar-thin scrollbar-thumb-slate-200">
         {activeTab === 'data' && (
-          <div className="space-y-6">
-            
-            <div className="flex gap-2 relative">
-              <input 
-                type="text" 
-                value={newSku}
-                onChange={(e) => setNewSku(e.target.value)}
-                placeholder="Ingresa SKU (ej: 1001)"
-                className="flex-1 border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                onKeyDown={(e) => e.key === 'Enter' && handleAddProduct()}
-              />
-              <button 
-                onClick={handleAddProduct}
-                disabled={isFetching}
-                className="bg-gray-900 text-white p-2 rounded-md hover:bg-gray-800 disabled:opacity-50"
-              >
-                {isFetching ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Plus className="w-5 h-5" />}
-              </button>
-            </div>
-            
-            {fetchError && (
-              <div className="flex items-center gap-2 text-xs text-red-600 bg-red-50 p-2 rounded border border-red-100">
-                <AlertCircle className="w-3 h-3" />
-                {fetchError}
-              </div>
-            )}
-
+          <div className="space-y-8 animate-in fade-in slide-in-from-right-2 duration-300">
+            {/* SKU Search */}
             <div className="space-y-3">
-              {products.map((p) => (
-                <div key={p.id} className="bg-white border border-gray-200 rounded-lg p-3 shadow-sm flex flex-col gap-2 group hover:border-indigo-300 transition-colors">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <div className="font-bold text-gray-800">{p.name}</div>
-                      <div className="text-xs text-gray-500">SKU: {p.sku} | ${p.price}</div>
-                    </div>
-                    <button 
-                      onClick={() => handleDeleteProduct(p.id)}
-                      className="text-gray-400 hover:text-red-500 p-1"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                  <div className="relative">
-                     <textarea
-                       className="w-full text-xs text-gray-600 bg-gray-50 border border-gray-200 rounded p-2 resize-none focus:outline-none focus:border-indigo-300"
-                       rows={2}
-                       value={p.description}
-                       readOnly
-                     />
-                     <button
-                        onClick={() => onOptimize(p.id)}
-                        disabled={isOptimizing}
-                        className="absolute bottom-1 right-1 bg-white border border-indigo-200 text-indigo-600 hover:bg-indigo-50 text-[10px] px-2 py-1 rounded-full flex items-center gap-1 shadow-sm transition-all"
-                        title="Mejorar con IA"
-                     >
-                       <Sparkles className="w-3 h-3" />
-                       {isOptimizing ? '...' : 'IA'}
-                     </button>
-                  </div>
-                </div>
-              ))}
-              {products.length === 0 && (
-                <div className="text-center text-gray-400 py-8 italic">
-                  No hay productos. Añade un SKU.
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Layout Tab */}
-        {activeTab === 'layout' && (
-          <div className="space-y-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Matriz de Etiquetas</label>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <span className="text-xs text-gray-500">Columnas</span>
-                  <select 
-                    value={config.layoutCols}
-                    onChange={(e) => updateConfig('layoutCols', Number(e.target.value))}
-                    className="mt-1 block w-full border border-gray-300 rounded-md py-2 px-3 text-sm focus:ring-indigo-500 focus:border-indigo-500"
-                  >
-                    <option value={1}>1 Columna</option>
-                    <option value={2}>2 Columnas</option>
-                    <option value={3}>3 Columnas</option>
-                    <option value={4}>4 Columnas</option>
-                  </select>
-                </div>
-                <div>
-                  <span className="text-xs text-gray-500">Filas</span>
-                  <select 
-                    value={config.layoutRows}
-                    onChange={(e) => updateConfig('layoutRows', Number(e.target.value))}
-                    className="mt-1 block w-full border border-gray-300 rounded-md py-2 px-3 text-sm focus:ring-indigo-500 focus:border-indigo-500"
-                  >
-                    {[1,2,3,4,5,6,7,8].map(n => (
-                      <option key={n} value={n}>{n} Filas</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Espaciado (mm)</label>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <span className="text-xs text-gray-500">Separación</span>
-                  <input 
-                    type="number" 
-                    value={config.gap}
-                    onChange={(e) => updateConfig('gap', Number(e.target.value))}
-                    className="mt-1 block w-full border border-gray-300 rounded-md py-2 px-3 text-sm"
-                  />
-                </div>
-                <div>
-                  <span className="text-xs text-gray-500">Padding Interno</span>
-                  <input 
-                    type="number" 
-                    value={config.padding}
-                    onChange={(e) => updateConfig('padding', Number(e.target.value))}
-                    className="mt-1 block w-full border border-gray-300 rounded-md py-2 px-3 text-sm"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="pt-4 border-t border-gray-200">
-               <label className="block text-sm font-medium text-gray-700 mb-3">Elementos Visibles</label>
-               <div className="space-y-2">
-                 {[
-                   { k: 'showSku', l: 'Mostrar SKU' },
-                   { k: 'showDescription', l: 'Mostrar Descripción' },
-                   { k: 'showQRCode', l: 'Mostrar Código QR' },
-                   { k: 'showSalePrice', l: 'Mostrar Precio Oferta' },
-                   { k: 'showBorder', l: 'Mostrar Borde de Corte' },
-                 ].map((item) => (
-                   <label key={item.k} className="flex items-center">
-                     <input 
-                       type="checkbox" 
-                       checked={config[item.k as keyof TagConfig] as boolean}
-                       onChange={(e) => updateConfig(item.k as keyof TagConfig, e.target.checked)}
-                       className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                     />
-                     <span className="ml-2 text-sm text-gray-600">{item.l}</span>
-                   </label>
-                 ))}
-               </div>
-            </div>
-          </div>
-        )}
-
-        {/* Design Tab */}
-        {activeTab === 'design' && (
-          <div className="space-y-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                <Type className="w-4 h-4" /> Tamaños de Fuente
+              <label className="text-[11px] font-black text-slate-600 uppercase tracking-[0.15em] flex items-center gap-2">
+                <QrCode className="w-4 h-4 text-indigo-500"/> BUSCAR POR SKU
               </label>
-              <div className="space-y-4">
-                 <div>
-                   <div className="flex justify-between text-xs text-gray-500 mb-1">
-                     <span>Título</span>
-                     <span>{config.fontSizeTitle}px</span>
-                   </div>
-                   <input 
-                     type="range" min="10" max="32" 
-                     value={config.fontSizeTitle}
-                     onChange={(e) => updateConfig('fontSizeTitle', Number(e.target.value))}
-                     className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
-                   />
-                 </div>
-                 <div>
-                   <div className="flex justify-between text-xs text-gray-500 mb-1">
-                     <span>Precio</span>
-                     <span>{config.fontSizePrice}px</span>
-                   </div>
-                   <input 
-                     type="range" min="12" max="72" 
-                     value={config.fontSizePrice}
-                     onChange={(e) => updateConfig('fontSizePrice', Number(e.target.value))}
-                     className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
-                   />
-                 </div>
-                 <div>
-                   <div className="flex justify-between text-xs text-gray-500 mb-1">
-                     <span>Descripción</span>
-                     <span>{config.fontSizeDesc}px</span>
-                   </div>
-                   <input 
-                     type="range" min="6" max="18" 
-                     value={config.fontSizeDesc}
-                     onChange={(e) => updateConfig('fontSizeDesc', Number(e.target.value))}
-                     className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
-                   />
-                 </div>
+              <div className="flex gap-2">
+                <input 
+                  type="text" 
+                  value={newSku} 
+                  onChange={(e) => setNewSku(e.target.value)} 
+                  placeholder="Ej: AB-123" 
+                  className="flex-1 border-2 border-slate-300 rounded-xl px-4 py-3 text-sm font-black text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none bg-white transition-all placeholder-slate-400 shadow-sm" 
+                  onKeyDown={(e) => e.key === 'Enter' && handleAddProduct()} 
+                />
+                <button onClick={handleAddProduct} disabled={isFetching} className="bg-slate-900 text-white p-3 rounded-xl hover:bg-slate-800 disabled:opacity-50 transition-all active:scale-95 shadow-md">
+                  {isFetching ? <div className="w-5 h-5 border-2 border-t-transparent rounded-full animate-spin" /> : <Plus className="w-6 h-6" />}
+                </button>
+              </div>
+              {fetchError && <p className="text-red-700 text-xs font-black mt-2 flex items-center gap-1 bg-red-50 p-2 rounded-lg border border-red-200"><AlertCircle className="w-4 h-4"/> {fetchError}</p>}
+            </div>
+
+            {/* Category Import */}
+            <div className="space-y-3 pt-6 border-t-2 border-slate-100">
+              <label className="text-[11px] font-black text-slate-600 uppercase tracking-[0.15em] flex items-center gap-2">
+                <Filter className="w-4 h-4 text-indigo-500"/> IMPORTAR CATEGORÍA
+              </label>
+              <div className="flex gap-2">
+                <select 
+                  value={selectedCat} 
+                  onChange={(e) => setSelectedCat(e.target.value)} 
+                  className="flex-1 border-2 border-slate-300 rounded-xl px-4 py-3 text-sm font-black text-slate-900 focus:outline-none bg-white focus:border-indigo-500 transition-all shadow-sm"
+                >
+                  <option value="">Selecciona categoría</option>
+                  {categories.map(c => <option key={c.id} value={c.id}>{c.name} ({c.count})</option>)}
+                </select>
+                <button onClick={handleImportCategory} disabled={isFetching || !selectedCat} className="bg-indigo-600 text-white p-3 rounded-xl hover:bg-indigo-700 disabled:opacity-50 transition-all active:scale-95 shadow-md">
+                  <Download className="w-6 h-6" />
+                </button>
               </div>
             </div>
 
-            <div className="pt-4 border-t border-gray-200">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Color de Acento</label>
-              <div className="flex gap-3">
-                 <input 
-                   type="color" 
-                   value={config.accentColor}
-                   onChange={(e) => updateConfig('accentColor', e.target.value)}
-                   className="h-10 w-14 block bg-white border border-gray-300 cursor-pointer rounded-md p-1"
-                 />
-                 <span className="text-xs text-gray-500 flex items-center">
-                   Usado para el precio y QR. El precio de oferta siempre será rojo.
-                 </span>
+            {/* Product List */}
+            <div className="space-y-4 pt-6 border-t-2 border-slate-100">
+              <div className="flex justify-between items-end mb-2">
+                <span className="text-[11px] font-black text-slate-600 uppercase tracking-[0.15em]">LISTA ACTUAL ({products.length})</span>
+                {products.length > 0 && <button onClick={() => setProducts([])} className="text-xs text-red-700 font-black hover:bg-red-50 px-2 py-1 rounded transition-colors uppercase">Vaciar Lista</button>}
+              </div>
+              <div className="space-y-3">
+                {products.map((p) => (
+                  <div key={p.id} className="bg-white border-2 border-slate-200 rounded-2xl p-3 flex items-center gap-3 group hover:border-indigo-200 transition-all shadow-sm">
+                    <div className="w-12 h-12 bg-slate-50 rounded-xl overflow-hidden flex-shrink-0 border border-slate-100">
+                      <img src={p.image || ''} className="w-full h-full object-contain" alt={p.name} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-black truncate text-slate-900">{p.name}</div>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span className="text-[10px] text-slate-600 font-mono font-black">SKU: {p.sku}</span>
+                        {p.manageStock && (
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded font-black ${Number(p.stockQuantity) <= 0 ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'}`}>
+                            {p.stockQuantity ?? 0}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button onClick={() => onOptimize(p.id)} disabled={optimizingId !== null} className="text-indigo-600 p-2 hover:bg-indigo-50 rounded-xl transition-colors" title="Optimizar con IA">
+                        {optimizingId === p.id ? <div className="w-5 h-5 border-2 border-t-transparent border-indigo-600 rounded-full animate-spin" /> : <Sparkles className="w-5 h-5" />}
+                      </button>
+                      <button onClick={() => setProducts(products.filter(i => i.id !== p.id))} className="text-slate-400 hover:text-red-700 p-2 transition-colors"><Trash2 className="w-5 h-5" /></button>
+                    </div>
+                  </div>
+                ))}
+                {products.length === 0 && (
+                  <div className="text-center py-12 border-2 border-dashed border-slate-200 rounded-3xl bg-slate-50/50">
+                    <p className="text-slate-500 text-sm font-black">Tu lista está vacía</p>
+                    <p className="text-slate-400 text-[10px] mt-1 font-bold">Agrega productos mediante SKU o categoría</p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
         )}
 
-      </div>
-      
-      <div className="p-4 border-t border-gray-200 bg-gray-50 text-xs text-gray-400 text-center">
-        Woocommerce Tag Generator v2.0
+        {activeTab === 'layout' && (
+          <div className="space-y-8 animate-in fade-in slide-in-from-right-2 duration-300">
+            <div className="space-y-4">
+              <label className="text-[11px] font-black text-slate-600 uppercase tracking-[0.15em] flex items-center gap-2"><Layout className="w-4 h-4 text-indigo-500" /> DISTRIBUCIÓN A4</label>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] text-slate-700 font-black uppercase ml-1">Columnas</label>
+                  <select value={config.layoutCols} onChange={(e) => updateConfig('layoutCols', Number(e.target.value))} className="w-full border-2 border-slate-300 rounded-xl p-3 text-sm font-black bg-white text-slate-900 focus:border-indigo-500 outline-none transition-all shadow-sm">{[1,2,3,4].map(n => <option key={n}>{n}</option>)}</select>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] text-slate-700 font-black uppercase ml-1">Filas</label>
+                  <select value={config.layoutRows} onChange={(e) => updateConfig('layoutRows', Number(e.target.value))} className="w-full border-2 border-slate-300 rounded-xl p-3 text-sm font-black bg-white text-slate-900 focus:border-indigo-500 outline-none transition-all shadow-sm">{[1,2,3,4,5,6,7,8,9,10].map(n => <option key={n}>{n}</option>)}</select>
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-6 border-t-2 border-slate-100 space-y-4">
+              <label className="text-[11px] font-black text-slate-600 uppercase tracking-[0.15em] flex items-center gap-2"><Eye className="w-4 h-4 text-indigo-500" /> CAMPOS VISIBLES</label>
+              <div className="bg-slate-50 p-4 rounded-2xl border-2 border-slate-200 shadow-inner space-y-1">
+                <VisibilityToggle label="Nombre del Producto" propKey="showTitle" />
+                <VisibilityToggle label="Código SKU" propKey="showSku" />
+                <VisibilityToggle label="Imagen del Producto" propKey="showImage" />
+                <VisibilityToggle label="Descripción Breve" propKey="showDescription" />
+                <VisibilityToggle label="Código QR" propKey="showQRCode" />
+                <VisibilityToggle label="Precio de Oferta" propKey="showSalePrice" />
+                <VisibilityToggle label="Símbolo de Moneda" propKey="showCurrencySymbol" />
+                <VisibilityToggle label="Borde de Corte" propKey="showBorder" />
+                <VisibilityToggle label="Decimales (.00)" propKey="showDecimals" />
+              </div>
+            </div>
+
+            <div className="space-y-4 pt-6 border-t-2 border-slate-100">
+              <label className="text-[11px] font-black text-slate-600 uppercase tracking-[0.15em] flex items-center gap-2"><Calculator className="w-4 h-4 text-indigo-500"/> PRECIO ESPECIAL</label>
+              <div className="bg-indigo-50 p-4 rounded-2xl border-2 border-indigo-200 shadow-sm space-y-4">
+                 <label className="flex items-center justify-between cursor-pointer group">
+                   <span className="text-sm font-black text-indigo-900">Activar Precio Extra</span>
+                   <input type="checkbox" checked={config.showCustomPrice} onChange={(e) => updateConfig('showCustomPrice', e.target.checked)} className="rounded text-indigo-700 h-6 w-6 border-indigo-400 focus:ring-indigo-500" />
+                 </label>
+                 {config.showCustomPrice && (
+                   <div className="space-y-4 animate-in fade-in slide-in-from-top-4 duration-300">
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] text-indigo-800 font-black uppercase ml-1">Etiqueta Personalizada</label>
+                      <input type="text" value={config.customPriceLabel} onChange={(e) => updateConfig('customPriceLabel', e.target.value)} placeholder="Ej: Mayorista" className="w-full text-sm font-black border-2 border-indigo-200 p-3 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none bg-white text-slate-900" />
+                    </div>
+                    <div className="flex gap-3">
+                      <div className="flex-1 space-y-1.5">
+                        <label className="text-[10px] text-indigo-800 font-black uppercase ml-1">Variación %</label>
+                        <input type="number" value={config.customPricePercent} onChange={(e) => updateConfig('customPricePercent', Number(e.target.value))} className="w-full text-sm font-black border-2 border-indigo-200 p-3 rounded-xl bg-white text-slate-900" />
+                      </div>
+                      <div className="flex-1 space-y-1.5">
+                        <label className="text-[10px] text-indigo-800 font-black uppercase ml-1">Base</label>
+                        <select value={config.customPriceBase} onChange={(e) => updateConfig('customPriceBase', e.target.value)} className="w-full text-sm font-black border-2 border-indigo-200 p-3 rounded-xl bg-white text-slate-900 shadow-sm"><option value="regular">Regular</option><option value="sale">Oferta</option></select>
+                      </div>
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] text-indigo-800 font-black uppercase ml-1">Posición</label>
+                      <select value={config.customPricePosition} onChange={(e) => updateConfig('customPricePosition', e.target.value)} className="w-full text-sm font-black border-2 border-indigo-200 p-3 rounded-xl bg-white text-slate-900 shadow-sm">
+                        <option value="top">Arriba del precio</option>
+                        <option value="bottom">Debajo del precio</option>
+                      </select>
+                    </div>
+                   </div>
+                 )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'design' && (
+          <div className="space-y-8 animate-in fade-in slide-in-from-right-2 duration-300">
+            {/* Profiles */}
+            <div className="space-y-4">
+              <label className="text-[11px] font-black text-slate-600 uppercase tracking-[0.15em] flex items-center gap-2"><FolderOpen className="w-4 h-4 text-indigo-500"/> PERFILES DE DISEÑO</label>
+              <div className="bg-slate-50 p-4 rounded-2xl space-y-5 border-2 border-slate-200">
+                <div className="flex gap-2">
+                  <input 
+                    type="text" 
+                    value={profileName} 
+                    onChange={(e) => setProfileName(e.target.value)} 
+                    placeholder="Nuevo nombre..." 
+                    className="flex-1 text-sm font-black border-2 border-slate-300 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-indigo-500 bg-white text-slate-900 placeholder-slate-500 shadow-sm"
+                    onKeyDown={(e) => e.key === 'Enter' && handleSaveCurrentProfile()}
+                  />
+                  <button onClick={handleSaveCurrentProfile} className="bg-indigo-600 text-white p-2.5 rounded-xl hover:bg-indigo-700 transition-all shadow-md active:scale-95">
+                    <Save className="w-6 h-6" />
+                  </button>
+                </div>
+                {profiles.length > 0 ? (
+                  <div className="space-y-2">
+                    {profiles.map(p => (
+                      <div key={p.id} className="flex items-center justify-between bg-white p-3 rounded-xl border-2 border-slate-200 text-sm shadow-sm hover:border-indigo-400 transition-all group">
+                        <span className="font-black text-slate-900 truncate mr-2">{p.name}</span>
+                        <div className="flex gap-2">
+                          <button onClick={() => onLoadProfile(p.id)} className="text-indigo-700 hover:bg-indigo-700 hover:text-white px-3 py-1.5 rounded-lg border-2 border-indigo-200 font-black text-xs transition-all uppercase">Cargar</button>
+                          <button onClick={() => onDeleteProfile(p.id)} className="text-slate-400 hover:text-red-700 p-1.5 rounded-lg transition-colors"><Trash2 className="w-5 h-5" /></button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-slate-500 text-center font-black py-2 uppercase tracking-wider">Sin perfiles guardados</p>
+                )}
+              </div>
+            </div>
+
+            {/* Typography */}
+            <div className="pt-6 border-t-2 border-slate-100 space-y-4">
+              <label className="text-[11px] font-black text-slate-600 uppercase tracking-[0.15em] flex items-center gap-2"><Type className="w-4 h-4 text-indigo-500"/> TAMAÑOS DE FUENTE</label>
+              <div className="space-y-6 bg-slate-50 p-5 rounded-2xl border-2 border-slate-200">
+                {[
+                  { key: 'fontSizeTitle', label: 'Nombre Producto' },
+                  { key: 'fontSizePrice', label: 'Precio Normal' },
+                  { key: 'fontSizeSalePrice', label: 'Precio Oferta' },
+                  { key: 'fontSizeCustomPrice', label: 'Precio Especial' },
+                  { key: 'fontSizeDesc', label: 'Descripción' }
+                ].map(item => (
+                  <div key={item.key} className="space-y-3">
+                    <div className="flex justify-between text-[11px] font-black text-slate-800 uppercase tracking-tighter">
+                      <span>{item.label}</span>
+                      <span className="bg-indigo-600 text-white px-2 py-0.5 rounded-md shadow-sm">{config[item.key as keyof TagConfig]}px</span>
+                    </div>
+                    <input type="range" min="8" max="80" value={config[item.key as keyof TagConfig] as number} onChange={(e) => updateConfig(item.key as any, Number(e.target.value))} className="w-full h-2 bg-slate-300 rounded-lg appearance-none cursor-pointer accent-indigo-600" />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Colors */}
+            <div className="pt-6 border-t-2 border-slate-100 space-y-4">
+              <label className="text-[11px] font-black text-slate-600 uppercase tracking-[0.15em] flex items-center gap-2"><Palette className="w-4 h-4 text-indigo-500"/> COLORES DE TEXTO</label>
+              <div className="bg-slate-50 p-4 rounded-2xl border-2 border-slate-200 space-y-1">
+                <ColorInput label="Título" propKey="colorTitle" />
+                <ColorInput label="Precio" propKey="colorPrice" />
+                <ColorInput label="Precio Oferta" propKey="colorSalePrice" />
+                <ColorInput label="Precio Especial" propKey="colorCustomPrice" />
+                <ColorInput label="Descripción" propKey="colorDesc" />
+                <ColorInput label="Bordes" propKey="colorBorder" />
+                <ColorInput label="Código QR" propKey="colorAccent" />
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
