@@ -116,7 +116,7 @@ export const Tag: React.FC<TagProps> = ({ product, config }) => {
           {config.showQRCode && (
             <div className="flex-shrink-0 ml-2">
               <QRCodeSVG
-                value={`SKU:${product.sku}`}
+                value={product.sku}
                 size={config.qrSize}
                 fgColor={config.colorAccent}
               />

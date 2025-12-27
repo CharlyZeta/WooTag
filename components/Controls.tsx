@@ -391,7 +391,8 @@ export const Controls: React.FC<ControlsProps> = ({
                   { key: 'fontSizeCustomPrice', label: 'Precio Especial' },
                   { key: 'fontSizeCustomLabel', label: 'Leyenda P. Especial' },
                   { key: 'fontSizePriceLegend', label: 'Leyenda Precio' },
-                  { key: 'fontSizeDesc', label: 'Descripción' }
+                  { key: 'fontSizeDesc', label: 'Descripción' },
+                  { key: 'qrSize', label: 'Tamaño QR' }
                 ].map(item => (
                   <div key={item.key} className="space-y-3">
                     <div className="flex justify-between text-[11px] font-black text-slate-800 uppercase tracking-tighter">
