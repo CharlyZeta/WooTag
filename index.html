@@ -1,74 +1,67 @@
-
 <!DOCTYPE html>
 <html lang="es">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>WooTag AI Generator</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
-      
-      body {
-        font-family: 'Inter', sans-serif;
-        background-color: #f3f4f6;
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WooTag AI Generator</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #f3f4f6;
+      margin: 0;
+      padding: 0;
+    }
+
+    /* Estilos para impresión y PDF */
+    @media print {
+      @page {
+        size: A4 portrait;
         margin: 0;
-        padding: 0;
       }
 
-      /* Estilos para impresión y PDF */
-      @media print {
-        @page {
-          size: A4 portrait;
-          margin: 0;
-        }
-        
-        html, body {
-          width: 210mm;
-          height: auto !important;
-          background-color: white !important;
-          overflow: visible !important;
-        }
-
-        #root {
-          overflow: visible !important;
-        }
-
-        .no-print {
-          display: none !important;
-        }
-
-        .print-container {
-          display: block !important;
-          width: 210mm !important;
-          margin: 0 !important;
-          padding: 0 !important;
-          position: static !important;
-          transform: none !important; /* Eliminar escala en impresión */
-          overflow: visible !important;
-        }
-
-        /* Forzar impresión de colores y fondos */
-        * {
-          -webkit-print-color-adjust: exact !important;
-          print-color-adjust: exact !important;
-        }
+      html,
+      body {
+        width: 210mm;
+        height: auto !important;
+        background-color: white !important;
+        overflow: visible !important;
       }
-    </style>
-  <script type="importmap">
-{
-  "imports": {
-    "react/": "https://aistudiocdn.com/react@^19.2.0/",
-    "react": "https://aistudiocdn.com/react@^19.2.0",
-    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
-    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.30.0",
-    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.555.0",
-    "qrcode.react": "https://aistudiocdn.com/qrcode.react@^4.2.0"
-  }
-}
-</script>
+
+      #root {
+        overflow: visible !important;
+      }
+
+      .no-print {
+        display: none !important;
+      }
+
+      .print-container {
+        display: block !important;
+        width: 210mm !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        position: static !important;
+        transform: none !important;
+        /* Eliminar escala en impresión */
+        overflow: visible !important;
+      }
+
+      /* Forzar impresión de colores y fondos */
+      * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+    }
+  </style>
 </head>
-  <body>
-    <div id="root"></div>
-  </body>
+
+<body>
+  <div id="root"></div>
+  <script type="module" src="/index.tsx"></script>
+</body>
+
 </html>

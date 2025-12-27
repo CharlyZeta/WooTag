@@ -2,8 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { TagConfig, Product, WooConfig, WpUser, WooCategory, DesignProfile } from '../types';
 import { fetchProductBySku, fetchCategories, fetchProductsByCategory } from '../services/wooService';
-import { 
-  Settings, Layout, Type, Palette, Printer, Plus, Trash2, Sparkles, AlertCircle, LogOut, User, Image as ImageIcon, QrCode, Layers, Calculator, Filter, Eye, Save, FolderOpen, Download
+import {
+  Settings, Layout, Type, Palette, Printer, Plus, Trash2, Sparkles, AlertCircle, LogOut, User, Image as ImageIcon, QrCode, Layers, Calculator, Filter, Eye, Save, FolderOpen, Download, MessageSquare
 } from 'lucide-react';
 
 interface ControlsProps {
@@ -22,7 +22,7 @@ interface ControlsProps {
   onDeleteProfile: (id: string) => void;
 }
 
-export const Controls: React.FC<ControlsProps> = ({ 
+export const Controls: React.FC<ControlsProps> = ({
   config, setConfig, products, setProducts, wooConfig, user, onOptimize, optimizingId, onLogout,
   profiles, onSaveProfile, onLoadProfile, onDeleteProfile
 }) => {
@@ -100,41 +100,41 @@ export const Controls: React.FC<ControlsProps> = ({
   const VisibilityToggle = ({ label, propKey }: { label: string, propKey: keyof TagConfig }) => (
     <label className="flex items-center justify-between cursor-pointer py-2 group border-b border-gray-100 last:border-0">
       <span className="text-sm text-slate-900 group-hover:text-indigo-700 transition-colors font-bold">{label}</span>
-      <input 
-        type="checkbox" 
-        checked={config[propKey] as boolean} 
-        onChange={(e) => updateConfig(propKey, e.target.checked)} 
-        className="rounded text-indigo-600 h-5 w-5 transition-transform active:scale-90 border-slate-300 focus:ring-indigo-500" 
+      <input
+        type="checkbox"
+        checked={config[propKey] as boolean}
+        onChange={(e) => updateConfig(propKey, e.target.checked)}
+        className="rounded text-indigo-600 h-5 w-5 transition-transform active:scale-90 border-slate-300 focus:ring-indigo-500"
       />
     </label>
   );
 
   const ColorInput = ({ label, propKey }: { label: string, propKey: keyof TagConfig }) => (
-     <div className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
-        <span className="text-sm text-slate-900 font-bold">{label}</span>
-        <div className="flex items-center gap-2">
-          <span className="text-[10px] font-mono text-slate-500 uppercase font-bold">{config[propKey] as string}</span>
-          <input 
-            type="color" 
-            value={config[propKey] as string}
-            onChange={(e) => updateConfig(propKey, e.target.value)}
-            className="h-8 w-12 block bg-white border border-slate-300 cursor-pointer rounded-md overflow-hidden p-0.5 shadow-sm"
-          />
-        </div>
-     </div>
+    <div className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
+      <span className="text-sm text-slate-900 font-bold">{label}</span>
+      <div className="flex items-center gap-2">
+        <span className="text-[10px] font-mono text-slate-500 uppercase font-bold">{config[propKey] as string}</span>
+        <input
+          type="color"
+          value={config[propKey] as string}
+          onChange={(e) => updateConfig(propKey, e.target.value)}
+          className="h-8 w-12 block bg-white border border-slate-300 cursor-pointer rounded-md overflow-hidden p-0.5 shadow-sm"
+        />
+      </div>
+    </div>
   );
 
   return (
-    <div className="bg-white h-screen flex flex-col border-r border-gray-300 w-full md:w-80 lg:w-96 shadow-2xl z-20 overflow-hidden">
+    <div className="bg-white h-screen flex flex-col border-r border-gray-300 w-full md:w-96 lg:w-[450px] shadow-2xl z-20 overflow-hidden">
       {/* Header */}
       <div className="p-4 border-b border-gray-200 bg-slate-100">
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-xl font-black text-slate-900 flex items-center gap-2">
             <Printer className="w-6 h-6 text-indigo-600" /> WooTag
           </h1>
-          <button 
+          <button
             type="button"
-            onClick={handlePrint} 
+            onClick={handlePrint}
             disabled={products.length === 0}
             className="bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-400 text-white px-4 py-2.5 rounded-xl text-sm font-black flex items-center gap-2 transition-all active:scale-95 shadow-lg shadow-indigo-200 cursor-pointer"
           >
@@ -159,9 +159,9 @@ export const Controls: React.FC<ControlsProps> = ({
           { id: 'layout', icon: Settings, label: 'Ajustes' },
           { id: 'design', icon: Palette, label: 'Diseño' }
         ].map(tab => (
-          <button 
-            key={tab.id} 
-            onClick={() => setActiveTab(tab.id as any)} 
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id as any)}
             className={`flex-1 py-4 text-[11px] font-black uppercase tracking-widest flex flex-col items-center gap-1.5 transition-all border-b-2 ${activeTab === tab.id ? 'text-indigo-600 border-indigo-600 bg-indigo-50/50' : 'text-slate-400 border-transparent hover:text-slate-600 hover:bg-slate-50'}`}
           >
             <tab.icon className={`w-5 h-5 ${activeTab === tab.id ? 'text-indigo-600' : 'text-slate-400'}`} /> {tab.label}
@@ -176,33 +176,33 @@ export const Controls: React.FC<ControlsProps> = ({
             {/* SKU Search */}
             <div className="space-y-3">
               <label className="text-[11px] font-black text-slate-600 uppercase tracking-[0.15em] flex items-center gap-2">
-                <QrCode className="w-4 h-4 text-indigo-500"/> BUSCAR POR SKU
+                <QrCode className="w-4 h-4 text-indigo-500" /> BUSCAR POR SKU
               </label>
               <div className="flex gap-2">
-                <input 
-                  type="text" 
-                  value={newSku} 
-                  onChange={(e) => setNewSku(e.target.value)} 
-                  placeholder="Ej: AB-123" 
-                  className="flex-1 border-2 border-slate-300 rounded-xl px-4 py-3 text-sm font-black text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none bg-white transition-all placeholder-slate-400 shadow-sm" 
-                  onKeyDown={(e) => e.key === 'Enter' && handleAddProduct()} 
+                <input
+                  type="text"
+                  value={newSku}
+                  onChange={(e) => setNewSku(e.target.value)}
+                  placeholder="Ej: AB-123"
+                  className="flex-1 border-2 border-slate-300 rounded-xl px-4 py-3 text-sm font-black text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none bg-white transition-all placeholder-slate-400 shadow-sm"
+                  onKeyDown={(e) => e.key === 'Enter' && handleAddProduct()}
                 />
                 <button onClick={handleAddProduct} disabled={isFetching} className="bg-slate-900 text-white p-3 rounded-xl hover:bg-slate-800 disabled:opacity-50 transition-all active:scale-95 shadow-md">
                   {isFetching ? <div className="w-5 h-5 border-2 border-t-transparent rounded-full animate-spin" /> : <Plus className="w-6 h-6" />}
                 </button>
               </div>
-              {fetchError && <p className="text-red-700 text-xs font-black mt-2 flex items-center gap-1 bg-red-50 p-2 rounded-lg border border-red-200"><AlertCircle className="w-4 h-4"/> {fetchError}</p>}
+              {fetchError && <p className="text-red-700 text-xs font-black mt-2 flex items-center gap-1 bg-red-50 p-2 rounded-lg border border-red-200"><AlertCircle className="w-4 h-4" /> {fetchError}</p>}
             </div>
 
             {/* Category Import */}
             <div className="space-y-3 pt-6 border-t-2 border-slate-100">
               <label className="text-[11px] font-black text-slate-600 uppercase tracking-[0.15em] flex items-center gap-2">
-                <Filter className="w-4 h-4 text-indigo-500"/> IMPORTAR CATEGORÍA
+                <Filter className="w-4 h-4 text-indigo-500" /> IMPORTAR CATEGORÍA
               </label>
               <div className="flex gap-2">
-                <select 
-                  value={selectedCat} 
-                  onChange={(e) => setSelectedCat(e.target.value)} 
+                <select
+                  value={selectedCat}
+                  onChange={(e) => setSelectedCat(e.target.value)}
                   className="flex-1 border-2 border-slate-300 rounded-xl px-4 py-3 text-sm font-black text-slate-900 focus:outline-none bg-white focus:border-indigo-500 transition-all shadow-sm"
                 >
                   <option value="">Selecciona categoría</option>
@@ -263,11 +263,11 @@ export const Controls: React.FC<ControlsProps> = ({
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <label className="text-[10px] text-slate-700 font-black uppercase ml-1">Columnas</label>
-                  <select value={config.layoutCols} onChange={(e) => updateConfig('layoutCols', Number(e.target.value))} className="w-full border-2 border-slate-300 rounded-xl p-3 text-sm font-black bg-white text-slate-900 focus:border-indigo-500 outline-none transition-all shadow-sm">{[1,2,3,4].map(n => <option key={n}>{n}</option>)}</select>
+                  <select value={config.layoutCols} onChange={(e) => updateConfig('layoutCols', Number(e.target.value))} className="w-full border-2 border-slate-300 rounded-xl p-3 text-sm font-black bg-white text-slate-900 focus:border-indigo-500 outline-none transition-all shadow-sm">{[1, 2, 3, 4].map(n => <option key={n}>{n}</option>)}</select>
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-[10px] text-slate-700 font-black uppercase ml-1">Filas</label>
-                  <select value={config.layoutRows} onChange={(e) => updateConfig('layoutRows', Number(e.target.value))} className="w-full border-2 border-slate-300 rounded-xl p-3 text-sm font-black bg-white text-slate-900 focus:border-indigo-500 outline-none transition-all shadow-sm">{[1,2,3,4,5,6,7,8,9,10].map(n => <option key={n}>{n}</option>)}</select>
+                  <select value={config.layoutRows} onChange={(e) => updateConfig('layoutRows', Number(e.target.value))} className="w-full border-2 border-slate-300 rounded-xl p-3 text-sm font-black bg-white text-slate-900 focus:border-indigo-500 outline-none transition-all shadow-sm">{[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(n => <option key={n}>{n}</option>)}</select>
                 </div>
               </div>
             </div>
@@ -284,18 +284,19 @@ export const Controls: React.FC<ControlsProps> = ({
                 <VisibilityToggle label="Símbolo de Moneda" propKey="showCurrencySymbol" />
                 <VisibilityToggle label="Borde de Corte" propKey="showBorder" />
                 <VisibilityToggle label="Decimales (.00)" propKey="showDecimals" />
+                <VisibilityToggle label="Separador de miles" propKey="showThousandsSeparator" />
               </div>
             </div>
 
             <div className="space-y-4 pt-6 border-t-2 border-slate-100">
-              <label className="text-[11px] font-black text-slate-600 uppercase tracking-[0.15em] flex items-center gap-2"><Calculator className="w-4 h-4 text-indigo-500"/> PRECIO ESPECIAL</label>
+              <label className="text-[11px] font-black text-slate-600 uppercase tracking-[0.15em] flex items-center gap-2"><Calculator className="w-4 h-4 text-indigo-500" /> PRECIO ESPECIAL</label>
               <div className="bg-indigo-50 p-4 rounded-2xl border-2 border-indigo-200 shadow-sm space-y-4">
-                 <label className="flex items-center justify-between cursor-pointer group">
-                   <span className="text-sm font-black text-indigo-900">Activar Precio Extra</span>
-                   <input type="checkbox" checked={config.showCustomPrice} onChange={(e) => updateConfig('showCustomPrice', e.target.checked)} className="rounded text-indigo-700 h-6 w-6 border-indigo-400 focus:ring-indigo-500" />
-                 </label>
-                 {config.showCustomPrice && (
-                   <div className="space-y-4 animate-in fade-in slide-in-from-top-4 duration-300">
+                <label className="flex items-center justify-between cursor-pointer group">
+                  <span className="text-sm font-black text-indigo-900">Activar Precio Extra</span>
+                  <input type="checkbox" checked={config.showCustomPrice} onChange={(e) => updateConfig('showCustomPrice', e.target.checked)} className="rounded text-indigo-700 h-6 w-6 border-indigo-400 focus:ring-indigo-500" />
+                </label>
+                {config.showCustomPrice && (
+                  <div className="space-y-4 animate-in fade-in slide-in-from-top-4 duration-300">
                     <div className="space-y-1.5">
                       <label className="text-[10px] text-indigo-800 font-black uppercase ml-1">Etiqueta Personalizada</label>
                       <input type="text" value={config.customPriceLabel} onChange={(e) => updateConfig('customPriceLabel', e.target.value)} placeholder="Ej: Mayorista" className="w-full text-sm font-black border-2 border-indigo-200 p-3 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none bg-white text-slate-900" />
@@ -317,8 +318,26 @@ export const Controls: React.FC<ControlsProps> = ({
                         <option value="bottom">Debajo del precio</option>
                       </select>
                     </div>
-                   </div>
-                 )}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="space-y-4 pt-6 border-t-2 border-slate-100">
+              <label className="text-[11px] font-black text-slate-600 uppercase tracking-[0.15em] flex items-center gap-2"><MessageSquare className="w-4 h-4 text-indigo-500" /> LEYENDA DE PRECIO</label>
+              <div className="bg-indigo-50 p-4 rounded-2xl border-2 border-indigo-200 shadow-sm space-y-4">
+                <label className="flex items-center justify-between cursor-pointer group">
+                  <span className="text-sm font-black text-indigo-900">Mostrar Leyenda</span>
+                  <input type="checkbox" checked={config.showPriceLegend} onChange={(e) => updateConfig('showPriceLegend', e.target.checked)} className="rounded text-indigo-700 h-6 w-6 border-indigo-400 focus:ring-indigo-500" />
+                </label>
+                {config.showPriceLegend && (
+                  <div className="space-y-4 animate-in fade-in slide-in-from-top-4 duration-300">
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] text-indigo-800 font-black uppercase ml-1">Texto</label>
+                      <input type="text" value={config.priceLegendText} onChange={(e) => updateConfig('priceLegendText', e.target.value)} placeholder="Ej: IVA Incluido" className="w-full text-sm font-black border-2 border-indigo-200 p-3 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none bg-white text-slate-900" />
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -328,14 +347,14 @@ export const Controls: React.FC<ControlsProps> = ({
           <div className="space-y-8 animate-in fade-in slide-in-from-right-2 duration-300">
             {/* Profiles */}
             <div className="space-y-4">
-              <label className="text-[11px] font-black text-slate-600 uppercase tracking-[0.15em] flex items-center gap-2"><FolderOpen className="w-4 h-4 text-indigo-500"/> PERFILES DE DISEÑO</label>
+              <label className="text-[11px] font-black text-slate-600 uppercase tracking-[0.15em] flex items-center gap-2"><FolderOpen className="w-4 h-4 text-indigo-500" /> PERFILES DE DISEÑO</label>
               <div className="bg-slate-50 p-4 rounded-2xl space-y-5 border-2 border-slate-200">
                 <div className="flex gap-2">
-                  <input 
-                    type="text" 
-                    value={profileName} 
-                    onChange={(e) => setProfileName(e.target.value)} 
-                    placeholder="Nuevo nombre..." 
+                  <input
+                    type="text"
+                    value={profileName}
+                    onChange={(e) => setProfileName(e.target.value)}
+                    placeholder="Nuevo nombre..."
                     className="flex-1 text-sm font-black border-2 border-slate-300 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-indigo-500 bg-white text-slate-900 placeholder-slate-500 shadow-sm"
                     onKeyDown={(e) => e.key === 'Enter' && handleSaveCurrentProfile()}
                   />
@@ -363,13 +382,15 @@ export const Controls: React.FC<ControlsProps> = ({
 
             {/* Typography */}
             <div className="pt-6 border-t-2 border-slate-100 space-y-4">
-              <label className="text-[11px] font-black text-slate-600 uppercase tracking-[0.15em] flex items-center gap-2"><Type className="w-4 h-4 text-indigo-500"/> TAMAÑOS DE FUENTE</label>
+              <label className="text-[11px] font-black text-slate-600 uppercase tracking-[0.15em] flex items-center gap-2"><Type className="w-4 h-4 text-indigo-500" /> TAMAÑOS DE FUENTE</label>
               <div className="space-y-6 bg-slate-50 p-5 rounded-2xl border-2 border-slate-200">
                 {[
                   { key: 'fontSizeTitle', label: 'Nombre Producto' },
                   { key: 'fontSizePrice', label: 'Precio Normal' },
                   { key: 'fontSizeSalePrice', label: 'Precio Oferta' },
                   { key: 'fontSizeCustomPrice', label: 'Precio Especial' },
+                  { key: 'fontSizeCustomLabel', label: 'Leyenda P. Especial' },
+                  { key: 'fontSizePriceLegend', label: 'Leyenda Precio' },
                   { key: 'fontSizeDesc', label: 'Descripción' }
                 ].map(item => (
                   <div key={item.key} className="space-y-3">
@@ -385,12 +406,14 @@ export const Controls: React.FC<ControlsProps> = ({
 
             {/* Colors */}
             <div className="pt-6 border-t-2 border-slate-100 space-y-4">
-              <label className="text-[11px] font-black text-slate-600 uppercase tracking-[0.15em] flex items-center gap-2"><Palette className="w-4 h-4 text-indigo-500"/> COLORES DE TEXTO</label>
+              <label className="text-[11px] font-black text-slate-600 uppercase tracking-[0.15em] flex items-center gap-2"><Palette className="w-4 h-4 text-indigo-500" /> COLORES DE TEXTO</label>
               <div className="bg-slate-50 p-4 rounded-2xl border-2 border-slate-200 space-y-1">
                 <ColorInput label="Título" propKey="colorTitle" />
                 <ColorInput label="Precio" propKey="colorPrice" />
                 <ColorInput label="Precio Oferta" propKey="colorSalePrice" />
                 <ColorInput label="Precio Especial" propKey="colorCustomPrice" />
+                <ColorInput label="Leyenda P. Especial" propKey="colorCustomLabel" />
+                <ColorInput label="Leyenda Precio" propKey="colorPriceLegend" />
                 <ColorInput label="Descripción" propKey="colorDesc" />
                 <ColorInput label="Bordes" propKey="colorBorder" />
                 <ColorInput label="Código QR" propKey="colorAccent" />
@@ -399,6 +422,6 @@ export const Controls: React.FC<ControlsProps> = ({
           </div>
         )}
       </div>
-    </div>
+    </div >
   );
 };

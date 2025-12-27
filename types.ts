@@ -21,7 +21,7 @@ export interface DesignProfile {
 export interface TagConfig {
   layoutRows: number;
   layoutCols: number;
-  
+
   // Visibility
   showTitle: boolean;
   showSku: boolean;
@@ -32,13 +32,19 @@ export interface TagConfig {
   showBorder: boolean;
   showImage: boolean;
   showDecimals: boolean;
-  
+
   // Custom Price Field
   showCustomPrice: boolean;
   customPriceLabel: string;
   customPricePercent: number; // Positive or negative
   customPriceBase: 'regular' | 'sale'; // Calculation base
   customPricePosition: 'top' | 'bottom';
+
+  // Price Legend
+  showPriceLegend: boolean;
+  priceLegendText: string;
+  colorPriceLegend: string;
+  fontSizePriceLegend: number;
 
   // Colors
   colorTitle: string;
@@ -95,7 +101,7 @@ export interface WooCategory {
 export const DEFAULT_CONFIG: TagConfig = {
   layoutRows: 4,
   layoutCols: 2,
-  
+
   showTitle: true,
   showSku: true,
   showDescription: true,
@@ -111,6 +117,11 @@ export const DEFAULT_CONFIG: TagConfig = {
   customPricePercent: 10,
   customPriceBase: 'regular',
   customPricePosition: 'bottom',
+
+  showPriceLegend: false,
+  priceLegendText: 'IVA Incluido',
+  colorPriceLegend: '#6b7280',
+  fontSizePriceLegend: 10,
 
   colorTitle: '#111827',
   colorPrice: '#000000',

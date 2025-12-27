@@ -1,72 +1,63 @@
-# 🏷️ WooTag AI Generator
+# WooTag AI Generator
 
-**WooTag AI Generator** es una herramienta profesional diseñada para propietarios de tiendas WooCommerce que necesitan imprimir etiquetas de precios físicas de forma rápida, elegante y optimizada.
+**WooTag AI Generator** es una herramienta profesional desarrollada para optimizar la creación e impresión de etiquetas de precios para tiendas WooCommerce. Combina la potencia de React para la interfaz de usuario con la inteligencia artificial de Google Gemini para optimizar descripciones de productos para etiquetas físicas.
 
-![Versión](https://img.shields.io/badge/version-1.2.0-blue.svg)
-![React](https://img.shields.io/badge/built%20with-React-61DAFB.svg)
-![Tailwind](https://img.shields.io/badge/style-TailwindCSS-38B2AC.svg)
-![Gemini AI](https://img.shields.io/badge/AI-Google%20Gemini-orange.svg)
+Este proyecto ha sido desarrollado con la asistencia de **Antigravity**.
 
----
+![React](https://img.shields.io/badge/React-19.2.0-61DAFB?style=flat-square&logo=react)
+![Vite](https://img.shields.io/badge/Vite-6.0.0-646CFF?style=flat-square&logo=vite)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.0-3178C6?style=flat-square&logo=typescript)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.4-38B2AC?style=flat-square&logo=tailwind-css)
 
-## ✨ Características Principales
+## 🚀 Características
 
-### 🔄 Integración Directa con WooCommerce
-Conéctate a tu tienda usando tu **Consumer Key** y **Consumer Secret**. Importa productos individualmente por SKU o carga categorías completas con un solo clic.
+-   **Integración WooCommerce**: Conexión directa mediante API REST (Consumer Key/Secret).
+-   **IA Integrada**: Uso de Google Gemini para resumir descripciones largas en formatos aptos para etiquetas (max 15 palabras).
+-   **Diseño de Etiquetas**:
+    -   Personalización de filas/columnas (Layout A4).
+    -   Ajustes de tipografía, colores y márgenes.
+    -   Generación de códigos QR automáticos basados en SKU.
+-   **Impresión Optimizada**: Salida CSS específica para impresión A4 perfecta sin márgenes indeseados.
+-   **Gestión de Perfiles**: Guardado local de configuraciones de diseño frecuentes.
 
-### 🤖 Optimización de Texto con IA (Gemini)
-¿Tus descripciones de WooCommerce son demasiado largas para una etiqueta pequeña? Nuestra IA analiza el producto y genera una descripción persuasiva y ultra-breve (máximo 15 palabras) ideal para retail.
+## 🛠️ Requisitos Previos
 
-### 🎨 Personalización Total del Diseño
-Controla cada aspecto de tu etiqueta:
-- **Layout A4:** Configura filas y columnas (desde 1x1 hasta 4x10).
-- **Colores:** Personaliza el color de títulos, precios, ofertas y códigos QR.
-- **Fuentes:** Ajusta tamaños de fuente independientes para cada campo.
-- **Precios Especiales:** Calcula automáticamente precios para "Mayoristas" o "Club" aplicando porcentajes de incremento o descuento.
+-   **Node.js**: v18.0.0 o superior (recomendado v20+).
+-   **NPM**: v9.0.0 o superior.
 
-### 📂 Perfiles de Diseño
-Guarda tus configuraciones favoritas (ej. "Etiqueta Oferta Roja", "Etiqueta Minimalista") y cárgalas instantáneamente según el tipo de producto que vayas a imprimir.
+## 📦 Instalación
 
-### 🖨️ Impresión Fiel a A4 y PDF
-Diseñado específicamente para hojas A4 (210mm x 297mm). El sistema elimina escalas y márgenes innecesarios para que lo que ves en pantalla sea exactamente lo que sale de tu impresora o se guarda en tu PDF.
+1.  Clona el repositorio o descarga el código fuente.
+2.  Instala las dependencias del proyecto:
 
----
+```bash
+npm install
+```
 
-## 🚀 Funciones Técnicas
+## ▶️ Ejecución Local
 
-- **Persistencia de Sesión:** Opción de "Recordar credenciales" para no tener que loguearte cada vez.
-- **Códigos QR Automáticos:** Genera un QR basado en el SKU para facilitar el escaneo en el punto de venta.
-- **Responsive Design:** Panel de control optimizado para uso en escritorio con previsualización en tiempo real.
-- **Modo Offline Ready:** Una vez cargados los productos, la personalización visual no requiere internet.
+Para iniciar el servidor de desarrollo:
 
----
+```bash
+npm run dev
+```
 
-## 🛠️ Instalación y Uso
+La aplicación estará disponible en `http://localhost:3000` (o el puerto que indique la terminal).
 
-1. **Configuración de WooCommerce:**
-   - Ve a `WooCommerce > Ajustes > Avanzado > API REST`.
-   - Crea una clave con permisos de **Lectura/Escritura**.
-2. **Inicio de Sesión:**
-   - Ingresa la URL de tu tienda (ej. `https://mitienda.com`).
-   - Pega tu `Consumer Key` y `Consumer Secret`.
-3. **Generación:**
-   - Busca productos por SKU o categoría.
-   - Ajusta el diseño en las pestañas laterales.
-   - Haz clic en **IMPRIMIR** y selecciona "Guardar como PDF" o tu impresora física.
+## 🔨 Build para Producción
 
----
+Para generar los archivos estáticos optimizados para producción:
 
-## 📸 Capturas de Pantalla (Ilustrativo)
+```bash
+npm run build
+```
 
-| Login Seguro | Panel de Control | Previsualización A4 |
-| :---: | :---: | :---: |
-| ![Login](https://raw.githubusercontent.com/lucide-react/lucide/main/icons/lock.svg) | ![Design](https://raw.githubusercontent.com/lucide-react/lucide/main/icons/palette.svg) | ![Print](https://raw.githubusercontent.com/lucide-react/lucide/main/icons/printer.svg) |
+Los archivos generados se encontrarán en la carpeta `dist/`.
+
+## 🤝 Contribución
+
+Si deseas contribuir, por favor asegúrate de seguir las pautas de estilo de código y realizar pruebas exhaustivas de las funcionalidades de impresión e integración con la API.
 
 ---
 
-## 📜 Licencia
-
-Este proyecto está diseñado para uso profesional en entornos de retail. Consulta el archivo `changelog.txt` para ver las últimas actualizaciones de rendimiento y seguridad.
-
----
-*Desarrollado con ❤️ para la comunidad de eCommerce.*
+*Powered by Antigravity*
