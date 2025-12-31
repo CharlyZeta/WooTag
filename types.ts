@@ -32,6 +32,7 @@ export interface TagConfig {
   showBorder: boolean;
   showImage: boolean;
   showDecimals: boolean;
+  showThousandsSeparator: boolean;
 
   // Custom Price Field
   showCustomPrice: boolean;
@@ -111,6 +112,7 @@ export const DEFAULT_CONFIG: TagConfig = {
   showBorder: true,
   showImage: false,
   showDecimals: true,
+  showThousandsSeparator: true,
 
   showCustomPrice: false,
   customPriceLabel: 'Precio Especial',

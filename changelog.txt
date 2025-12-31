@@ -1,5 +1,26 @@
 # Changelog - WooTag AI Generator
 
+## [1.3.1] - 2025-12-30
+### Fixed
+- Corrección de errores de compilación y referencias indefinidas en `Controls.tsx` (funciones de búsqueda e importaciones).
+- Se corrigieron imports faltantes (Iconos de Lucide React).
+- Corrección de `TypeError` en `Controls.tsx` cuando se carga la app en modo invitado (sin configuración de WooCommerce).
+- Se añadió la definición de tipo faltante para `showThousandsSeparator`.
+
+## [1.3.0] - 2024-12-30
+### Added
+- Nueva característica: **Leyenda de Precio Configurable**. Permite agregar un texto libre debajo del precio (ej: "IVA Incluido").
+- Selector de color independiente para la "Leyenda de Precio".
+- Selector de tamaño de fuente independiente para "Leyenda de Precio" y "Etiqueta P. Especial".
+- Nueva característica: **Separador de Miles**. Interruptor en Ajustes para activar/desactivar el formato de miles (ej: 1.000 vs 1000).
+- Selector de color independiente para la "Etiqueta de Precio Especial" (ej: Mayorista).
+
+### Fixed
+- Corrección en el Código QR: Se eliminó el prefijo "SKU:" del valor escaneado, ahora muestra solo el código limpio.
+- Corrección de UI: Se aumentó el ancho del menú lateral en resoluciones medias y grandes para evitar solapamientos.
+- Se restauró el selector de **Tamaño QR** que había desaparecido de la interfaz.
+- Normalización del nombre de archivo `README.md` para evitar conflictos de git en Windows.
+
 ## [1.2.0] - 2024-05-24
 ### Added
 - Nuevo archivo `changelog.txt` para seguimiento de versiones.

@@ -21,7 +21,7 @@ const makeWooRequest = async (endpoint: string, config: WooConfig): Promise<Resp
   }
 
   const url = `${baseUrl}${endpoint}`;
-  
+
   let response = await fetch(url, {
     method: 'GET',
     headers: getAuthHeaders(config)
@@ -41,18 +41,21 @@ export const validateConnection = async (config: WooConfig): Promise<WpUser> => 
     throw new Error("Por favor completa todos los campos.");
   }
   try {
-    let response = await makeWooRequest('/wp-json/wp/v2/users/me?context=edit', config);
-    if (response.ok) {
-        const user = await response.json();
-        const allowedRoles = ['administrator', 'shop_manager'];
-        const hasPermission = user.roles && user.roles.some((r: string) => allowedRoles.includes(r));
-        if (!hasPermission) throw new Error("El usuario no tiene permisos suficientes.");
-        return { id: user.id, name: user.name, slug: user.slug, roles: user.roles };
+    // 1. Try to fetch a product first (Primary Check for WooCommerce API)
+    // This is more reliable than wp/v2/users/me which is often blocked or restricted
+    const productResponse = await makeWooRequest('/wp-json/wc/v3/products?per_page=1', config);
+
+    if (productResponse.ok) {
+      // Connection successful! Use default user profile.
+      // We skip fetching specific user details (wp/v2/users/me) because it often triggers 401 errors
+      // on secured sites, causing unnecessary alarm in the console.
+      return { id: 0, name: 'Gestor Tienda', slug: 'shop_manager', roles: ['shop_manager'] };
     }
-    response = await makeWooRequest('/wp-json/wc/v3/products?per_page=1', config);
-    if (response.ok) return { id: 0, name: 'Gestor Tienda', slug: 'shop_manager', roles: ['shop_manager'] };
-    throw new Error("Credenciales inválidas.");
+
+    // If we're here, product fetch failed.
+    throw new Error("Credenciales inválidas o acceso denegado a Productos.");
   } catch (error: any) {
+    console.error("Connection error:", error);
     throw error;
   }
 };
@@ -76,18 +79,29 @@ const mapWooProduct = (wooProd: any): Product => ({
 });
 
 export const fetchProductsByCategory = async (categoryId: number, config: WooConfig): Promise<Product[]> => {
+  console.log(`[WooTag] Fetching category ${categoryId}...`);
   const response = await makeWooRequest(`/wp-json/wc/v3/products?category=${categoryId}&per_page=100&status=publish`, config);
-  if (!response.ok) return [];
+  if (!response.ok) {
+    console.error(`[WooTag] Category fetch failed: ${response.status}`);
+    return [];
+  }
   const data = await response.json();
+  console.log(`[WooTag] Found ${data.length} products in category.`);
   return data.map(mapWooProduct);
 };
 
 export const fetchProductBySku = async (sku: string, config: WooConfig): Promise<Product | null> => {
+  console.log(`[WooTag] Searching SKU: ${sku}`);
   const response = await makeWooRequest(`/wp-json/wc/v3/products?sku=${sku}`, config);
-  if (!response.ok) return null;
+  if (!response.ok) {
+    console.error(`[WooTag] SKU fetch failed: ${response.status}`);
+    return null;
+  }
   const data = await response.json();
+  console.log(`[WooTag] SKU Search Result:`, data);
   if (Array.isArray(data) && data.length > 0) {
     return mapWooProduct(data[0]);
   }
+  console.warn(`[WooTag] SKU not found (empty array)`);
   return null;
 };

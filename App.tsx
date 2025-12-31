@@ -1,12 +1,12 @@
-
 import React, { useState, useEffect } from 'react';
 import { DEFAULT_CONFIG, Product, TagConfig, WooConfig, AuthSession, WpUser, DesignProfile } from './types';
 import { TagSheet } from './components/TagSheet';
 import { Controls } from './components/Controls';
-import { LoginScreen } from './components/LoginScreen';
+import { ConnectionModal } from './components/ConnectionModal';
 import { optimizeDescription } from './services/geminiService';
+import { encrypt, decrypt } from './utils/security';
 
-const SESSION_KEY = 'wootag_session';
+const SESSION_KEY = 'wootag_session_v2';
 const CONFIG_KEY = 'wootag_config_v2';
 const PROFILES_KEY = 'wootag_profiles';
 const SESSION_DURATION = 24 * 60 * 60 * 1000;
@@ -14,7 +14,9 @@ const SESSION_DURATION = 24 * 60 * 60 * 1000;
 export default function App() {
   const [session, setSession] = useState<AuthSession | null>(null);
   const [loadingSession, setLoadingSession] = useState(true);
-  
+  const [isConnectionModalOpen, setIsConnectionModalOpen] = useState(false);
+
+  // Tag Config
   const [config, setConfig] = useState<TagConfig>(() => {
     try {
       const saved = localStorage.getItem(CONFIG_KEY);
@@ -24,6 +26,7 @@ export default function App() {
     }
   });
 
+  // Profiles
   const [profiles, setProfiles] = useState<DesignProfile[]>(() => {
     try {
       const saved = localStorage.getItem(PROFILES_KEY);
@@ -36,12 +39,13 @@ export default function App() {
   const [products, setProducts] = useState<Product[]>([]);
   const [optimizingId, setOptimizingId] = useState<string | null>(null);
 
+  // Load Session (Decrypted)
   useEffect(() => {
     try {
-      const savedSession = localStorage.getItem(SESSION_KEY);
-      if (savedSession) {
-        const parsed: AuthSession = JSON.parse(savedSession);
-        if (Date.now() < parsed.expiresAt) {
+      const savedEncrypted = localStorage.getItem(SESSION_KEY);
+      if (savedEncrypted) {
+        const parsed = decrypt(savedEncrypted) as AuthSession;
+        if (parsed && Date.now() < parsed.expiresAt) {
           setSession(parsed);
         } else {
           localStorage.removeItem(SESSION_KEY);
@@ -54,6 +58,7 @@ export default function App() {
     }
   }, []);
 
+  // Persist State
   useEffect(() => {
     localStorage.setItem(CONFIG_KEY, JSON.stringify(config));
   }, [config]);
@@ -62,17 +67,24 @@ export default function App() {
     localStorage.setItem(PROFILES_KEY, JSON.stringify(profiles));
   }, [profiles]);
 
-  const handleLogin = (wooConfig: WooConfig, user: WpUser) => {
+  // Auth Handlers
+  const handleConnect = (wooConfig: WooConfig, user: WpUser, remember: boolean) => {
     const newSession: AuthSession = {
       user,
       config: wooConfig,
       expiresAt: Date.now() + SESSION_DURATION
     };
     setSession(newSession);
-    localStorage.setItem(SESSION_KEY, JSON.stringify(newSession));
+
+    if (remember) {
+      const encrypted = encrypt(newSession);
+      localStorage.setItem(SESSION_KEY, encrypted);
+    } else {
+      localStorage.removeItem(SESSION_KEY);
+    }
   };
 
-  const handleLogout = () => {
+  const handleDisconnect = () => {
     setSession(null);
     localStorage.removeItem(SESSION_KEY);
     setProducts([]);
@@ -85,7 +97,7 @@ export default function App() {
     setOptimizingId(productId);
     try {
       const optimizedDesc = await optimizeDescription(product.name, product.description);
-      setProducts(prev => prev.map(p => 
+      setProducts(prev => prev.map(p =>
         p.id === productId ? { ...p, description: optimizedDesc } : p
       ));
     } catch (error) {
@@ -115,47 +127,53 @@ export default function App() {
     }
   };
 
+  // Skip loading screen, app is always accessible
+  // Debug: Show a loading screen instead of null
   if (loadingSession) {
-    return <div className="min-h-screen flex items-center justify-center text-gray-500 italic">Validando sesión...</div>;
-  }
-
-  if (!session) {
-    return <LoginScreen onLoginSuccess={handleLogin} />;
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-slate-500 font-bold">Cargando aplicación...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-gray-100 print:bg-white">
-      
+
+      <ConnectionModal
+        isOpen={isConnectionModalOpen}
+        onClose={() => setIsConnectionModalOpen(false)}
+        onConnect={handleConnect}
+      />
+
       {/* Controles: Ocultos en impresión */}
       <div className="no-print w-full md:w-auto z-50">
-        <Controls 
-          config={config} 
-          setConfig={setConfig} 
+        <Controls
+          config={config}
+          setConfig={setConfig}
           products={products}
           setProducts={setProducts}
-          wooConfig={session.config}
-          user={session.user}
+          wooConfig={session?.config || null} // Pass null if guest
+          user={session?.user || null}       // Pass null if guest
           onOptimize={handleOptimizeDescription}
           optimizingId={optimizingId}
-          onLogout={handleLogout}
+          onLogout={handleDisconnect}
           profiles={profiles}
           onSaveProfile={handleSaveProfile}
           onLoadProfile={handleLoadProfile}
           onDeleteProfile={handleDeleteProfile}
+          onOpenConnection={() => setIsConnectionModalOpen(true)}
         />
       </div>
 
       {/* Area de Previsualización */}
       <main className="flex-1 overflow-auto p-4 md:p-8 flex justify-center print:p-0 print:overflow-visible print:block">
-        
-        {/* 
-          En pantalla: Escalamos para que quepa en el visor.
-          En impresión: La clase 'print-container' de index.html quita la escala y posiciona fijo.
-        */}
         <div className="print-container origin-top transform scale-[0.5] sm:scale-[0.6] md:scale-[0.7] lg:scale-[0.85] xl:scale-100 transition-transform duration-300">
           <TagSheet products={products} config={config} />
         </div>
-
       </main>
 
     </div>
