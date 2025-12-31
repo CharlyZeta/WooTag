@@ -1,5 +1,14 @@
 # Changelog - WooTag AI Generator
 
+## [1.3.2] - 2025-12-31
+### Changed
+- **Rediseño de Interfaz (Header)**: Se simplificó la cabecera del panel lateral, eliminando información duplicada, mejorando el botón de "Imprimir" (ancho completo) y modernizando la estética general.
+- **Lógica de Conexión Mejorada**: Ahora la validación de conexión prioriza el endpoint de Productos de WooCommerce (`/wc/v3/products`), lo que esquiva bloqueos de seguridad comunes en endpoints de usuario de WordPress (`/wp/v2/users`), eliminando falsos errores 401 en consola.
+
+### Fixed
+- **Selector de Categorías**: Se reemplazó el botón estático de "Importar Categoría" por un selector funcional que permite elegir la categoría antes de descargar los productos.
+- Eliminación de alertas de error "Unauthorized" innecesarias en la consola al conectar.
+
 ## [1.3.1] - 2025-12-30
 ### Fixed
 - Corrección de errores de compilación y referencias indefinidas en `Controls.tsx` (funciones de búsqueda e importaciones).

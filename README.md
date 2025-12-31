@@ -14,16 +14,23 @@ Este proyecto ha sido desarrollado con la asistencia de **Antigravity**.
 ## 🚀 Características Principales
 
 ### 🔌 Integración WooCommerce
-*   **Conexión Directa**: Se conecta a tu tienda mediante API REST (Consumer Key / Consumer Secret).
+*   **Conexión Inteligente**:
+    *   **Modo Invitado / Offline**: Accede a la interfaz de diseño inmediatamente sin necesidad de credenciales. La aplicación solo solicitará conexión cuando intentes importar datos.
+    *   **Validación Robusta**: Sistema de conexión mejorado que prioriza endpoints de productos para evitar bloqueos de seguridad comunes (Errores 401).
+    *   **Seguridad Local**: Las credenciales se pueden "Recordar" de forma segura (ofuscadas) en el almacenamiento local del navegador para no tener que reingresarlas.
 *   **Importación Flexible**:
     *   **Por SKU**: Busca y agrega productos individuales rápidamente.
-    *   **Por Categoría**: Importa catálogos completos con un solo clic.
+    *   **Por Categoría**: Selector desplegable integrado para importar catálogos enteros filtrando por categoría.
 
 ### 🧠 Inteligencia Artificial (Gemini AI)
 *   **Optimización de Textos**: Transforma descripciones largas y técnicas de productos en "bullets" de venta concisos y atractivos (máx. 15 palabras), perfectos para el espacio limitado de una etiqueta física.
 
 ### 🎨 Personalización de Diseño Avanzada
 El editor visual en tiempo real permite ajustar cada detalle de la etiqueta:
+
+#### **Interfaz Renovada (v1.3)**
+*   **Nueva Cabecera**: Diseño limpio y moderno que maximiza el espacio de trabajo.
+*   **Controles Intuitivos**: Panel lateral organizado por pestañas (Productos, Ajustes, Diseño) para un flujo de trabajo más ágil.
 
 #### **Distribución y Formato**
 *   **Layout A4**: Configura filas y columnas (ej. 4x2, 5x3) para aprovechar al máximo tus hojas de etiquetas.
@@ -90,8 +97,8 @@ El editor visual en tiempo real permite ajustar cada detalle de la etiqueta:
 4.  **Abrir en el navegador**:
     Visita `http://localhost:3000`.
 
-5.  **Configurar credenciales**:
-    Ingresa la URL de tu tienda, Consumer Key y Consumer Secret en la pantalla de inicio. (Nota: Las credenciales se guardan localmente en tu navegador).
+5.  **Conexión (Opcional)**:
+    Puedes usar la aplicación en modo diseño inmediatamente. Para importar productos, haz clic en "Conectar" e ingresa tus credenciales de WooCommerce. Las claves se pueden guardar localmente para futuros accesos.
 
 ---
 
