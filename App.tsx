@@ -59,9 +59,13 @@ export default function App() {
         timestamp: Date.now(),
         items: products.map(p => ({ sku: p.sku, name: p.name, image: p.image }))
       };
-      setPrintLog(prev => [record, ...prev].slice(0, 200)); // keep last 200 records
+      // Actualizar el log y luego imprimir en el siguiente tick para que React
+      // persista el estado en localStorage antes de que window.print() bloquee.
+      setPrintLog(prev => [record, ...prev].slice(0, 200));
+      setTimeout(() => window.print(), 0);
+    } else {
+      window.print();
     }
-    window.print();
   };
 
   // Page indicator
@@ -226,7 +230,7 @@ export default function App() {
         className="flex-1 overflow-auto p-4 md:p-8 flex justify-center print:p-0 print:overflow-visible print:block bg-gray-100"
       >
         <div className="w-full flex justify-center">
-          <div className="origin-top scale-[0.45] sm:scale-[0.58] md:scale-[0.72] lg:scale-[0.88] xl:scale-100 transition-transform duration-300 min-w-[210mm]">
+          <div className="origin-top scale-[0.45] sm:scale-[0.58] md:scale-[0.72] lg:scale-[0.88] xl:scale-100 print:scale-100 print:transform-none print:origin-top-left transition-transform duration-300 min-w-[210mm]">
             <TagSheet products={products} config={config} />
           </div>
         </div>

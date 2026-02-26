@@ -1,6 +1,12 @@
 # Changelog - WooTag AI Generator
 
-## [1.6.0] - 2026-02-25
+## [1.6.1] - 2026-02-26
+### Fixed
+- **Tamaño de hoja incorrecto en preview de impresión** (`App.tsx`): El wrapper de escala visual tenía clases `scale-*` que el navegador aplicaba también al imprimir, generando un tamaño de página personalizado pequeño. Se agregó `print:scale-100 print:transform-none` para neutralizar la transformación en modo impresión.
+- **Hoja en blanco extra al final** (`TagSheet.tsx`): La clase `print:break-after-page` se aplicaba a todas las páginas, incluida la última, generando una página vacía al final del documento. Ahora solo se aplica a las páginas intermedias (condicionalmente: `pageIndex < pages.length - 1`).
+- **Historial de impresión no registraba** (`App.tsx`): `window.print()` es una llamada síncrona bloqueante. Al llamarse inmediatamente después de `setPrintLog`, React no tenía tiempo de hacer el flush del estado a `localStorage`. Ahora se envuelve en `setTimeout(() => window.print(), 0)` para permitir que el estado se persista antes de abrir el diálogo de impresión.
+
+
 ### Added
 - **Versión en el pie del menú lateral** (`Controls.tsx`): Footer fijo al final del sidebar que muestra "WooTag AI" y el número de versión actual (`v{APP_VERSION}`), definida centralmente en `types.ts`.
 - **Historial de impresiones** (`App.tsx` + `Controls.tsx`): Nueva tab "Historial" en el panel lateral. Cada vez que se presiona "Imprimir", se registra la fecha, hora y lista de productos (nombre, SKU, imagen). El historial persiste en `localStorage`. Incluye:
