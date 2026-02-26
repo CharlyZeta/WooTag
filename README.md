@@ -1,120 +1,140 @@
 # 🏷️ WooTag AI Generator
 
-**WooTag AI Generator** es una potente herramienta de escritorio (web-based) diseñada para optimizar, diseñar e imprimir etiquetas de precios profesionales para tiendas WooCommerce. Combina la flexibilidad de la API de WooCommerce con la inteligencia de Google Gemini para crear etiquetas perfectas en segundos.
+**WooTag AI Generator** es una herramienta web para diseñar e imprimir etiquetas de precio profesionales para tiendas WooCommerce. Importa productos desde tu tienda, personaliza el diseño y genera hojas A4 listas para imprimir, con soporte de QR y optimización de textos via Google Gemini AI.
 
 Este proyecto ha sido desarrollado con la asistencia de **Antigravity**.
 
 ![React](https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.0-3178C6?style=flat-square&logo=typescript)
-![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4-38B2AC?style=flat-square&logo=tailwind-css)
 ![Vite](https://img.shields.io/badge/Vite-6.0-646CFF?style=flat-square&logo=vite)
+![Version](https://img.shields.io/badge/versión-1.5.1-indigo?style=flat-square)
 
 ---
 
 ## 🚀 Características Principales
 
 ### 🔌 Integración WooCommerce
-*   **Conexión Inteligente**:
-    *   **Modo Invitado / Offline**: Accede a la interfaz de diseño inmediatamente sin necesidad de credenciales. La aplicación solo solicitará conexión cuando intentes importar datos.
-    *   **Validación Robusta**: Sistema de conexión mejorado que prioriza endpoints de productos para evitar bloqueos de seguridad comunes (Errores 401).
-    *   **Seguridad Local**: Las credenciales se pueden "Recordar" de forma segura (ofuscadas) en el almacenamiento local del navegador para no tener que reingresarlas.
-*   **Importación Flexible**:
-    *   **Por SKU**: Busca y agrega productos individuales rápidamente.
-    *   **Por Categoría**: Selector desplegable integrado para importar catálogos enteros filtrando por categoría.
+
+- **Modo Invitado / Offline**: La app es completamente funcional sin credenciales. Solo se requiere conexión para importar productos.
+- **Conexión segura**: Credenciales ofuscadas en `localStorage`. La validación prioriza el endpoint de productos para esquivar bloqueos de seguridad comunes (Error 401).
+- **Pre-carga de credenciales**: Al abrir el modal de conexión, los campos se pre-llenan con las credenciales ya guardadas. Los campos tienen `autoComplete="off"` para evitar interferencias del navegador.
+
+#### Importación de productos
+
+| Método | Descripción |
+|--------|-------------|
+| **Por SKU** | Búsqueda exacta por código. Filtra solo productos publicados (`status=publish`). |
+| **Por nombre** | Campo de búsqueda con autocompletado en tiempo real (debounce 400ms). Muestra imagen, nombre y SKU en un dropdown de sugerencias. |
+| **Por categoría** | Selector desplegable con paginación automática (obtiene **todas** las categorías, sin límite de 100). |
+
+> Todos los métodos de importación detectan duplicados y preguntan al usuario antes de agregar etiquetas repetidas.
+
+---
 
 ### 🧠 Inteligencia Artificial (Gemini AI)
-*   **Optimización de Textos**: Transforma descripciones largas y técnicas de productos en "bullets" de venta concisos y atractivos (máx. 15 palabras), perfectos para el espacio limitado de una etiqueta física.
 
-### 🎨 Personalización de Diseño Avanzada
-El editor visual en tiempo real permite ajustar cada detalle de la etiqueta:
+- **Optimización de descripciones**: Convierte textos largos en frases de venta concisas (≤ 15 palabras), ideales para el espacio limitado de una etiqueta.
+- Modelo: `gemini-2.0-flash` (nombre oficial y estable).
 
-#### **Interfaz Renovada (v1.3)**
-*   **Nueva Cabecera**: Diseño limpio y moderno que maximiza el espacio de trabajo.
-*   **Controles Intuitivos**: Panel lateral organizado por pestañas (Productos, Ajustes, Diseño) para un flujo de trabajo más ágil.
+---
 
-#### **Distribución y Formato**
-*   **Layout A4**: Configura filas y columnas (ej. 4x2, 5x3) para aprovechar al máximo tus hojas de etiquetas.
-*   **Visibilidad Selectiva**: Activa o desactiva elementos según necesites:
-    *   Nombre del producto
-    *   SKU
-    *   Imagen
-    *   Descripción
-    *   Código QR
-    *   Precios (Oferta, Regular)
-    *   Bordes de corte
+### 🎨 Personalización de Diseño
 
-#### **Precios y Ofertas**
-*   **Precios Dinámicos**: Detecta automáticamente si un producto está en oferta y destaca el precio rebajado.
-*   **Separador de Miles**: Interruptor para alternar entre formatos de precio (`1.500` vs `1500`).
-*   **Leyenda de Precio**: Campo de texto libre debajo del precio (ej: "IVA Incluido", "Contado Efectivo") con color y tamaño configurables.
-*   **Etiqueta de Precio Especial**:
-    *   Calculadora automática de recargos o descuentos (ej: "+10%", "-5%").
-    *   Base de cálculo seleccionable (sobre precio regular o precio de oferta).
-    *   Posición ajustable (Arriba o Abajo del precio principal).
-    *   Etiqueta de texto personalizable (ej: "Mayorista", "Club") con **control de color y tamaño independiente**.
+El panel lateral está organizado en tres pestañas:
 
-#### **Estilos Gráficos**
-*   **Tipografía**: Control total del tamaño de fuente para *cada* elemento (título, precios, leyendas, descripción).
-*   **Paleta de Colores**: Selectores de color individuales para textos, bordes y acentos.
+#### Tab "Ajustes" — Layout y Visibilidad
 
-#### **Código QR**
-*   **QR Limpio**: Genera códigos QR que contienen exclusivamente el SKU del producto, facilitando el escaneo en caja o inventario.
-*   **Tamaño Ajustable**: Slider dedicado para controlar el tamaño del código QR en la etiqueta.
+- **Distribución A4**: Configura filas y columnas (ej: 4×2, 5×3).
+- **Campos visibles**: Activa/desactiva nombre, SKU, imagen, descripción, QR, precio de oferta, bordes, decimales, separador de miles.
+- **Precio Especial**: Precio adicional con porcentaje configurable (+/-), base de cálculo (regular/oferta), posición (arriba/abajo) y etiqueta personalizada.
+- **Leyenda de Precio**: Texto libre debajo del precio (ej: "IVA Incluido") con color y tamaño independientes.
+
+#### Tab "Diseño" — Estilo Visual
+
+- **Perfiles de diseño**: Guarda y carga múltiples configuraciones con nombre personalizado.
+- **Tamaños de fuente**: Slider individual por elemento (título, precios, leyendas, descripción, QR).
+- **Paleta de colores**: Selectores de color para cada elemento textual y de borde.
+
+#### Diseño de la etiqueta
+
+- Formato de precios con `Intl.NumberFormat('es-AR')` — separadores siempre correctos (ej: `$1.234,56`).
+- **Código QR** centrado verticalmente respecto al bloque de precios, con padding inferior para que nunca se corte.
+
+---
+
+### 🖨️ Impresión y Navegación
+
+- **Modo impresión**: Hoja A4 limpia (sin interfaz), con estilos CSS print-media para márgenes exactos.
+- **Múltiples páginas**: Paginación automática según el layout configurado.
+- **Indicador de páginas flotante**: Badge en el rincón inferior derecho que muestra la página actual y el total (ej: `2 / 5`), con puntos animados. Se actualiza en tiempo real al scrollear y se oculta al imprimir.
+- **Scroll independiente**: El área de previsualización scrollea de forma completamente independiente del menú lateral.
+
+---
 
 ### 💾 Gestión de Perfiles
-*   **Guardado Local**: Crea y guarda múltiples perfiles de diseño (ej: "Etiquetas Oferta", "Etiquetas Estantería").
-*   **Carga Rápida**: Cambia entre configuraciones completas con un solo clic.
 
-### 🖨️ Impresión Optimizada
-*   **Modo de Impresión**: Genera una hoja limpia, sin interfaz de usuario, lista para imprimir en A4.
-*   **CSS Print-Media**: Ajustes específicos para asegurar márgenes correctos y alta fidelidad.
+Crea y guarda múltiples perfiles de diseño (ej: "Etiquetas Oferta", "Etiquetas Estantería") para cambiar entre configuraciones completas con un clic.
 
 ---
 
 ## 🛠️ Instalación y Uso
 
 ### Requisitos
-*   Node.js (v18+)
-*   npm
+
+- Node.js v18+
+- npm
+- Credenciales de la API REST de WooCommerce (Consumer Key + Consumer Secret)
 
 ### Pasos
-1.  **Clonar el repositorio**:
-    ```bash
-    git clone <url-del-repo>
-    cd WooTag
-    ```
 
-2.  **Instalar dependencias**:
-    ```bash
-    npm install
-    ```
+```bash
+# 1. Clonar el repositorio
+git clone <url-del-repo>
+cd WooTag
 
-3.  **Iniciar servidor de desarrollo**:
-    ```bash
-    npm run dev
-    ```
+# 2. Instalar dependencias
+npm install
 
-4.  **Abrir en el navegador**:
-    Visita `http://localhost:3000`.
+# 3. Iniciar en desarrollo
+npm run dev
+```
 
-5.  **Conexión (Opcional)**:
-    Puedes usar la aplicación en modo diseño inmediatamente. Para importar productos, haz clic en "Conectar" e ingresa tus credenciales de WooCommerce. Las claves se pueden guardar localmente para futuros accesos.
+Abre `http://localhost:3000` en tu navegador.
+
+La app funciona en **modo diseño** sin credenciales. Para importar productos, hacé clic en **"Conectar"** e ingresá la URL de tu tienda + Consumer Key + Consumer Secret.
 
 ---
 
 ## 📦 Build para Producción
 
-Para generar los archivos estáticos listos para desplegar en un servidor web o subcarpeta de WordPress:
-
 ```bash
 npm run build
 ```
 
-Los archivos se generarán en la carpeta `dist/`.
+Los archivos estáticos quedan en `dist/` listos para alojar en cualquier servidor web o subcarpeta de WordPress.
+
+---
+
+## 🗂️ Estructura del Proyecto
+
+```
+App.tsx                  ← Estado global: sesión, configuración, perfiles, indicador de páginas
+├── components/
+│   ├── ConnectionModal.tsx  ← Modal de conexión a WooCommerce
+│   ├── Controls.tsx         ← Panel lateral con 3 tabs
+│   ├── TagSheet.tsx         ← Hoja A4 paginada
+│   └── Tag.tsx              ← Componente individual de etiqueta
+├── services/
+│   ├── wooService.ts        ← API REST WooCommerce (SKU, nombre, categorías)
+│   └── geminiService.ts     ← Optimización de descripciones con Gemini AI
+├── utils/
+│   └── security.ts          ← Ofuscación de credenciales en localStorage
+└── types.ts                 ← Interfaces TypeScript (Product, TagConfig, etc.)
+```
 
 ---
 
 ## 🤝 Créditos
 
-Desarrollado para potenciar la gestión de tiendas físicas WooCommerce.
-*Powered by **Antigravity***.
+Desarrollado para potenciar la gestión de tiendas físicas WooCommerce.  
+*Powered by **Antigravity***

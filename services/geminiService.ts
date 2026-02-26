@@ -27,7 +27,7 @@ export const optimizeDescription = async (productName: string, currentDescriptio
     `;
 
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
+      model: 'gemini-2.0-flash', // Bug 2 fix: use stable model name
       contents: prompt,
     });
 

@@ -61,9 +61,24 @@ export const validateConnection = async (config: WooConfig): Promise<WpUser> => 
 };
 
 export const fetchCategories = async (config: WooConfig): Promise<WooCategory[]> => {
-  const response = await makeWooRequest('/wp-json/wc/v3/products/categories?per_page=100&hide_empty=true', config);
-  if (!response.ok) return [];
-  return await response.json();
+  // Bug 7 fix: paginate to fetch all categories, not just the first 100
+  const allCategories: WooCategory[] = [];
+  let page = 1;
+  let totalPages = 1;
+
+  do {
+    const response = await makeWooRequest(
+      `/wp-json/wc/v3/products/categories?per_page=100&hide_empty=true&page=${page}`,
+      config
+    );
+    if (!response.ok) break;
+    const data: WooCategory[] = await response.json();
+    allCategories.push(...data);
+    totalPages = parseInt(response.headers.get('X-WP-TotalPages') || '1', 10);
+    page++;
+  } while (page <= totalPages);
+
+  return allCategories;
 };
 
 const mapWooProduct = (wooProd: any): Product => ({
@@ -92,7 +107,8 @@ export const fetchProductsByCategory = async (categoryId: number, config: WooCon
 
 export const fetchProductBySku = async (sku: string, config: WooConfig): Promise<Product | null> => {
   console.log(`[WooTag] Searching SKU: ${sku}`);
-  const response = await makeWooRequest(`/wp-json/wc/v3/products?sku=${sku}`, config);
+  // Bug 1 fix: add status=publish to avoid returning drafts
+  const response = await makeWooRequest(`/wp-json/wc/v3/products?sku=${sku}&status=publish`, config);
   if (!response.ok) {
     console.error(`[WooTag] SKU fetch failed: ${response.status}`);
     return null;
@@ -104,4 +120,16 @@ export const fetchProductBySku = async (sku: string, config: WooConfig): Promise
   }
   console.warn(`[WooTag] SKU not found (empty array)`);
   return null;
+};
+
+export const fetchProductsByName = async (query: string, config: WooConfig): Promise<Product[]> => {
+  if (!query || query.trim().length < 2) return [];
+  const encoded = encodeURIComponent(query.trim());
+  const response = await makeWooRequest(
+    `/wp-json/wc/v3/products?search=${encoded}&status=publish&per_page=10`,
+    config
+  );
+  if (!response.ok) return [];
+  const data = await response.json();
+  return Array.isArray(data) ? data.map(mapWooProduct) : [];
 };

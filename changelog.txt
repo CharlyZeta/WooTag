@@ -1,5 +1,42 @@
 # Changelog - WooTag AI Generator
 
+## [1.6.0] - 2026-02-25
+### Added
+- **Versión en el pie del menú lateral** (`Controls.tsx`): Footer fijo al final del sidebar que muestra "WooTag AI" y el número de versión actual (`v{APP_VERSION}`), definida centralmente en `types.ts`.
+- **Historial de impresiones** (`App.tsx` + `Controls.tsx`): Nueva tab "Historial" en el panel lateral. Cada vez que se presiona "Imprimir", se registra la fecha, hora y lista de productos (nombre, SKU, imagen). El historial persiste en `localStorage`. Incluye:
+  - Buscador por SKU o nombre con filtrado en tiempo real.
+  - Productos duplicados (múltiples etiquetas del mismo ítem) muestran el multiplicador `×N`.
+  - Badge con el conteo total de registros en la pestaña.
+  - Botón "Borrar todo" para limpiar el log.
+- **`types.ts`**: Se agrega `APP_VERSION`, `PrintRecord` y `PrintHistoryItem`.
+
+## [1.5.2] - 2026-02-25
+### Fixed
+- **Indicador de páginas no actualizaba** (`App.tsx`): El `div` interior del área de previsualización tenía `overflow-auto`, convirtiéndose en el scroll container real y haciendo que el `onScroll` del `main` nunca se disparara. Se unificó en un único scroll container (`useRef<HTMLDivElement>`) eliminando el `overflow-auto` del wrapper interno.
+- **README.md**: Documentación completa reescrita para reflejar el estado actual del proyecto (v1.5.x).
+
+## [1.5.1] - 2026-02-25
+### Added
+- **Indicador de páginas flotante** (`App.tsx`): Aparece en el rincón inferior derecho cuando hay más de una página de etiquetas. Muestra puntos animados (el punto activo se expande) y el número de página actual sobre el total (ej: "2 / 5"). Se actualiza en tiempo real al scrollear y se oculta al imprimir.
+
+## [1.5.0] - 2026-02-25
+### Added
+- **Buscador por nombre con autocompletado** (`Controls.tsx` + `wooService.ts`): Nuevo campo de búsqueda que consulta la API de WooCommerce a medida que se escribe (debounce de 400ms). Muestra un dropdown con imagen miniatura, nombre y SKU. Al hacer clic en un resultado, lo agrega a la lista de etiquetas.
+
+### Fixed
+- **QR centrado verticalmente** (`Tag.tsx`): El código QR ahora se alinea al centro respecto al bloque de precios (`items-center`), evitando que se corte contra el borde inferior de la etiqueta. Se añadió padding inferior para garantizar espacio.
+- **Scroll independiente** (`App.tsx`): El área de previsualización de etiquetas ahora tiene scroll completamente independiente del menú lateral. El contenedor raíz cambia a `h-screen overflow-hidden` para que cada panel controle su propio desbordamiento.
+
+## [1.4.0] - 2026-02-25
+### Fixed
+- **Bug 1** (`wooService.ts`): `fetchProductBySku` — Añadido `status=publish` para evitar retornar borradores o productos no publicados.
+- **Bug 2** (`geminiService.ts`): Modelo de Gemini cambiado de `gemini-3-flash-preview` (inestable) a `gemini-2.0-flash` (nombre oficial y estable).
+- **Bug 3** (`Tag.tsx`): Reescritura de `formatPrice` usando `Intl.NumberFormat('es-AR')` para separadores de miles/decimales siempre consistentes (ej: $1.234,56).
+- **Bug 4** (`Controls.tsx`): Reemplazado the non-null assertion `wooConfig!` en `handleSearch` por un guard seguro con mensaje de error al usuario.
+- **Bug 5**: Eliminado `LoginScreen.tsx` — componente duplicado/obsoleto que nunca se usaba en la aplicación.
+- **Bug 6** (`App.tsx`): Mejorada la previsualización A4 en pantallas pequeñas — se usa un wrapper scrolleable con escalas más ajustadas por breakpoint.
+- **Bug 7** (`wooService.ts`): `fetchCategories` ahora pagina usando el header `X-WP-TotalPages`, obteniendo todas las categorías de tiendas grandes (antes se limitaba a 100).
+
 ## [1.3.2] - 2025-12-31
 ### Changed
 - **Rediseño de Interfaz (Header)**: Se simplificó la cabecera del panel lateral, eliminando información duplicada, mejorando el botón de "Imprimir" (ancho completo) y modernizando la estética general.

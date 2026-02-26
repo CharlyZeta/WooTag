@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { WooConfig, WpUser } from '../types';
 import { validateConnection } from '../services/wooService';
 import { ShoppingBag, Key, Lock, Globe, AlertCircle, ArrowRight, X } from 'lucide-react';
@@ -8,15 +8,29 @@ interface ConnectionModalProps {
     isOpen: boolean;
     onClose: () => void;
     onConnect: (config: WooConfig, user: WpUser, remember: boolean) => void;
+    currentConfig?: WooConfig | null; // Pre-fill with existing credentials
 }
 
-export const ConnectionModal: React.FC<ConnectionModalProps> = ({ isOpen, onClose, onConnect }) => {
+export const ConnectionModal: React.FC<ConnectionModalProps> = ({ isOpen, onClose, onConnect, currentConfig }) => {
     const [url, setUrl] = useState('');
     const [key, setKey] = useState('');
     const [secret, setSecret] = useState('');
     const [remember, setRemember] = useState(true);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    // Pre-fill fields with existing credentials when modal opens
+    useEffect(() => {
+        if (isOpen && currentConfig) {
+            setUrl(currentConfig.url || '');
+            setKey(currentConfig.consumerKey || '');
+            setSecret(currentConfig.consumerSecret || '');
+        }
+        if (!isOpen) {
+            // Reset error when closing
+            setError(null);
+        }
+    }, [isOpen, currentConfig]);
 
     if (!isOpen) return null;
 
@@ -62,7 +76,7 @@ export const ConnectionModal: React.FC<ConnectionModalProps> = ({ isOpen, onClos
                     </button>
                 </div>
 
-                <form onSubmit={handleSubmit} className="p-6 space-y-5">
+                <form onSubmit={handleSubmit} className="p-6 space-y-5" autoComplete="off">
                     {error && (
                         <div className="bg-red-50 text-red-700 p-3 rounded-xl text-xs font-bold flex items-start gap-2 border border-red-100">
                             <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
@@ -78,6 +92,8 @@ export const ConnectionModal: React.FC<ConnectionModalProps> = ({ isOpen, onClos
                                 <input
                                     type="url"
                                     required
+                                    name="wootag-store-url"
+                                    autoComplete="off"
                                     placeholder="https://mitienda.com"
                                     value={url}
                                     onChange={(e) => setUrl(e.target.value)}
@@ -93,6 +109,8 @@ export const ConnectionModal: React.FC<ConnectionModalProps> = ({ isOpen, onClos
                                 <input
                                     type="text"
                                     required
+                                    name="wootag-consumer-key"
+                                    autoComplete="off"
                                     placeholder="ck_xxxxxxxx..."
                                     value={key}
                                     onChange={(e) => setKey(e.target.value)}
@@ -108,6 +126,8 @@ export const ConnectionModal: React.FC<ConnectionModalProps> = ({ isOpen, onClos
                                 <input
                                     type="password"
                                     required
+                                    name="wootag-consumer-secret"
+                                    autoComplete="new-password"
                                     placeholder="cs_xxxxxxxx..."
                                     value={secret}
                                     onChange={(e) => setSecret(e.target.value)}

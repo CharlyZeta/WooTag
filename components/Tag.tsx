@@ -13,17 +13,24 @@ export const Tag: React.FC<TagProps> = ({ product, config }) => {
 
   const formatPrice = (price: number | undefined) => {
     if (price === undefined) return '';
-    let val = config.showDecimals ? price.toFixed(2) : Math.round(price).toFixed(0);
+
+    // Bug 3 fix: build separators consistently
+    // Argentina/Spain format: 1.234,56 (dot=thousands, comma=decimal)
+    const decimals = config.showDecimals ? 2 : 0;
 
     if (config.showThousandsSeparator) {
-      const parts = val.split('.');
-      parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-      val = parts.join(',');
+      // Format with Intl to get reliable thousands+decimal handling
+      const formatted = new Intl.NumberFormat('es-AR', {
+        minimumFractionDigits: decimals,
+        maximumFractionDigits: decimals,
+        useGrouping: true,
+      }).format(price);
+      return config.showCurrencySymbol ? `$${formatted}` : formatted;
     } else {
-      val = val.replace('.', ',');
+      // No thousands separator: just format the number with comma as decimal
+      const formatted = price.toFixed(decimals).replace('.', ',');
+      return config.showCurrencySymbol ? `$${formatted}` : formatted;
     }
-
-    return config.showCurrencySymbol ? `$${val}` : val;
   };
 
   const calculateCustomPrice = () => {
@@ -82,7 +89,7 @@ export const Tag: React.FC<TagProps> = ({ product, config }) => {
           </div>
         )}
 
-        <div className="flex items-end justify-between mt-auto pt-2 border-t border-gray-100">
+        <div className="flex items-center justify-between mt-auto pt-2 border-t border-gray-100 pb-1">
           <div className="flex flex-col gap-1">
             {config.showCustomPrice && config.customPricePosition === 'top' && <CustomPriceBlock />}
 

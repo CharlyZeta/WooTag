@@ -1,4 +1,18 @@
 
+export const APP_VERSION = '1.6.0';
+
+export interface PrintHistoryItem {
+  sku: string;
+  name: string;
+  image?: string;
+}
+
+export interface PrintRecord {
+  id: string;
+  timestamp: number;
+  items: PrintHistoryItem[];
+}
+
 export interface Product {
   id: string;
   sku: string;
