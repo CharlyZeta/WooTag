@@ -1,5 +1,26 @@
 # Changelog - WooTag AI Generator
 
+## [1.7.1] - 2026-02-27
+### Changed
+- **Reorganización de pestañas** (`Controls.tsx`): La barra de navegación pasa de 4 a 5 pestañas. Se creó la nueva pestaña **"Importar"** que agrupa toda la lógica de importación de productos (planilla XLS y API WooCommerce). La pestaña **"Lista"** (ex "Productos") ahora muestra únicamente la lista de productos a imprimir, sin herramientas de importación, lo que libera espacio de trabajo al usar la tienda conectada.
+  - La lista vacía muestra un atajo directo **"Ir a Importar →"** para guiar al usuario nuevo.
+  - Los labels de las tabs se redujeron en tamaño para acomodar las 5 pestañas sin desbordamiento.
+
+## [1.7.0] - 2026-02-27
+### Added
+- **Importación desde Planilla XLS** (`Controls.tsx` + `utils/xlsImport.ts`): Nueva sección "Importar Planilla XLS" disponible en la tab Productos, tanto en modo conectado como sin conexión a WooCommerce. Incluye:
+  - **Descarga de plantilla oficial** (`.xlsx`) con las columnas correctas (`sku`, `name`, `price`, `sale_price`, `description`, `category`, `image_url`), fila de ejemplo y hoja de instrucciones integrada.
+  - **Área de drag & drop** con fallback de click para seleccionar el archivo. Acepta `.xlsx` y `.xls`.
+  - **Feedback visual**: spinner durante el procesamiento, badges de éxito con cantidad de productos importados, alertas de error (rojo) para problemas críticos y alertas de advertencia (amarillo) para filas omitidas.
+- **Módulo `utils/xlsImport.ts`**: Implementación de parseo seguro con SheetJS con las siguientes protecciones:
+  - Solo se aceptan extensiones `.xlsx` y `.xls`. Los archivos `.xlsm` (con macros VBA) son rechazados explícitamente.
+  - Tamaño máximo de 5 MB por archivo.
+  - SheetJS se utiliza con `{ cellFormula: false, cellHTML: false, bookVBA: false }` para desactivar la ejecución de fórmulas, HTML embebido y macros VBA.
+  - Cada valor de celda se sanitiza: solo se aceptan strings y números. Objetos, funciones y valores complejos son normalizados a cadena vacía.
+  - Las URLs de imagen son validadas para asegurar que sean protocolos `http:` o `https:`. Se rechazan esquemas peligrosos como `javascript:` o `data:`.
+  - Límite de 500 filas por importación.
+  - Validación de columnas requeridas (`sku`, `name`, `price`) con mensajes de error descriptivos.
+
 ## [1.6.1] - 2026-02-26
 ### Fixed
 - **Tamaño de hoja incorrecto en preview de impresión** (`App.tsx`): El wrapper de escala visual tenía clases `scale-*` que el navegador aplicaba también al imprimir, generando un tamaño de página personalizado pequeño. Se agregó `print:scale-100 print:transform-none` para neutralizar la transformación en modo impresión.

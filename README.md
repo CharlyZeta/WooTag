@@ -1,13 +1,14 @@
 # 🏷️ WooTag AI Generator
 
-**WooTag AI Generator** es una herramienta web para diseñar e imprimir etiquetas de precio profesionales para tiendas WooCommerce. Importa productos desde tu tienda, personaliza el diseño y genera hojas A4 listas para imprimir, con soporte de QR y optimización de textos via Google Gemini AI.
+**WooTag AI Generator** es una herramienta web para diseñar e imprimir etiquetas de precio profesionales para tiendas WooCommerce. Importa productos desde tu tienda o desde una planilla Excel, personaliza el diseño y genera hojas A4 listas para imprimir, con código QR por producto y optimización de textos via Google Gemini AI.
 
-Este proyecto ha sido desarrollado con la asistencia de **Antigravity**.
+Desarrollado con la asistencia de **Antigravity** (Google DeepMind).
 
 ![React](https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.0-3178C6?style=flat-square&logo=typescript)
 ![Vite](https://img.shields.io/badge/Vite-6.0-646CFF?style=flat-square&logo=vite)
-![Version](https://img.shields.io/badge/versión-1.5.1-indigo?style=flat-square)
+![Version](https://img.shields.io/badge/versión-1.7.1-indigo?style=flat-square)
+![Tests](https://img.shields.io/badge/tests-39%20passing-brightgreen?style=flat-square)
 
 ---
 
@@ -15,65 +16,73 @@ Este proyecto ha sido desarrollado con la asistencia de **Antigravity**.
 
 ### 🔌 Integración WooCommerce
 
-- **Modo Invitado / Offline**: La app es completamente funcional sin credenciales. Solo se requiere conexión para importar productos.
-- **Conexión segura**: Credenciales ofuscadas en `localStorage`. La validación prioriza el endpoint de productos para esquivar bloqueos de seguridad comunes (Error 401).
-- **Pre-carga de credenciales**: Al abrir el modal de conexión, los campos se pre-llenan con las credenciales ya guardadas. Los campos tienen `autoComplete="off"` para evitar interferencias del navegador.
+- **Modo Invitado / Offline**: La app es completamente funcional sin credenciales. Solo se requiere conexión para importar productos desde la API.
+- **Conexión segura**: Credenciales ofuscadas en `localStorage` con salt + base64. La validación prioriza el endpoint de productos para esquivar bloqueos comunes (Error 401).
+- **Sesión con expiración**: Las credenciales guardadas expiran a las 24 horas automáticamente.
 
-#### Importación de productos
+#### Importación de productos — Tab "Importar"
 
 | Método | Descripción |
 |--------|-------------|
+| **Planilla XLS** | Descarga la plantilla oficial `.xlsx`, completá los datos y subila con drag & drop. Sin necesidad de conexión a la tienda. |
 | **Por SKU** | Búsqueda exacta por código. Filtra solo productos publicados (`status=publish`). |
-| **Por nombre** | Campo de búsqueda con autocompletado en tiempo real (debounce 400ms). Muestra imagen, nombre y SKU en un dropdown de sugerencias. |
-| **Por categoría** | Selector desplegable con paginación automática (obtiene **todas** las categorías, sin límite de 100). |
+| **Por nombre** | Autocompletado en tiempo real (debounce 400ms) con imagen, nombre y SKU en dropdown. |
+| **Por categoría** | Selector con paginación automática — obtiene **todas** las categorías, sin límite de 100. |
 
-> Todos los métodos de importación detectan duplicados y preguntan al usuario antes de agregar etiquetas repetidas.
+> Todos los métodos detectan duplicados y preguntan antes de agregar etiquetas repetidas.
+
+---
+
+### 📊 Importación XLS Segura
+
+La planilla Excel oficial incluye las columnas `sku`, `name`, `price`, `sale_price`, `description`, `category`, `image_url`. El módulo de importación aplica las siguientes medidas de seguridad:
+
+- Solo acepta `.xlsx` y `.xls`. Los archivos `.xlsm` (con macros VBA) son **rechazados**.
+- Límite de **5 MB** por archivo y **500 filas** por importación.
+- SheetJS se configura con `{ cellFormula: false, cellHTML: false, bookVBA: false }` — no ejecuta fórmulas ni macros.
+- Cada valor de celda se sanitiza: solo se aceptan `string` y `number`.
+- URLs de imagen validadas para aceptar únicamente `http:` / `https:`. Se rechazan `javascript:`, `data:`, `file:` y similares.
 
 ---
 
 ### 🧠 Inteligencia Artificial (Gemini AI)
 
 - **Optimización de descripciones**: Convierte textos largos en frases de venta concisas (≤ 15 palabras), ideales para el espacio limitado de una etiqueta.
-- Modelo: `gemini-2.0-flash` (nombre oficial y estable).
+- Modelo: `gemini-2.0-flash` (estable).
+- Requiere `GEMINI_API_KEY` en el archivo `.env`.
 
 ---
 
 ### 🎨 Personalización de Diseño
 
-El panel lateral está organizado en tres pestañas:
+El panel lateral está organizado en **5 pestañas**:
 
-#### Tab "Ajustes" — Layout y Visibilidad
+| Tab | Contenido |
+|-----|-----------|
+| **Lista** | Lista de productos a imprimir. Botón de acceso rápido a "Importar" cuando está vacía. |
+| **Importar** | Importación por XLS + API WooCommerce (SKU / Nombre / Categoría). |
+| **Ajustes** | Layout A4 (filas/columnas), visibilidad de campos, Precio Especial, Leyenda de Precio. |
+| **Diseño** | Perfiles de diseño guardados, tamaños de fuente, paleta de colores. |
+| **Historial** | Registro de impresiones con filtro por SKU/nombre. |
 
-- **Distribución A4**: Configura filas y columnas (ej: 4×2, 5×3).
-- **Campos visibles**: Activa/desactiva nombre, SKU, imagen, descripción, QR, precio de oferta, bordes, decimales, separador de miles.
-- **Precio Especial**: Precio adicional con porcentaje configurable (+/-), base de cálculo (regular/oferta), posición (arriba/abajo) y etiqueta personalizada.
-- **Leyenda de Precio**: Texto libre debajo del precio (ej: "IVA Incluido") con color y tamaño independientes.
+#### Campos configurables por etiqueta
 
-#### Tab "Diseño" — Estilo Visual
-
-- **Perfiles de diseño**: Guarda y carga múltiples configuraciones con nombre personalizado.
-- **Tamaños de fuente**: Slider individual por elemento (título, precios, leyendas, descripción, QR).
-- **Paleta de colores**: Selectores de color para cada elemento textual y de borde.
-
-#### Diseño de la etiqueta
-
-- Formato de precios con `Intl.NumberFormat('es-AR')` — separadores siempre correctos (ej: `$1.234,56`).
-- **Código QR** centrado verticalmente respecto al bloque de precios, con padding inferior para que nunca se corte.
-
----
-
-### 🖨️ Impresión y Navegación
-
-- **Modo impresión**: Hoja A4 limpia (sin interfaz), con estilos CSS print-media para márgenes exactos.
-- **Múltiples páginas**: Paginación automática según el layout configurado.
-- **Indicador de páginas flotante**: Badge en el rincón inferior derecho que muestra la página actual y el total (ej: `2 / 5`), con puntos animados. Se actualiza en tiempo real al scrollear y se oculta al imprimir.
-- **Scroll independiente**: El área de previsualización scrollea de forma completamente independiente del menú lateral.
+- Distribución: filas × columnas en A4 (ej: 4×2, 5×3, 2×1)
+- Visibilidad: nombre, SKU, imagen, descripción, QR, precio oferta, bordes, decimales, separador de miles
+- **Precio Especial**: porcentaje configurable (+/-), base (regular/oferta), posición (arriba/abajo), etiqueta personalizada
+- **Leyenda de Precio**: texto libre debajo del precio (ej: "IVA Incluido") con color y tamaño independientes
+- Formato de precios: `Intl.NumberFormat('es-AR')` → `$1.234,56`
+- Código QR centrado verticalmente con el bloque de precios
 
 ---
 
-### 💾 Gestión de Perfiles
+### 🖨️ Impresión
 
-Crea y guarda múltiples perfiles de diseño (ej: "Etiquetas Oferta", "Etiquetas Estantería") para cambiar entre configuraciones completas con un clic.
+- Hoja A4 limpia (sin interfaz) con estilos CSS `@media print`.
+- Múltiples páginas con paginación automática.
+- **Indicador de páginas flotante**: badge animado en esquina inferior derecha, actualizado en tiempo real al scrollear.
+- Scroll del área de previsualización completamente independiente del panel lateral.
+- Historial de impresiones persistido en `localStorage` con deduplicación visual por SKU (`×N`).
 
 ---
 
@@ -81,9 +90,10 @@ Crea y guarda múltiples perfiles de diseño (ej: "Etiquetas Oferta", "Etiquetas
 
 ### Requisitos
 
-- Node.js v18+
-- npm
-- Credenciales de la API REST de WooCommerce (Consumer Key + Consumer Secret)
+- Node.js v18+  
+- npm  
+- Credenciales de la API REST de WooCommerce (Consumer Key + Consumer Secret)  
+- (Opcional) `GEMINI_API_KEY` para la optimización AI
 
 ### Pasos
 
@@ -95,13 +105,26 @@ cd WooTag
 # 2. Instalar dependencias
 npm install
 
-# 3. Iniciar en desarrollo
+# 3. Configurar API Key de Gemini (opcional)
+echo "GEMINI_API_KEY=tu-api-key-aqui" > .env
+
+# 4. Iniciar en desarrollo
 npm run dev
 ```
 
-Abre `http://localhost:3000` en tu navegador.
+Abre `http://localhost:3000`. La app funciona en **modo diseño** sin credenciales. Para importar desde WooCommerce, hacé clic en **"Conectar"**.
 
-La app funciona en **modo diseño** sin credenciales. Para importar productos, hacé clic en **"Conectar"** e ingresá la URL de tu tienda + Consumer Key + Consumer Secret.
+---
+
+## 🧪 Tests Automatizados
+
+```bash
+npm test               # Ejecuta los 39 tests una vez
+npm run test:watch     # Modo watch para desarrollo
+npm run test:coverage  # Genera reporte de cobertura en /coverage
+```
+
+Los tests cubren el módulo `utils/xlsImport.ts` con 9 grupos: extensión, tamaño, estructura, columnas, happy paths, advertencias, límite de filas, seguridad de URLs y sanitización de celdas.
 
 ---
 
@@ -111,30 +134,43 @@ La app funciona en **modo diseño** sin credenciales. Para importar productos, h
 npm run build
 ```
 
-Los archivos estáticos quedan en `dist/` listos para alojar en cualquier servidor web o subcarpeta de WordPress.
+Los archivos estáticos quedan en `dist/`, listos para alojar en cualquier servidor web o subcarpeta de WordPress.
 
 ---
 
 ## 🗂️ Estructura del Proyecto
 
 ```
-App.tsx                  ← Estado global: sesión, configuración, perfiles, indicador de páginas
+App.tsx                      ← Estado global: sesión, config, perfiles, historial, paginación
 ├── components/
-│   ├── ConnectionModal.tsx  ← Modal de conexión a WooCommerce
-│   ├── Controls.tsx         ← Panel lateral con 3 tabs
-│   ├── TagSheet.tsx         ← Hoja A4 paginada
-│   └── Tag.tsx              ← Componente individual de etiqueta
+│   ├── ConnectionModal.tsx   ← Modal de conexión a WooCommerce con validación
+│   ├── Controls.tsx          ← Panel lateral con 5 tabs (Lista/Importar/Ajustes/Diseño/Historial)
+│   ├── TagSheet.tsx          ← Hoja A4 paginada (un sheet por página)
+│   └── Tag.tsx               ← Componente individual de etiqueta con QR y formateo de precios
 ├── services/
-│   ├── wooService.ts        ← API REST WooCommerce (SKU, nombre, categorías)
-│   └── geminiService.ts     ← Optimización de descripciones con Gemini AI
+│   ├── wooService.ts         ← API REST WooCommerce (SKU, nombre, categorías, paginación)
+│   └── geminiService.ts      ← Optimización de descripciones con Gemini AI
 ├── utils/
-│   └── security.ts          ← Ofuscación de credenciales en localStorage
-└── types.ts                 ← Interfaces TypeScript (Product, TagConfig, etc.)
+│   ├── security.ts           ← Ofuscación de credenciales en localStorage (base64 + salt)
+│   └── xlsImport.ts          ← Parseo seguro XLS (SheetJS) + generador de plantilla
+│
+└── types.ts                  ← Interfaces TypeScript globales + DEFAULT_CONFIG + APP_VERSION
 ```
+
+---
+
+## 🔐 Seguridad
+
+| Aspecto | Implementación |
+|---------|----------------|
+| Credenciales WooCommerce | Ofuscadas con base64 + salt en `localStorage`. **No** es cifrado fuerte — es protección contra inspección casual. |
+| Sesión | Expiración automática a las 24h. |
+| API Key Gemini | Solo en `.env` (gitignoreado). Nunca en código. |
+| Importación XLS | Solo `.xlsx`/`.xls`, sin macros VBA, sanitización de celdas y URLs. |
 
 ---
 
 ## 🤝 Créditos
 
 Desarrollado para potenciar la gestión de tiendas físicas WooCommerce.  
-*Powered by **Antigravity***
+*Powered by **Antigravity** (Google DeepMind)*
