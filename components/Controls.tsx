@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { APP_VERSION, PrintRecord, TagConfig, Product, WooConfig, WpUser, WooCategory, DesignProfile } from '../types';
 import { fetchProductBySku, fetchCategories, fetchProductsByCategory, fetchProductsByName } from '../services/wooService';
 import { downloadTemplate, parseXlsFile } from '../utils/xlsImport';
+import { logEvent } from '../utils/ipLogger';
 import {
   Settings, Layout, Type, Palette, Printer, Plus, Trash2, Sparkles, AlertCircle, LogOut, Image as ImageIcon, Layers, Calculator, Eye, Save, FolderOpen, Download, MessageSquare, Globe, Search, Eraser, LayoutGrid, ChevronRight, Tags, BookOpen, History, Clock, Package, FileSpreadsheet, Upload, AlertTriangle, CheckCircle2, PackagePlus
 } from 'lucide-react';
@@ -117,6 +118,7 @@ export const Controls: React.FC<ControlsProps> = ({
         const withIds = result.products.map(p => ({ ...p, id: `${p.id}-${Date.now()}-${Math.random()}` }));
         setProducts(prev => [...prev, ...withIds]);
         setXlsSuccess(result.products.length);
+        logEvent('xls_upload', { f: file.name, n: result.products.length });
       }
     } catch (e) {
       setXlsErrors(['Ocurrió un error inesperado al procesar el archivo.']);

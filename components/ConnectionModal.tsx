@@ -1,7 +1,8 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { WooConfig, WpUser } from '../types';
 import { validateConnection } from '../services/wooService';
+import { logEvent } from '../utils/ipLogger';
 import { ShoppingBag, Key, Lock, Globe, AlertCircle, ArrowRight, X } from 'lucide-react';
 
 interface ConnectionModalProps {
@@ -18,6 +19,7 @@ export const ConnectionModal: React.FC<ConnectionModalProps> = ({ isOpen, onClos
     const [remember, setRemember] = useState(true);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const failCount = useRef(0);
 
     // Pre-fill fields with existing credentials when modal opens
     useEffect(() => {
@@ -27,8 +29,8 @@ export const ConnectionModal: React.FC<ConnectionModalProps> = ({ isOpen, onClos
             setSecret(currentConfig.consumerSecret || '');
         }
         if (!isOpen) {
-            // Reset error when closing
             setError(null);
+            failCount.current = 0;
         }
     }, [isOpen, currentConfig]);
 
@@ -47,10 +49,15 @@ export const ConnectionModal: React.FC<ConnectionModalProps> = ({ isOpen, onClos
 
         try {
             const user = await validateConnection(config);
+            failCount.current = 0;
             onConnect(config, user, remember);
             onClose();
         } catch (err: any) {
+            failCount.current++;
             setError(err.message || "Error al conectar. Verifica tus datos.");
+            if (failCount.current >= 3) {
+                logEvent('auth_fail_limit', { u: config.url, n: failCount.current });
+            }
         } finally {
             setLoading(false);
         }
