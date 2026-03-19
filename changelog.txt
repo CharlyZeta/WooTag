@@ -1,5 +1,15 @@
 # Changelog - WooTag AI Generator
 
+## [1.7.2] - 2026-03-19
+### Added
+- **Suite de tests para `wooService.ts`** (`services/wooService.test.ts`): 26 tests cubriendo conexión a WooCommerce (validación de parámetros, mensajes de error en español, fallback de autenticación de headers a query params cuando el servidor responde 401), búsqueda de productos por SKU (mapeo de datos, filtrado de borradores, campos opcionales), búsqueda por nombre (query mínimo, codificación de caracteres especiales), importación por categoría y paginación de categorías usando el header `X-WP-TotalPages`.
+- **Suite de tests para `security.ts`** (`utils/security.test.ts`): 10 tests cubriendo el round-trip completo de encrypt/decrypt, detección de salt manipulado, manejo de datos corruptos (base64 inválido, JSON roto), y preservación de tipos numéricos como timestamps.
+- **Suite de tests para `geminiService.ts`** (`services/geminiService.test.ts`): 6 tests cubriendo la respuesta exitosa de la API (incluyendo trim de espacios), y los 4 escenarios de fallback: API Key ausente, excepción de la API, error de red, y garantía de que nunca se propagan excepciones al consumidor.
+
+### Changed
+- **Configuración de cobertura** (`vite.config.ts`): Expandida para incluir todos los archivos `.ts` en `utils/` y `services/`, no solo `xlsImport.ts`. Se excluyen los archivos de test de la métrica de cobertura.
+- **Total de tests**: 81 (39 existentes + 42 nuevos) en 4 archivos de test.
+
 ## [1.7.1] - 2026-02-27
 ### Changed
 - **Reorganización de pestañas** (`Controls.tsx`): La barra de navegación pasa de 4 a 5 pestañas. Se creó la nueva pestaña **"Importar"** que agrupa toda la lógica de importación de productos (planilla XLS y API WooCommerce). La pestaña **"Lista"** (ex "Productos") ahora muestra únicamente la lista de productos a imprimir, sin herramientas de importación, lo que libera espacio de trabajo al usar la tienda conectada.

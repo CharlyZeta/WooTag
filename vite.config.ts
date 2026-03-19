@@ -27,7 +27,8 @@ export default defineConfig(({ mode }) => {
       coverage: {
         provider: 'v8',
         reporter: ['text', 'html'],
-        include: ['utils/xlsImport.ts'],
+        include: ['utils/**/*.ts', 'services/**/*.ts'],
+        exclude: ['**/*.test.ts', '**/*.test.tsx'],
       },
     },
   };
