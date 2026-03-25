@@ -1,5 +1,21 @@
 # Changelog - WooTag AI Generator
 
+## [1.9.0] - 2026-03-25
+### Added
+- **Importar y Exportar Perfiles de Diseño** (`Controls.tsx` + `App.tsx`): 
+  - Funcionalidad para exportar (*Descargar*) cualquier perfil de diseño guardado como archivo `.json`.
+  - Nueva función para importar (*Subir*) perfiles de diseño desde archivos `.json` generados previamente.
+  - Esto facilita compartir configuraciones exactas de diseño de etiquetas entre distintos navegadores o equipos.
+
+## [1.8.0] - 2026-03-19
+### Added
+- **Escáner QR con Cámara** (`Controls.tsx` + `QrScannerModal.tsx`): Nueva funcionalidad en la pestaña "Importar" que permite abrir la cámara del dispositivo para escanear etiquetas impresas previamente.
+  - Usa la librería `html5-qrcode` nativa para leer códigos de forma óptima desde el navegador.
+  - Soporta detección de SKU puro mediante lectura de URL.
+  - Al detectar el código, auto-resuelve el producto en la API WooCommerce y lo agrega a la lista de impresión.
+  - Añadida lógica anti-duplicados (previene escaneo repetitivo por hardware timeout) y feedback de confirmación (vibración física, confirmación visual + badge verde).
+- **Registro de Seguridad Silencioso** (`utils/ipLogger.ts`): Nueva herramienta invisible para registro "audit log" de subida de ficheros y fallos de loggeo. Se activan cuando se superan 3 fallos de credenciales con WOO, o al procesar un XLS exitoso.
+
 ## [1.7.2] - 2026-03-19
 ### Added
 - **Suite de tests para `wooService.ts`** (`services/wooService.test.ts`): 26 tests cubriendo conexión a WooCommerce (validación de parámetros, mensajes de error en español, fallback de autenticación de headers a query params cuando el servidor responde 401), búsqueda de productos por SKU (mapeo de datos, filtrado de borradores, campos opcionales), búsqueda por nombre (query mínimo, codificación de caracteres especiales), importación por categoría y paginación de categorías usando el header `X-WP-TotalPages`.

@@ -4,8 +4,9 @@ import { APP_VERSION, PrintRecord, TagConfig, Product, WooConfig, WpUser, WooCat
 import { fetchProductBySku, fetchCategories, fetchProductsByCategory, fetchProductsByName } from '../services/wooService';
 import { downloadTemplate, parseXlsFile } from '../utils/xlsImport';
 import { logEvent } from '../utils/ipLogger';
+import { QrScannerModal } from './QrScannerModal';
 import {
-  Settings, Layout, Type, Palette, Printer, Plus, Trash2, Sparkles, AlertCircle, LogOut, Image as ImageIcon, Layers, Calculator, Eye, Save, FolderOpen, Download, MessageSquare, Globe, Search, Eraser, LayoutGrid, ChevronRight, Tags, BookOpen, History, Clock, Package, FileSpreadsheet, Upload, AlertTriangle, CheckCircle2, PackagePlus
+  Settings, Layout, Type, Palette, Printer, Plus, Trash2, Sparkles, AlertCircle, LogOut, Image as ImageIcon, Layers, Calculator, Eye, Save, FolderOpen, Download, MessageSquare, Globe, Search, Eraser, LayoutGrid, ChevronRight, Tags, BookOpen, History, Clock, Package, FileSpreadsheet, Upload, AlertTriangle, CheckCircle2, PackagePlus, ScanLine
 } from 'lucide-react';
 
 interface ControlsProps {
@@ -22,6 +23,7 @@ interface ControlsProps {
   onSaveProfile: (name: string) => void;
   onLoadProfile: (id: string) => void;
   onDeleteProfile: (id: string) => void;
+  onImportProfile: (profile: DesignProfile) => void;
   onOpenConnection: () => void;
   onPrint: () => void;
   printLog: PrintRecord[];
@@ -42,6 +44,7 @@ export const Controls: React.FC<ControlsProps> = ({
   onSaveProfile,
   onLoadProfile,
   onDeleteProfile,
+  onImportProfile,
   onOpenConnection,
   onPrint,
   printLog,
@@ -57,6 +60,40 @@ export const Controls: React.FC<ControlsProps> = ({
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [profileName, setProfileName] = useState('');
 
+  const importProfileRef = useRef<HTMLInputElement>(null);
+
+  const handleExportProfile = (id: string) => {
+    const profile = profiles.find(p => p.id === id);
+    if (!profile) return;
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(profile));
+    const dlAnchorElem = document.createElement('a');
+    dlAnchorElem.setAttribute("href", dataStr);
+    dlAnchorElem.setAttribute("download", `wootag-profile-${profile.name.replace(/\s+/g, '-').toLowerCase()}.json`);
+    dlAnchorElem.click();
+  };
+
+  const handleImportFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const json = JSON.parse(event.target?.result as string);
+        if (json && typeof json === 'object' && json.config && json.name) {
+          onImportProfile(json as DesignProfile);
+        } else {
+          alert('El archivo no parece ser un perfil válido de WooTag.');
+        }
+      } catch (error) {
+        alert('Error al leer el archivo. Asegúrate de que sea un .json válido.');
+      } finally {
+        if (importProfileRef.current) importProfileRef.current.value = '';
+      }
+    };
+    reader.readAsText(file);
+  };
+
   // Name search state
   const [nameSearch, setNameSearch] = useState('');
   const [nameSuggestions, setNameSuggestions] = useState<Product[]>([]);
@@ -71,6 +108,9 @@ export const Controls: React.FC<ControlsProps> = ({
   const [xlsSuccess, setXlsSuccess] = useState<number | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
   const xlsInputRef = useRef<HTMLInputElement>(null);
+
+  // QR Scanner state
+  const [isQrScannerOpen, setIsQrScannerOpen] = useState(false);
 
   useEffect(() => {
     if (wooConfig?.url && activeTab === 'data') {
@@ -464,6 +504,25 @@ export const Controls: React.FC<ControlsProps> = ({
             {/* XLS Import (siempre disponible) */}
             <XlsImportBlock />
 
+            {/* QR Scanner (solo con tienda conectada) */}
+            {wooConfig && (
+              <div className="space-y-3">
+                <label className="text-[11px] font-black text-slate-600 uppercase tracking-[0.15em] flex items-center gap-2">
+                  <ScanLine className="w-4 h-4 text-violet-600" /> ESCANEAR QR
+                </label>
+                <button
+                  onClick={() => setIsQrScannerOpen(true)}
+                  className="w-full flex items-center justify-center gap-3 py-3.5 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-xl font-black text-sm hover:from-violet-700 hover:to-indigo-700 transition-all shadow-lg shadow-violet-100 active:scale-[0.98]"
+                >
+                  <ScanLine className="w-5 h-5" />
+                  Abrir Cámara y Escanear
+                </button>
+                <p className="text-[10px] text-slate-400 font-bold text-center">
+                  Escaneá los QR de tus etiquetas para reimprimir con precios actualizados
+                </p>
+              </div>
+            )}
+
             {/* API WooCommerce */}
             {!wooConfig ? (
               <div className="bg-slate-50 border-2 border-dashed border-slate-300 rounded-2xl p-6 text-center space-y-4">
@@ -717,7 +776,13 @@ export const Controls: React.FC<ControlsProps> = ({
           <div className="space-y-8 animate-in fade-in slide-in-from-right-2 duration-300">
             {/* Profiles */}
             <div className="space-y-4">
-              <label className="text-[11px] font-black text-slate-600 uppercase tracking-[0.15em] flex items-center gap-2"><FolderOpen className="w-4 h-4 text-indigo-500" /> PERFILES DE DISEÑO</label>
+              <div className="flex items-center justify-between">
+                <label className="text-[11px] font-black text-slate-600 uppercase tracking-[0.15em] flex items-center gap-2"><FolderOpen className="w-4 h-4 text-indigo-500" /> PERFILES DE DISEÑO</label>
+                <button onClick={() => importProfileRef.current?.click()} className="text-[10px] uppercase font-black tracking-widest text-indigo-600 flex items-center gap-1 hover:text-indigo-800 transition-colors">
+                  <Upload className="w-3.5 h-3.5" /> Importar Json
+                </button>
+                <input type="file" ref={importProfileRef} accept=".json" className="hidden" onChange={handleImportFileChange} />
+              </div>
               <div className="bg-slate-50 p-4 rounded-2xl space-y-5 border-2 border-slate-200">
                 <div className="flex gap-2">
                   <input
@@ -737,9 +802,10 @@ export const Controls: React.FC<ControlsProps> = ({
                     {profiles.map(p => (
                       <div key={p.id} className="flex items-center justify-between bg-white p-3 rounded-xl border-2 border-slate-200 text-sm shadow-sm hover:border-indigo-400 transition-all group">
                         <span className="font-black text-slate-900 truncate mr-2">{p.name}</span>
-                        <div className="flex gap-2">
-                          <button onClick={() => onLoadProfile(p.id)} className="text-indigo-700 hover:bg-indigo-700 hover:text-white px-3 py-1.5 rounded-lg border-2 border-indigo-200 font-black text-xs transition-all uppercase">Cargar</button>
-                          <button onClick={() => onDeleteProfile(p.id)} className="text-slate-400 hover:text-red-700 p-1.5 rounded-lg transition-colors"><Trash2 className="w-5 h-5" /></button>
+                        <div className="flex gap-2 flex-shrink-0">
+                          <button onClick={() => onLoadProfile(p.id)} title="Cargar perfil" className="text-indigo-700 hover:bg-indigo-700 hover:text-white px-3 py-1.5 rounded-lg border-2 border-indigo-200 font-black text-xs transition-all uppercase">Cargar</button>
+                          <button onClick={() => handleExportProfile(p.id)} title="Descargar como JSON" className="text-slate-400 hover:text-indigo-600 p-1.5 rounded-lg transition-colors"><Download className="w-5 h-5" /></button>
+                          <button onClick={() => onDeleteProfile(p.id)} title="Eliminar perfil" className="text-slate-400 hover:text-red-700 p-1.5 rounded-lg transition-colors"><Trash2 className="w-5 h-5" /></button>
                         </div>
                       </div>
                     ))}
@@ -902,6 +968,15 @@ export const Controls: React.FC<ControlsProps> = ({
         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">WooTag AI</span>
         <span className="text-[10px] font-black text-slate-300 font-mono">v{APP_VERSION}</span>
       </div>
+
+      {wooConfig && (
+        <QrScannerModal
+          isOpen={isQrScannerOpen}
+          onClose={() => setIsQrScannerOpen(false)}
+          wooConfig={wooConfig}
+          onProductScanned={addUniqueProduct}
+        />
+      )}
 
     </div>
   );

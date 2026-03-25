@@ -177,6 +177,11 @@ export default function App() {
     }
   };
 
+  const handleImportProfile = (importedProfile: DesignProfile) => {
+    const newProfile = { ...importedProfile, id: Date.now().toString() };
+    setProfiles(prev => [...prev, newProfile]);
+  };
+
   // Skip loading screen, app is always accessible
   // Debug: Show a loading screen instead of null
   if (loadingSession) {
@@ -216,6 +221,7 @@ export default function App() {
           onSaveProfile={handleSaveProfile}
           onLoadProfile={handleLoadProfile}
           onDeleteProfile={handleDeleteProfile}
+          onImportProfile={handleImportProfile}
           onOpenConnection={() => setIsConnectionModalOpen(true)}
           onPrint={handlePrint}
           printLog={printLog}

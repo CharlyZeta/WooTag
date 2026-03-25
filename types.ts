@@ -1,5 +1,5 @@
 
-export const APP_VERSION = '1.7.2';
+export const APP_VERSION = '1.9.0';
 
 
 export interface PrintHistoryItem {

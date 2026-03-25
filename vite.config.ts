@@ -20,6 +20,20 @@ export default defineConfig(({ mode }) => {
         '@': path.resolve(__dirname, '.'),
       }
     },
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            if (id.includes('node_modules')) {
+              if (id.includes('xlsx')) return 'vendor-xlsx';
+              if (id.includes('html5-qrcode')) return 'vendor-scanner';
+              if (id.includes('lucide-react')) return 'vendor-icons';
+              return 'vendor-react'; // React, React DOM, y demás libs base
+            }
+          }
+        }
+      }
+    },
     test: {
       globals: true,
       environment: 'jsdom',
