@@ -5,8 +5,13 @@ import { fetchProductBySku, fetchCategories, fetchProductsByCategory, fetchProdu
 import { downloadTemplate, parseXlsFile } from '../utils/xlsImport';
 import { logEvent } from '../utils/ipLogger';
 import { QrScannerModal } from './QrScannerModal';
+import { CloudLoginModal } from './CloudLoginModal';
+import { useAuth } from '../contexts/AuthContext';
+import { HostRoomModal } from './HostRoomModal';
+import { MobileJoinScanner } from './MobileJoinScanner';
+import { AuthSession } from '../types';
 import {
-  Settings, Layout, Type, Palette, Printer, Plus, Trash2, Sparkles, AlertCircle, LogOut, Image as ImageIcon, Layers, Calculator, Eye, Save, FolderOpen, Download, MessageSquare, Globe, Search, Eraser, LayoutGrid, ChevronRight, Tags, BookOpen, History, Clock, Package, FileSpreadsheet, Upload, AlertTriangle, CheckCircle2, PackagePlus, ScanLine
+  Cloud, Settings, Layout, Type, Palette, Printer, Plus, Trash2, Sparkles, AlertCircle, LogOut, Image as ImageIcon, Layers, Calculator, Eye, Save, FolderOpen, Download, MessageSquare, Globe, Search, Eraser, LayoutGrid, ChevronRight, Tags, BookOpen, History, Clock, Package, FileSpreadsheet, Upload, AlertTriangle, CheckCircle2, PackagePlus, ScanLine, Smartphone
 } from 'lucide-react';
 
 interface ControlsProps {
@@ -28,6 +33,9 @@ interface ControlsProps {
   onPrint: () => void;
   printLog: PrintRecord[];
   onClearPrintLog: () => void;
+  activeRoomId: string | null;
+  onRoomCreated: (id: string) => void;
+  onRoomJoined: (id: string, wooConfig: AuthSession) => void;
 }
 
 export const Controls: React.FC<ControlsProps> = ({
@@ -48,7 +56,10 @@ export const Controls: React.FC<ControlsProps> = ({
   onOpenConnection,
   onPrint,
   printLog,
-  onClearPrintLog
+  onClearPrintLog,
+  activeRoomId,
+  onRoomCreated,
+  onRoomJoined
 }) => {
   const [activeTab, setActiveTab] = useState<'data' | 'import' | 'layout' | 'design' | 'history'>('data');
   const [skuSearch, setSkuSearch] = useState('');
@@ -59,6 +70,12 @@ export const Controls: React.FC<ControlsProps> = ({
   const [isImporting, setIsImporting] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [profileName, setProfileName] = useState('');
+  
+  const { currentUser } = useAuth();
+  const [isCloudModalOpen, setIsCloudModalOpen] = useState(false);
+  
+  const [isHostModalOpen, setIsHostModalOpen] = useState(false);
+  const [isJoinModalOpen, setIsJoinModalOpen] = useState(false);
 
   const importProfileRef = useRef<HTMLInputElement>(null);
 
@@ -377,29 +394,55 @@ export const Controls: React.FC<ControlsProps> = ({
           </div>
 
           {/* User Profile / Status */}
-          {user ? (
-            <div className="flex items-center gap-3 pl-4 border-l-2 border-slate-100">
-              <div className="text-right hidden sm:block">
-                <div className="text-xs font-black text-slate-800 leading-tight">{user.name}</div>
-                <div className="text-[10px] font-bold text-emerald-500 uppercase tracking-wider">Conectado</div>
-              </div>
-              <button
-                onClick={onLogout}
-                className="group p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all border-2 border-transparent hover:border-red-100"
-                title="Cerrar Sesión"
+          <div className="flex items-center gap-2">
+            {/* Botón de Nube (Auth) */}
+            <div className="flex gap-2 mr-2 border-r-2 border-slate-100 pr-2">
+              <button 
+                onClick={() => setIsHostModalOpen(true)}
+                disabled={activeRoomId !== null && isHostModalOpen === false}
+                className={`p-2 rounded-xl transition-all border-2 border-transparent hover:border-indigo-100 group relative ${activeRoomId ? 'bg-emerald-50 text-emerald-600' : 'text-slate-400'}`}
+                title={activeRoomId ? `Sala ${activeRoomId} activa` : "Conectar Móvil"}
               >
-                <LogOut className="w-5 h-5 transition-transform group-hover:-translate-x-0.5" />
+                <Smartphone className={`w-5 h-5 transition-transform group-hover:-translate-y-0.5 ${activeRoomId ? 'text-emerald-500' : 'group-hover:text-indigo-500'}`} />
+                {activeRoomId && <div className="absolute top-0 right-0 w-2 h-2 bg-emerald-500 border border-white rounded-full translate-x-1 -translate-y-1" />}
+              </button>
+
+              <button 
+                onClick={() => setIsCloudModalOpen(true)}
+                className={`p-2 rounded-xl transition-all border-2 border-transparent hover:border-indigo-100 flex items-center gap-2 group relative`}
+                title="Cuenta en la Nube"
+              >
+                <div className="relative">
+                  <Cloud className={`w-5 h-5 transition-transform group-hover:-translate-y-0.5 ${currentUser ? 'text-indigo-600' : 'text-slate-400 group-hover:text-indigo-500'}`} />
+                  {currentUser && <div className="absolute top-0 right-0 w-2 h-2 bg-emerald-500 border border-white rounded-full translate-x-1 -translate-y-1" />}
+                </div>
               </button>
             </div>
-          ) : (
-            <button
-              onClick={onOpenConnection}
-              className="text-xs font-black bg-slate-100 text-slate-600 px-3 py-2 rounded-xl hover:bg-indigo-600 hover:text-white transition-all flex items-center gap-2 border-2 border-slate-200 hover:border-indigo-600"
-            >
-              <span className="w-2 h-2 bg-slate-400 rounded-full group-hover:bg-white" />
-              Conectar
-            </button>
-          )}
+
+            {user ? (
+              <div className="flex items-center gap-2 pl-2 border-l-2 border-slate-100">
+                <div className="text-right hidden sm:block">
+                  <div className="text-xs font-black text-slate-800 leading-tight">{user.name}</div>
+                  <div className="text-[10px] font-bold text-emerald-500 uppercase tracking-wider">Woo Conectado</div>
+                </div>
+                <button
+                  onClick={onLogout}
+                  className="group p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all border-2 border-transparent hover:border-red-100"
+                  title="Desconectar Tienda"
+                >
+                  <LogOut className="w-5 h-5 transition-transform group-hover:-translate-x-0.5" />
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={onOpenConnection}
+                className="text-xs font-black bg-slate-100 text-slate-600 px-3 py-2 rounded-xl hover:bg-indigo-600 hover:text-white transition-all flex items-center gap-2 border-2 border-slate-200 hover:border-indigo-600 ml-2"
+              >
+                <span className="w-2 h-2 bg-slate-400 rounded-full group-hover:bg-white" />
+                Conectar Woo
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Global Actions */}
@@ -523,6 +566,25 @@ export const Controls: React.FC<ControlsProps> = ({
               </div>
             )}
 
+            {/* Mobile Companion Mode (solo disponible si no tienes woo conectado) */}
+            {!wooConfig && !activeRoomId && (
+              <div className="space-y-3 pt-6 border-t-2 border-slate-100">
+                <label className="text-[11px] font-black text-slate-600 uppercase tracking-[0.15em] flex items-center gap-2">
+                  <Smartphone className="w-4 h-4 text-emerald-500" /> VINCULAR CELULAR
+                </label>
+                <button
+                  onClick={() => setIsJoinModalOpen(true)}
+                  className="w-full flex items-center justify-center gap-3 py-3.5 bg-emerald-50 text-emerald-700 border-2 border-emerald-200 rounded-xl font-black text-sm hover:bg-emerald-100 transition-all active:scale-[0.98]"
+                >
+                  <Smartphone className="w-5 h-5" />
+                  Escanear QR de PC
+                </button>
+                <p className="text-[10px] text-slate-400 font-bold text-center">
+                  Escaneá el código brillante en tu computadora para compartir el escáner del celular.
+                </p>
+              </div>
+            )}
+            
             {/* API WooCommerce */}
             {!wooConfig ? (
               <div className="bg-slate-50 border-2 border-dashed border-slate-300 rounded-2xl p-6 text-center space-y-4">
@@ -977,6 +1039,30 @@ export const Controls: React.FC<ControlsProps> = ({
           onProductScanned={addUniqueProduct}
         />
       )}
+
+      <CloudLoginModal
+        isOpen={isCloudModalOpen}
+        onClose={() => setIsCloudModalOpen(false)}
+      />
+
+      {wooConfig && currentUser && (
+        <HostRoomModal
+          isOpen={isHostModalOpen}
+          onClose={() => setIsHostModalOpen(false)}
+          hostUid={currentUser.uid}
+          wooSession={{ config: wooConfig, user: user as any, expiresAt: Date.now() }}
+          onRoomCreated={(id) => onRoomCreated(id)}
+        />
+      )}
+
+      <MobileJoinScanner
+        isOpen={isJoinModalOpen}
+        onClose={() => setIsJoinModalOpen(false)}
+        onRoomJoined={(id, auth) => {
+          setIsJoinModalOpen(false);
+          onRoomJoined(id, auth);
+        }}
+      />
 
     </div>
   );

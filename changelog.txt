@@ -1,5 +1,21 @@
 # Changelog - WooTag AI Generator
 
+## [2.0.0] - 2026-03-26
+### Added
+- **Integración con Firebase (Cloud Services)** (`contexts/AuthContext.tsx`, `services/firebase.ts`):
+  - Nuevo flujo de Autenticación de Usuarios (Login, Registro, Recuperación de contraseña).
+  - Los perfiles de diseño y las credenciales de WooCommerce ahora se sincronizan en la nube (Firestore).
+- **Modo "Companion" (Emparejamiento por QR)** (`services/realtimeSession.ts`, `MobileJoinScanner.tsx`, `HostRoomModal.tsx`):
+  - Creación del botón "Vincular Celular" en la interfaz de PC que genera un Código QR de sesión única.
+  - La App móvil ahora incluye la opción "Escanear QR de PC" en la pantalla inicial que permite leer el código y unirse automáticamente a la sesión como "Companion".
+  - Las credenciales de WooCommerce se transfieren a la sesión temporalmente de forma segura.
+- **Sincronización en Tiempo Real Bidireccional** (`App.tsx`):
+  - Todo producto escaneado, buscado o eliminado en el celular se refleja instantáneamente en la pantalla de la PC y viceversa sin necesidad de recargar.
+
+### Changed
+- Refactorizada la inyección del estado `products` (vía `wrappedSetProducts`) para soportar persistencia automática distribuida mientras exista una sala activa.
+- Depuración y reorganización jerárquica: Los recursos cloud se organizaron en las carpetas `services/` y `contexts/`.
+
 ## [1.9.0] - 2026-03-25
 ### Added
 - **Importar y Exportar Perfiles de Diseño** (`Controls.tsx` + `App.tsx`): 

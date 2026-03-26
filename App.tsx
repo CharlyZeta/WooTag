@@ -5,6 +5,9 @@ import { Controls } from './components/Controls';
 import { ConnectionModal } from './components/ConnectionModal';
 import { optimizeDescription } from './services/geminiService';
 import { encrypt, decrypt } from './utils/security';
+import { useAuth } from './contexts/AuthContext';
+import { loadCloudProfile, updateCloudProfile } from './services/cloudProfiles';
+import { subscribeToRoom, syncRoomProducts, closeRoom } from './services/realtimeSession';
 
 const SESSION_KEY = 'wootag_session_v2';
 const CONFIG_KEY = 'wootag_config_v2';
@@ -16,6 +19,7 @@ export default function App() {
   const [session, setSession] = useState<AuthSession | null>(null);
   const [loadingSession, setLoadingSession] = useState(true);
   const [isConnectionModalOpen, setIsConnectionModalOpen] = useState(false);
+  const { currentUser } = useAuth();
 
   // Tag Config
   const [config, setConfig] = useState<TagConfig>(() => {
@@ -39,6 +43,11 @@ export default function App() {
 
   const [products, setProducts] = useState<Product[]>([]);
   const [optimizingId, setOptimizingId] = useState<string | null>(null);
+  
+  // Room Matching State
+  const [activeRoomId, setActiveRoomId] = useState<string | null>(null);
+  const activeRoomIdRef = useRef<string | null>(null);
+  activeRoomIdRef.current = activeRoomId;
 
   // Print history
   const [printLog, setPrintLog] = useState<PrintRecord[]>(() => {
@@ -108,14 +117,42 @@ export default function App() {
     }
   }, []);
 
+  // Load Cloud Profile when user logs in
+  useEffect(() => {
+    if (currentUser) {
+      loadCloudProfile(currentUser.uid).then(cloudData => {
+        if (cloudData.tagConfig) setConfig(cloudData.tagConfig);
+        if (cloudData.designProfiles.length > 0) setProfiles(cloudData.designProfiles);
+        if (cloudData.wooSession) setSession(cloudData.wooSession);
+      }).catch(err => console.error("Error loading cloud profile", err));
+    }
+  }, [currentUser]);
+
+  // Room subscription
+  useEffect(() => {
+    if (!activeRoomId) return;
+    const unsubscribe = subscribeToRoom(activeRoomId, (room) => {
+      if (room) {
+        setProducts(room.products);
+      } else {
+        // La sala se cerró u host desconectó
+        setActiveRoomId(null);
+        alert("La sesión enlazada ha finalizado.");
+      }
+    });
+    return () => unsubscribe();
+  }, [activeRoomId]);
+
   // Persist State
   useEffect(() => {
     localStorage.setItem(CONFIG_KEY, JSON.stringify(config));
-  }, [config]);
+    if (currentUser) updateCloudProfile(currentUser.uid, { tagConfig: config });
+  }, [config, currentUser]);
 
   useEffect(() => {
     localStorage.setItem(PROFILES_KEY, JSON.stringify(profiles));
-  }, [profiles]);
+    if (currentUser) updateCloudProfile(currentUser.uid, { designProfiles: profiles });
+  }, [profiles, currentUser]);
 
   // Auth Handlers
   const handleConnect = (wooConfig: WooConfig, user: WpUser, remember: boolean) => {
@@ -126,6 +163,10 @@ export default function App() {
     };
     setSession(newSession);
 
+    if (currentUser) {
+      updateCloudProfile(currentUser.uid, { wooSession: newSession });
+    }
+
     if (remember) {
       const encrypted = encrypt(newSession);
       localStorage.setItem(SESSION_KEY, encrypted);
@@ -135,9 +176,14 @@ export default function App() {
   };
 
   const handleDisconnect = () => {
+    if (activeRoomIdRef.current) {
+      closeRoom(activeRoomIdRef.current).catch(console.error);
+      setActiveRoomId(null);
+    }
     setSession(null);
     localStorage.removeItem(SESSION_KEY);
-    setProducts([]);
+    if (currentUser) updateCloudProfile(currentUser.uid, { wooSession: null });
+    wrappedSetProducts([]);
   };
 
   const handleOptimizeDescription = async (productId: string) => {
@@ -147,7 +193,7 @@ export default function App() {
     setOptimizingId(productId);
     try {
       const optimizedDesc = await optimizeDescription(product.name, product.description);
-      setProducts(prev => prev.map(p =>
+      wrappedSetProducts(prev => prev.map(p =>
         p.id === productId ? { ...p, description: optimizedDesc } : p
       ));
     } catch (error) {
@@ -156,6 +202,16 @@ export default function App() {
       setOptimizingId(null);
     }
   };
+
+  const wrappedSetProducts: React.Dispatch<React.SetStateAction<Product[]>> = useCallback((val) => {
+    setProducts((prev) => {
+      const updated = typeof val === 'function' ? val(prev) : val;
+      if (activeRoomIdRef.current) {
+        syncRoomProducts(activeRoomIdRef.current, updated).catch(console.error);
+      }
+      return updated;
+    });
+  }, []);
 
   const handleSaveProfile = (name: string) => {
     const newProfile: DesignProfile = {
@@ -211,7 +267,7 @@ export default function App() {
           config={config}
           setConfig={setConfig}
           products={products}
-          setProducts={setProducts}
+          setProducts={wrappedSetProducts}
           wooConfig={session?.config || null} // Pass null if guest
           user={session?.user || null}       // Pass null if guest
           onOptimize={handleOptimizeDescription}
@@ -226,6 +282,12 @@ export default function App() {
           onPrint={handlePrint}
           printLog={printLog}
           onClearPrintLog={() => setPrintLog([])}
+          activeRoomId={activeRoomId}
+          onRoomCreated={setActiveRoomId}
+          onRoomJoined={(id: string, newSession: AuthSession) => {
+            setActiveRoomId(id);
+            setSession(newSession); // Se hereda la sesión de Woo desde el host
+          }}
         />
       </div>
 
