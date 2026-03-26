@@ -6,6 +6,7 @@
   - Nuevo flujo de Autenticación de Usuarios (Login, Registro, Recuperación de contraseña).
   - Los perfiles de diseño y las credenciales de WooCommerce ahora se sincronizan en la nube (Firestore).
 
+
 - **Modo "Companion" (Emparejamiento por QR)** (`services/realtimeSession.ts`, `MobileJoinScanner.tsx`, `HostRoomModal.tsx`):
   - Creación del botón "Vincular Celular" en la interfaz de PC que genera un Código QR de sesión única.
   - La App móvil ahora incluye la opción "Escanear QR de PC" en la pantalla inicial que permite leer el código y unirse automáticamente a la sesión como "Companion".
