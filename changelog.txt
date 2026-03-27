@@ -1,5 +1,13 @@
 # Changelog - WooTag AI Generator
 
+## [2.0.2] - 2026-03-27
+### Fixed
+- **Caché de `index.html` en producción** (`public/.htaccess`): La app no se actualizaba en el navegador tras un deploy exitoso porque el servidor cacheaba `index.html`. Se agrega `.htaccess` con `Cache-Control: no-store` para `index.html` (el punto de entrada siempre debe ser fresco) y `max-age=31536000, immutable` para los assets con hash de Vite (son inmutables por definición). También incluye `mod_rewrite` para soporte de rutas SPA a futuro.
+
+### Added
+- **Favicon e ícono de pestaña** (`public/favicon.png`, `index.html`): Se agrega el logotipo de WooTag como ícono en la pestaña del navegador (`<link rel="icon">`) y como ícono de acceso directo en iOS/Android (`<link rel="apple-touch-icon">`).
+- **Mejoras SEO en `index.html`**: Se agregan `<meta name="description">` con descripción de la app y `<meta name="theme-color">` con el color principal indigo (#4F46E5).
+
 ## [2.0.1] - 2026-03-27
 ### Fixed
 - **Bug crítico de autenticación Firebase** (`.env`): La variable `VITE_FIREBASE_PROJECT_ID` tenía una comilla de apertura extra (`""wootag-cloud"`) que causaba que Firebase inicializara con un `projectId` inválido, rompiendo completamente el login y el registro de usuarios. Corregido a `"wootag-cloud"`.
