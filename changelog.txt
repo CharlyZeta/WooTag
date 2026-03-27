@@ -1,6 +1,21 @@
 # Changelog - WooTag AI Generator
 
+## [2.0.1] - 2026-03-27
+### Fixed
+- **Bug crítico de autenticación Firebase** (`.env`): La variable `VITE_FIREBASE_PROJECT_ID` tenía una comilla de apertura extra (`""wootag-cloud"`) que causaba que Firebase inicializara con un `projectId` inválido, rompiendo completamente el login y el registro de usuarios. Corregido a `"wootag-cloud"`.
+- **Memory leak en `subscribeToCloudProfile`** (`services/cloudProfiles.ts`): La función no retornaba el unsubscriber de `onSnapshot`, lo que impedía cancelar la suscripción a Firestore al desmontar el componente.
+
+### Changed
+- **Refactorización de `cloudProfiles.ts`** (`services/cloudProfiles.ts`): Eliminados imports dinámicos redundantes dentro de `loadCloudProfile` y `updateCloudProfile` (el módulo ya importaba las funciones en el top-level). El código es más claro y predecible.
+- **Nuevas dependencias de desarrollo**: `@testing-library/react`, `@testing-library/jest-dom`, `@testing-library/user-event` para soportar tests de componentes React.
+
+### Added
+- **Tests unitarios para `cloudProfiles.ts`** (`services/cloudProfiles.test.ts`): 8 tests cubriendo `loadCloudProfile` (documento existente, documento nuevo con valores default, propagación de errores de Firestore), `updateCloudProfile` (llamada correcta con merge, propagación de errores) y `subscribeToCloudProfile` (invocación del callback, caso de documento inexistente, retorno del unsubscriber).
+- **Tests unitarios para `AuthContext.tsx`** (`contexts/AuthContext.test.tsx`): 8 tests cubriendo el estado inicial (loading=true hasta resolver, pasa a false con usuario null), actualización de `currentUser` al disparar `onAuthStateChanged`, y los 4 métodos del contexto: `login`, `register`, `logout` y `resetPassword` (verificando delegación correcta al SDK de Firebase).
+- **Total de tests**: 97 (89 existentes + 16 nuevos) en 6 archivos de test.
+
 ## [2.0.0] - 2026-03-26
+
 ### Added
 - **Integración con Firebase (Cloud Services)** (`contexts/AuthContext.tsx`, `services/firebase.ts`):
   - Nuevo flujo de Autenticación de Usuarios (Login, Registro, Recuperación de contraseña).

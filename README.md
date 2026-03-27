@@ -1,14 +1,15 @@
 # 🏷️ WooTag AI Generator
 
-**WooTag AI Generator** es una herramienta web para diseñar e imprimir etiquetas de precio profesionales para tiendas WooCommerce. Importa productos desde tu tienda o desde una planilla Excel, personaliza el diseño y genera hojas A4 listas para imprimir, con código QR por producto y optimización de textos via Google Gemini AI.
+**WooTag AI Generator** es una herramienta web para diseñar e imprimir etiquetas de precio profesionales para tiendas WooCommerce. Importa productos desde tu tienda o desde una planilla Excel, personaliza el diseño y genera hojas A4 listas para imprimir, con código QR por producto y optimización de textos vía Google Gemini AI.
 
 Desarrollado con la asistencia de **Antigravity** (Google DeepMind).
 
 ![React](https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.0-3178C6?style=flat-square&logo=typescript)
 ![Vite](https://img.shields.io/badge/Vite-6.0-646CFF?style=flat-square&logo=vite)
-![Version](https://img.shields.io/badge/versión-1.7.2-indigo?style=flat-square)
-![Tests](https://img.shields.io/badge/tests-81%20passing-brightgreen?style=flat-square)
+![Firebase](https://img.shields.io/badge/Firebase-12-FFCA28?style=flat-square&logo=firebase)
+![Version](https://img.shields.io/badge/versión-2.0.1-indigo?style=flat-square)
+![Tests](https://img.shields.io/badge/tests-97%20passing-brightgreen?style=flat-square)
 
 ---
 
@@ -30,9 +31,22 @@ Desarrollado con la asistencia de **Antigravity** (Google DeepMind).
 
 ## 🚀 Características Principales
 
+### ☁️ Cuenta en la Nube (Firebase)
+
+- **Autenticación**: Login, registro y recuperación de contraseña con Firebase Authentication.
+- **Sincronización**: Los perfiles de diseño, la configuración de etiqueta y las credenciales de WooCommerce se sincronizan automáticamente en Firestore.
+- **Multi-dispositivo**: Los datos se restauran automáticamente al iniciar sesión en cualquier navegador.
+- Opcional — la app es completamente funcional sin cuenta.
+
+### 📱 Modo Companion (Emparejamiento por QR)
+
+- **Vincular celular**: El PC genera un QR de sesión única. El celular lo escanea y entra como "Companion".
+- **Sincronización en tiempo real**: Todo producto escaneado en el celular aparece instantáneamente en el PC via Firebase Realtime (Firestore).
+- Las credenciales de WooCommerce se transfieren a la sesión de manera segura y temporal.
+
 ### 🔌 Integración WooCommerce
 
-- **Modo Invitado / Offline**: La app es completamente funcional sin credenciales. Solo se requiere conexión para importar productos desde la API.
+- **Modo Invitado / Offline**: La app es completamente funcional sin credenciales. Solo se requiere conexión para importar desde la API.
 - **Conexión segura**: Credenciales ofuscadas en `localStorage` con salt + base64. La validación prioriza el endpoint de productos para esquivar bloqueos comunes (Error 401).
 - **Sesión con expiración**: Las credenciales guardadas expiran a las 24 horas automáticamente.
 
@@ -55,29 +69,17 @@ Desarrollado con la asistencia de **Antigravity** (Google DeepMind).
 
 ![Tab Importar](screenshots/import_tab.png)
 
-> Sección de importación con área drag & drop para planillas XLS y botón para conectar con WooCommerce.
-
 ---
 
 ### 📊 Importación XLS Segura
 
-La planilla Excel oficial incluye las columnas `sku`, `name`, `price`, `sale_price`, `description`, `category`, `image_url`. El módulo de importación aplica las siguientes medidas de seguridad:
+La planilla Excel oficial incluye las columnas `sku`, `name`, `price`, `sale_price`, `description`, `category`, `image_url`. El módulo aplica:
 
 - Solo acepta `.xlsx` y `.xls`. Los archivos `.xlsm` (con macros VBA) son **rechazados**.
 - Límite de **5 MB** por archivo y **500 filas** por importación.
-- SheetJS se configura con `{ cellFormula: false, cellHTML: false, bookVBA: false }` — no ejecuta fórmulas ni macros.
-- Cada valor de celda se sanitiza: solo se aceptan `string` y `number`.
-- URLs de imagen validadas para aceptar únicamente `http:` / `https:`. Se rechazan `javascript:`, `data:`, `file:` y similares.
-
----
-
-### 🧠 Inteligencia Artificial (Gemini AI)
-
-- **Optimización de descripciones**: Convierte textos largos en frases de venta concisas (≤ 15 palabras), ideales para el espacio limitado de una etiqueta.
-- Modelo: `gemini-2.0-flash` (estable).
-- Requiere `GEMINI_API_KEY` en el archivo `.env`.
-
-<!-- TODO: Captura del botón de optimización AI en acción (screenshots/ai_optimization.png) -->
+- SheetJS con `{ cellFormula: false, cellHTML: false, bookVBA: false }` — no ejecuta fórmulas ni macros.
+- Sanitización de celdas: solo `string` y `number`.
+- URLs de imagen validadas: solo `http:` / `https:`. Se rechazan `javascript:`, `data:`, `file:`.
 
 ---
 
@@ -90,34 +92,23 @@ El panel lateral está organizado en **5 pestañas**:
 | **Lista** | Lista de productos a imprimir. Botón de acceso rápido a "Importar" cuando está vacía. |
 | **Importar** | Importación por XLS + API WooCommerce (SKU / Nombre / Categoría). |
 | **Ajustes** | Layout A4 (filas/columnas), visibilidad de campos, Precio Especial, Leyenda de Precio. |
-| **Diseño** | Perfiles de diseño guardados, tamaños de fuente, paleta de colores. |
+| **Diseño** | Perfiles de diseño guardados (guardar/cargar/eliminar/exportar/importar como JSON). |
 | **Historial** | Registro de impresiones con filtro por SKU/nombre. |
 
-#### Tab Ajustes
-
-![Tab Ajustes](screenshots/settings_tab.png)
-
-> Configuración de la distribución A4 (columnas × filas) y switches de visibilidad para cada campo de la etiqueta.
-
-#### Tab Diseño
-
-![Tab Diseño](screenshots/design_tab.png)
-
-> Gestión de perfiles de diseño y sliders para ajustar tamaños de fuente por elemento.
-
-#### Tab Historial
-
-<!-- TODO: Captura del historial de impresiones con registros (screenshots/history_tab.png) -->
-> *Pendiente: agregar captura del historial con registros de impresión.*
-
-#### Campos configurables por etiqueta
-
+#### Campos configurables por etiqueta:
 - Distribución: filas × columnas en A4 (ej: 4×2, 5×3, 2×1)
 - Visibilidad: nombre, SKU, imagen, descripción, QR, precio oferta, bordes, decimales, separador de miles
-- **Precio Especial**: porcentaje configurable (+/-), base (regular/oferta), posición (arriba/abajo), etiqueta personalizada
-- **Leyenda de Precio**: texto libre debajo del precio (ej: "IVA Incluido") con color y tamaño independientes
-- Formato de precios: `Intl.NumberFormat('es-AR')` → `$1.234,56`
-- Código QR centrado verticalmente con el bloque de precios
+- **Precio Especial**: porcentaje configurable (+/-), base (regular/oferta), posición, etiqueta personalizada
+- **Leyenda de Precio**: texto libre con color y tamaño independientes
+- Formato: `Intl.NumberFormat('es-AR')` → `$1.234,56`
+
+---
+
+### 🧠 Inteligencia Artificial (Gemini AI)
+
+- **Optimización de descripciones**: Convierte textos largos en frases de venta concisas (≤ 15 palabras).
+- Modelo: `gemini-2.0-flash` (estable).
+- Requiere `GEMINI_API_KEY` en `.env`. Si no está configurada, retorna silenciosamente la descripción original.
 
 ---
 
@@ -125,8 +116,7 @@ El panel lateral está organizado en **5 pestañas**:
 
 - Hoja A4 limpia (sin interfaz) con estilos CSS `@media print`.
 - Múltiples páginas con paginación automática.
-- **Indicador de páginas flotante**: badge animado en esquina inferior derecha, actualizado en tiempo real al scrollear.
-- Scroll del área de previsualización completamente independiente del panel lateral.
+- **Indicador de páginas flotante**: badge animado actualizado en tiempo real al scrollear.
 - Historial de impresiones persistido en `localStorage` con deduplicación visual por SKU (`×N`).
 
 ---
@@ -135,10 +125,11 @@ El panel lateral está organizado en **5 pestañas**:
 
 ### Requisitos
 
-- Node.js v18+  
-- npm  
-- Credenciales de la API REST de WooCommerce (Consumer Key + Consumer Secret)  
+- Node.js v18+
+- npm
+- Credenciales de la API REST de WooCommerce (Consumer Key + Consumer Secret)
 - (Opcional) `GEMINI_API_KEY` para la optimización AI
+- (Opcional) Proyecto Firebase para autenticación y sincronización en la nube
 
 ### Pasos
 
@@ -150,21 +141,38 @@ cd WooTag
 # 2. Instalar dependencias
 npm install
 
-# 3. Configurar API Key de Gemini (opcional)
-echo "GEMINI_API_KEY=tu-api-key-aqui" > .env
+# 3. Configurar variables de entorno
+# Copiar .env.example a .env y completar los valores
+cp .env.example .env
 
 # 4. Iniciar en desarrollo
 npm run dev
 ```
 
-Abre `http://localhost:3000`. La app funciona en **modo diseño** sin credenciales. Para importar desde WooCommerce, hacé clic en **"Conectar"**.
+Abre `http://localhost:3000`. La app funciona en **modo diseño** sin credenciales. Para importar desde WooCommerce, hacé clic en **"Conectar"**. Para activar la nube, hacé clic en el ícono ☁️.
+
+### Variables de Entorno
+
+```env
+# Firebase (requerido para autenticación y sincronización en la nube)
+VITE_FIREBASE_API_KEY="..."
+VITE_FIREBASE_AUTH_DOMAIN="proyecto.firebaseapp.com"
+VITE_FIREBASE_PROJECT_ID="proyecto"
+VITE_FIREBASE_STORAGE_BUCKET="proyecto.firebasestorage.app"
+VITE_FIREBASE_MESSAGING_SENDER_ID="..."
+VITE_FIREBASE_APP_ID="..."
+VITE_FIREBASE_MEASUREMENTID="G-..."
+
+# Gemini AI (opcional)
+GEMINI_API_KEY="..."
+```
 
 ---
 
 ## 🧪 Tests Automatizados
 
 ```bash
-npm test               # Ejecuta los 81 tests una vez
+npm test               # Ejecuta los 97 tests una vez
 npm run test:watch     # Modo watch para desarrollo
 npm run test:coverage  # Genera reporte de cobertura en /coverage
 ```
@@ -175,6 +183,8 @@ npm run test:coverage  # Genera reporte de cobertura en /coverage
 | `services/wooService.test.ts` | 26 | Conexión WooCommerce, fallback auth 401, búsqueda por SKU/nombre/categoría, paginación de categorías, mensajes de error en español |
 | `utils/security.test.ts` | 10 | Round-trip encrypt/decrypt, datos corruptos, salt manipulado, preservación de tipos |
 | `services/geminiService.test.ts` | 6 | Respuesta AI exitosa, fallback a descripción original, API Key ausente, errores de red |
+| `services/cloudProfiles.test.ts` | 8 | loadCloudProfile (existente/nuevo/error), updateCloudProfile (merge/error), subscribeToCloudProfile (callback/inexistente/unsubscribe) |
+| `contexts/AuthContext.test.tsx` | 8 | Estado inicial, loading, currentUser, login, register, logout, resetPassword |
 
 ---
 
@@ -191,20 +201,29 @@ Los archivos estáticos quedan en `dist/`, listos para alojar en cualquier servi
 ## 🗂️ Estructura del Proyecto
 
 ```
-App.tsx                      ← Estado global: sesión, config, perfiles, historial, paginación
+App.tsx                        ← Estado global: sesión, config, perfiles, historial, paginación
 ├── components/
-│   ├── ConnectionModal.tsx   ← Modal de conexión a WooCommerce con validación
-│   ├── Controls.tsx          ← Panel lateral con 5 tabs (Lista/Importar/Ajustes/Diseño/Historial)
-│   ├── TagSheet.tsx          ← Hoja A4 paginada (un sheet por página)
-│   └── Tag.tsx               ← Componente individual de etiqueta con QR y formateo de precios
+│   ├── ConnectionModal.tsx    ← Modal de conexión a WooCommerce
+│   ├── CloudLoginModal.tsx    ← Modal de autenticación Firebase (login/registro)
+│   ├── Controls.tsx           ← Panel lateral con 5 tabs
+│   ├── HostRoomModal.tsx      ← Modal para crear sala QR (modo Companion)
+│   ├── MobileJoinScanner.tsx  ← Escáner QR para unirse a sala desde celular
+│   ├── QrScannerModal.tsx     ← Escáner QR de productos
+│   ├── TagSheet.tsx           ← Hoja A4 paginada
+│   └── Tag.tsx                ← Etiqueta individual con QR y formateo de precios
+├── contexts/
+│   └── AuthContext.tsx        ← Contexto de autenticación Firebase (login/register/logout)
 ├── services/
-│   ├── wooService.ts         ← API REST WooCommerce (SKU, nombre, categorías, paginación)
-│   └── geminiService.ts      ← Optimización de descripciones con Gemini AI
+│   ├── firebase.ts            ← Inicialización de Firebase (Auth + Firestore)
+│   ├── cloudProfiles.ts       ← CRUD de perfiles en Firestore (load/update/subscribe)
+│   ├── realtimeSession.ts     ← Sala colaborativa en tiempo real (modo Companion)
+│   ├── wooService.ts          ← API REST WooCommerce (SKU, nombre, categorías, paginación)
+│   └── geminiService.ts       ← Optimización de descripciones con Gemini AI
 ├── utils/
-│   ├── security.ts           ← Ofuscación de credenciales en localStorage (base64 + salt)
-│   └── xlsImport.ts          ← Parseo seguro XLS (SheetJS) + generador de plantilla
-│
-└── types.ts                  ← Interfaces TypeScript globales + DEFAULT_CONFIG + APP_VERSION
+│   ├── security.ts            ← Ofuscación de credenciales en localStorage (base64 + salt)
+│   ├── xlsImport.ts           ← Parseo seguro XLS (SheetJS) + generador de plantilla
+│   └── ipLogger.ts            ← Registro de auditoría silencioso
+└── types.ts                   ← Interfaces TypeScript globales + DEFAULT_CONFIG + APP_VERSION
 ```
 
 ---
@@ -213,16 +232,17 @@ App.tsx                      ← Estado global: sesión, config, perfiles, histo
 
 | Aspecto | Implementación |
 |---------|----------------|
-| Credenciales WooCommerce | Ofuscadas con base64 + salt en `localStorage`. **No** es cifrado fuerte — es protección contra inspección casual. |
-| Sesión | Expiración automática a las 24h. |
+| Credenciales WooCommerce | Ofuscadas con base64 + salt en `localStorage`. Protección contra inspección casual. |
+| Sesión WooCommerce | Expiración automática a las 24h. |
 | API Key Gemini | Solo en `.env` (gitignoreado). Nunca en código. |
-| Importación XLS | Solo `.xlsx`/`.xls`, sin macros VBA, sanitización de celdas y URLs. |
+| Firebase Auth | Manejo de sesión delegado al SDK de Firebase. No se almacenan contraseñas. |
+| Importación XLS | Solo `.xlsx`/`.xls`, sin macros VBA, sanitización de celdas y URLs de imagen. |
 
 ---
 
 ## 📌 Estado del Proyecto
 
-En mejora continua.
+En **mejora continua** — en producción.
 
 ---
 
@@ -230,9 +250,9 @@ En mejora continua.
 
 - [ ] Columna `quantity` en la planilla XLS para imprimir N etiquetas del mismo producto.
 - [ ] Soporte multi-hoja para importar distintos grupos de productos.
-- [ ] Exportar la configuración de la etiqueta como JSON para compartir entre usuarios.
 - [ ] Modo oscuro en la interfaz de configuración.
 - [ ] PWA / instalable como app de escritorio.
+- [ ] Historial de impresiones sincronizado en la nube.
 
 ---
 
