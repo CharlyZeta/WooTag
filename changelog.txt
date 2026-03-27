@@ -1,5 +1,16 @@
 # Changelog - WooTag AI Generator
 
+## [2.0.3] - 2026-03-27
+### Changed
+- **Detección de dispositivo en `Controls.tsx`**: El botón "Conectar Móvil" del header y la sección "Vincular Celular" del tab Importar ahora se ocultan automáticamente cuando la app se abre en un dispositivo móvil (viewport < 768px). El móvil no puede ser "host" de una sala — ese rol corresponde a la PC. Se usa un hook reactivo que escucha `resize` para manejar también rotaciones de pantalla.
+- **Formulario de registro mejorado en `CloudLoginModal.tsx`**:
+  - Nuevo campo "Confirmar contraseña" visible solo al crear cuenta, con animación de entrada.
+  - Feedback visual en tiempo real: el borde se vuelve verde si las contraseñas coinciden, rojo si no.
+  - Texto indicador bajo el campo con mensaje explícito ("✓ Las contraseñas coinciden" / "✗ Las contraseñas no coinciden").
+  - Validación previa a la llamada a Firebase: si las contraseñas no coinciden o tienen menos de 6 caracteres, se muestra el error sin consumir la API.
+  - Botones para mostrar/ocultar contraseña (👁) en ambos campos.
+  - Los campos de contraseña se limpian al cambiar entre modo Login y Registro.
+
 ## [2.0.2] - 2026-03-27
 ### Fixed
 - **Caché de `index.html` en producción** (`public/.htaccess`): La app no se actualizaba en el navegador tras un deploy exitoso porque el servidor cacheaba `index.html`. Se agrega `.htaccess` con `Cache-Control: no-store` para `index.html` (el punto de entrada siempre debe ser fresco) y `max-age=31536000, immutable` para los assets con hash de Vite (son inmutables por definición). También incluye `mod_rewrite` para soporte de rutas SPA a futuro.

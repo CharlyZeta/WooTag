@@ -73,9 +73,17 @@ export const Controls: React.FC<ControlsProps> = ({
   
   const { currentUser } = useAuth();
   const [isCloudModalOpen, setIsCloudModalOpen] = useState(false);
-  
+
   const [isHostModalOpen, setIsHostModalOpen] = useState(false);
   const [isJoinModalOpen, setIsJoinModalOpen] = useState(false);
+
+  // Detección de dispositivo: ocultar funciones de PC en mobile
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
+  useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
 
   const importProfileRef = useRef<HTMLInputElement>(null);
 
@@ -397,15 +405,17 @@ export const Controls: React.FC<ControlsProps> = ({
           <div className="flex items-center gap-2">
             {/* Botón de Nube (Auth) */}
             <div className="flex gap-2 mr-2 border-r-2 border-slate-100 pr-2">
-              <button 
-                onClick={() => setIsHostModalOpen(true)}
-                disabled={activeRoomId !== null && isHostModalOpen === false}
-                className={`p-2 rounded-xl transition-all border-2 border-transparent hover:border-indigo-100 group relative ${activeRoomId ? 'bg-emerald-50 text-emerald-600' : 'text-slate-400'}`}
-                title={activeRoomId ? `Sala ${activeRoomId} activa` : "Conectar Móvil"}
-              >
-                <Smartphone className={`w-5 h-5 transition-transform group-hover:-translate-y-0.5 ${activeRoomId ? 'text-emerald-500' : 'group-hover:text-indigo-500'}`} />
-                {activeRoomId && <div className="absolute top-0 right-0 w-2 h-2 bg-emerald-500 border border-white rounded-full translate-x-1 -translate-y-1" />}
-              </button>
+              {!isMobile && (
+                <button
+                  onClick={() => setIsHostModalOpen(true)}
+                  disabled={activeRoomId !== null && isHostModalOpen === false}
+                  className={`p-2 rounded-xl transition-all border-2 border-transparent hover:border-indigo-100 group relative ${activeRoomId ? 'bg-emerald-50 text-emerald-600' : 'text-slate-400'}`}
+                  title={activeRoomId ? `Sala ${activeRoomId} activa` : "Conectar Móvil"}
+                >
+                  <Smartphone className={`w-5 h-5 transition-transform group-hover:-translate-y-0.5 ${activeRoomId ? 'text-emerald-500' : 'group-hover:text-indigo-500'}`} />
+                  {activeRoomId && <div className="absolute top-0 right-0 w-2 h-2 bg-emerald-500 border border-white rounded-full translate-x-1 -translate-y-1" />}
+                </button>
+              )}
 
               <button 
                 onClick={() => setIsCloudModalOpen(true)}
@@ -566,8 +576,8 @@ export const Controls: React.FC<ControlsProps> = ({
               </div>
             )}
 
-            {/* Mobile Companion Mode (solo disponible si no tienes woo conectado) */}
-            {!wooConfig && !activeRoomId && (
+            {/* Companion Mode: solo en PC (no en mobile, porque el mobile ES el companion) */}
+            {!isMobile && !wooConfig && !activeRoomId && (
               <div className="space-y-3 pt-6 border-t-2 border-slate-100">
                 <label className="text-[11px] font-black text-slate-600 uppercase tracking-[0.15em] flex items-center gap-2">
                   <Smartphone className="w-4 h-4 text-emerald-500" /> VINCULAR CELULAR
