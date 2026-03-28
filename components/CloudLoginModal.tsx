@@ -56,11 +56,22 @@ export const CloudLoginModal: React.FC<CloudLoginModalProps> = ({ isOpen, onClos
         onClose();
       }
     } catch (err: any) {
-      if (err.code === 'auth/invalid-credential') setError('Credenciales incorrectas');
-      else if (err.code === 'auth/email-already-in-use') setError('El correo ya está registrado');
-      else if (err.code === 'auth/weak-password') setError('La contraseña es muy débil (mínimo 6 caracteres)');
-      else if (err.code === 'auth/invalid-email') setError('El correo no es válido');
-      else setError('Ocurrió un error. Verificá tus datos.');
+      const code: string = err?.code ?? '';
+      if (code === 'auth/invalid-credential')           setError('Credenciales incorrectas');
+      else if (code === 'auth/email-already-in-use')   setError('El correo ya está registrado. Probá iniciar sesión.');
+      else if (code === 'auth/weak-password')           setError('La contraseña es muy débil (mínimo 6 caracteres)');
+      else if (code === 'auth/invalid-email')           setError('El correo no tiene un formato válido');
+      else if (code === 'auth/user-not-found')          setError('No existe una cuenta con ese correo');
+      else if (code === 'auth/wrong-password')          setError('Contraseña incorrecta');
+      else if (code === 'auth/too-many-requests')       setError('Demasiados intentos fallidos. Esperá unos minutos.');
+      else if (code === 'auth/network-request-failed')  setError('Sin conexión a internet. Verificá tu red.');
+      else if (code === 'auth/operation-not-allowed')   setError('El registro con email está deshabilitado en Firebase. Habilitalo en Firebase Console → Authentication → Sign-in method.');
+      else if (code === 'auth/admin-restricted-operation') setError('El registro no está habilitado. Activá "Email/Password" en Firebase Console → Authentication.');
+      else if (err?.message?.includes('CONFIGURATION_NOT_FOUND')) setError('Proyecto Firebase no configurado correctamente. Revisá las variables VITE_FIREBASE_* en el .env');
+      else {
+        console.error('[CloudLogin] Firebase error:', code, err?.message);
+        setError(`Error inesperado (${code || 'desconocido'}). Revisá la consola para más detalles.`);
+      }
     } finally {
       setLoading(false);
     }
