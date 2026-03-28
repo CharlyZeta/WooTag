@@ -1,5 +1,9 @@
 # Changelog - WooTag AI Generator
 
+## [2.0.4] - 2026-03-28
+### Fixed
+- **Versión desincronizada en la UI** (`types.ts`, `vite.config.ts`): La constante `APP_VERSION` estaba hardcodeada a `'2.0.0'` en `types.ts` sin actualizar manualmente con cada release. Se refactorizó para que sea inyectada automáticamente por Vite desde el campo `version` de `package.json` en tiempo de build (via `__APP_VERSION__`). **A partir de ahora, para actualizar la versión basta con modificar `package.json`.**
+
 ## [2.0.3] - 2026-03-27
 ### Changed
 - **Detección de dispositivo en `Controls.tsx`**: El botón "Conectar Móvil" del header y la sección "Vincular Celular" del tab Importar ahora se ocultan automáticamente cuando la app se abre en un dispositivo móvil (viewport < 768px). El móvil no puede ser "host" de una sala — ese rol corresponde a la PC. Se usa un hook reactivo que escucha `resize` para manejar también rotaciones de pantalla.

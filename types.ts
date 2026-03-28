@@ -1,5 +1,8 @@
 
-export const APP_VERSION = '2.0.0';
+// Versión inyectada automáticamente desde package.json por Vite en tiempo de build.
+// Para actualizar la versión, modificar únicamente el campo "version" en package.json.
+declare const __APP_VERSION__: string;
+export const APP_VERSION: string = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '0.0.0';
 
 
 export interface PrintHistoryItem {
