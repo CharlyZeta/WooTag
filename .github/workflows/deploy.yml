@@ -29,29 +29,16 @@ jobs:
       - name: 🧪 Run tests (Vitest)
         run: npm run test
 
-      - name: 🔍 Verificar variables de entorno (diagnóstico)
-        env:
-          VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
-          VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
+      - name: 🔍 Verificar secrets disponibles (diagnóstico)
         run: |
-          echo "API_KEY primeros 10 chars: ${VITE_FIREBASE_API_KEY:0:10}"
-          echo "API_KEY longitud total:    ${#VITE_FIREBASE_API_KEY}"
-          echo "PROJECT_ID:                $VITE_FIREBASE_PROJECT_ID"
-          if [[ "$VITE_FIREBASE_API_KEY" == \"* ]] || [[ "$VITE_FIREBASE_API_KEY" == *\" ]]; then
-            echo "⚠️ ERROR: La API Key tiene comillas incluidas en el secret de GitHub!"
-            exit 1
-          fi
-          echo "✅ API Key parece válida (sin comillas detectadas)"
+          echo "FTP_SERVER definido: ${{ secrets.FTP_SERVER != '' }}"
+          echo "VITE_FIREBASE_API_KEY definido: ${{ secrets.VITE_FIREBASE_API_KEY != '' }}"
+          echo "ENV_FILE definido: ${{ secrets.ENV_FILE != '' }}"
+
+      - name: 📝 Crear archivo .env desde secret
+        run: echo "${{ secrets.ENV_FILE }}" > .env
 
       - name: 🛠️ Build project (Vite)
-        env:
-          VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
-          VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
-          VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
-          VITE_FIREBASE_STORAGE_BUCKET: ${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}
-          VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
-          VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
-          VITE_FIREBASE_MEASUREMENTID: ${{ secrets.VITE_FIREBASE_MEASUREMENTID }}
         run: npm run build
 
       - name: 🚀 Deploy via FTP

@@ -2,7 +2,6 @@
 
 ## [2.0.5] - 2026-03-28
 ### Improved
-
 - **Mensajes de error en `CloudLoginModal.tsx`**: Se reemplazó el mensaje genérico "Ocurrió un error. Verificá tus datos." por mensajes específicos para cada código de error de Firebase: `auth/operation-not-allowed` (proveedor deshabilitado), `auth/admin-restricted-operation` (registro no habilitado), `auth/network-request-failed` (sin conexión), `auth/too-many-requests`, `auth/user-not-found`, `auth/wrong-password`, y un fallback que muestra el código de error técnico en lugar de ocultarlo. Adicionalmente se loguea el error completo en consola para facilitar el debug.
 
 ## [2.0.4] - 2026-03-28
