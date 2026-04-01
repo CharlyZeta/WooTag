@@ -6,8 +6,20 @@ import { ConnectionModal } from './components/ConnectionModal';
 import { optimizeDescription } from './services/geminiService';
 import { encrypt, decrypt } from './utils/security';
 import { useAuth } from './contexts/AuthContext';
-import { loadCloudProfile, updateCloudProfile } from './services/cloudProfiles';
+import { loadCloudProfile, updateCloudProfile, subscribeToCloudProfile } from './services/cloudProfiles';
 import { subscribeToRoom, syncRoomProducts, closeRoom } from './services/realtimeSession';
+
+// Identificador único por dispositivo/navegador — persiste en localStorage
+const DEVICE_ID_KEY = 'wootag_device_id';
+const getDeviceId = (): string => {
+  let id = localStorage.getItem(DEVICE_ID_KEY);
+  if (!id) {
+    id = Math.random().toString(36).substring(2) + Date.now().toString(36);
+    localStorage.setItem(DEVICE_ID_KEY, id);
+  }
+  return id;
+};
+const MY_DEVICE_ID = getDeviceId();
 
 const SESSION_KEY = 'wootag_session_v2';
 const CONFIG_KEY = 'wootag_config_v2';
@@ -48,6 +60,10 @@ export default function App() {
   const [activeRoomId, setActiveRoomId] = useState<string | null>(null);
   const activeRoomIdRef = useRef<string | null>(null);
   activeRoomIdRef.current = activeRoomId;
+
+  // Flag anti-loop: cuando actualizamos products DESDE Firestore, evitamos
+  // escribir de vuelta en Firestore en ese mismo ciclo de React.
+  const skipNextCloudWrite = useRef(false);
 
   // Print history
   const [printLog, setPrintLog] = useState<PrintRecord[]>(() => {
@@ -124,8 +140,26 @@ export default function App() {
         if (cloudData.tagConfig) setConfig(cloudData.tagConfig);
         if (cloudData.designProfiles.length > 0) setProfiles(cloudData.designProfiles);
         if (cloudData.wooSession) setSession(cloudData.wooSession);
+        // Cargar productos iniciales desde la nube si los hay
+        if (cloudData.products && cloudData.products.length > 0) {
+          skipNextCloudWrite.current = true;
+          setProducts(cloudData.products);
+        }
       }).catch(err => console.error("Error loading cloud profile", err));
     }
+  }, [currentUser]);
+
+  // Suscripción en tiempo real a productos de la nube (sync entre dispositivos)
+  useEffect(() => {
+    if (!currentUser) return;
+    const unsubscribe = subscribeToCloudProfile(currentUser.uid, (cloudData) => {
+      // Solo sincronizar si el update lo hizo otro dispositivo
+      if (cloudData.lastProductsDevice !== MY_DEVICE_ID && Array.isArray(cloudData.products)) {
+        skipNextCloudWrite.current = true;
+        setProducts(cloudData.products);
+      }
+    });
+    return unsubscribe;
   }, [currentUser]);
 
   // Room subscription
@@ -153,6 +187,23 @@ export default function App() {
     localStorage.setItem(PROFILES_KEY, JSON.stringify(profiles));
     if (currentUser) updateCloudProfile(currentUser.uid, { designProfiles: profiles });
   }, [profiles, currentUser]);
+
+  // Sync productos a la nube con debounce (solo si logueado y fuera de sala QR)
+  useEffect(() => {
+    if (!currentUser || activeRoomId) return;
+    // Si el update vino de la nube, salteamos la escritura de vuelta
+    if (skipNextCloudWrite.current) {
+      skipNextCloudWrite.current = false;
+      return;
+    }
+    const timer = setTimeout(() => {
+      updateCloudProfile(currentUser.uid, {
+        products,
+        lastProductsDevice: MY_DEVICE_ID,
+      }).catch(console.error);
+    }, 1500); // Debounce de 1.5s para no saturar Firestore
+    return () => clearTimeout(timer);
+  }, [products, currentUser, activeRoomId]);
 
   // Auth Handlers
   const handleConnect = (wooConfig: WooConfig, user: WpUser, remember: boolean) => {

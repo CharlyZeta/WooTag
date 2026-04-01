@@ -44,12 +44,16 @@ const MOCK_PROFILE: UserCloudProfile = {
   wooSession: null,
   designProfiles: [{ id: '1', name: 'Perfil Test', config: {} as any }],
   tagConfig: null,
+  products: [],
+  lastProductsDevice: '',
 };
 
 const DEFAULT_PROFILE: UserCloudProfile = {
   wooSession: null,
   designProfiles: [],
   tagConfig: null,
+  products: [],
+  lastProductsDevice: '',
 };
 
 // ─── Setup ────────────────────────────────────────────────────────────────────

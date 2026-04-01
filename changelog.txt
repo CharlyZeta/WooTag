@@ -1,5 +1,17 @@
 # Changelog - WooTag AI Generator
 
+## [2.0.7] - 2026-04-01
+### Fixed
+- **Sincronización en la nube fallaba silenciosamente** (`services/cloudProfiles.ts`): Al actualizar los productos en tiempo real, ciertos campos que venían nulos o vacíos desde la API de WooCommerce (como `salePrice`, `image`, o `category`) se representaban como `undefined` en el objeto `Product`. El SDK de Firebase rechaza terminantemente cualquier escritura que contenga `undefined`, lo que provocaba que la aplicación móvil cancelara silenciosamente la sincronización hacia la nube. Se añadió una "limpieza segura" transparente antes de llamar a Firestore, eliminando los campos `undefined` para que los productos se inserten correctamente y aparezcan al instante en la PC.
+
+## [2.0.6] - 2026-03-28
+### Added
+- **Sincronización de productos en tiempo real entre dispositivos** (`App.tsx`, `cloudProfiles.ts`): Los productos de la lista de impresión ahora se sincronizan automáticamente en tiempo real entre PC y móvil cuando ambos están logueados con la misma cuenta de Firebase. Ya no es necesario el modo Companion (QR) para ver en la PC los productos escaneados desde el móvil.
+  - El sistema usa `onSnapshot` de Firestore sobre el documento del usuario, reaccionando a cambios en menos de 1 segundo.
+  - Se implementó un mecanismo anti-loop con `lastProductsDevice` (ID único por dispositivo/navegador generado una vez y persistido en `localStorage`) y un ref `skipNextCloudWrite` para evitar que el dispositivo que recibe una actualización la vuelva a escribir.
+  - Los productos se escriben a Firestore con un debounce de 1.5 segundos para no saturar la base de datos con cada escaneo.
+  - El sync de productos vía sala (modo Companion/QR) sigue teniendo prioridad cuando `activeRoomId` está activo.
+
 ## [2.0.5] - 2026-03-28
 ### Improved
 - **Mensajes de error en `CloudLoginModal.tsx`**: Se reemplazó el mensaje genérico "Ocurrió un error. Verificá tus datos." por mensajes específicos para cada código de error de Firebase: `auth/operation-not-allowed` (proveedor deshabilitado), `auth/admin-restricted-operation` (registro no habilitado), `auth/network-request-failed` (sin conexión), `auth/too-many-requests`, `auth/user-not-found`, `auth/wrong-password`, y un fallback que muestra el código de error técnico en lugar de ocultarlo. Adicionalmente se loguea el error completo en consola para facilitar el debug.
