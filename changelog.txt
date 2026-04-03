@@ -1,5 +1,9 @@
 # Changelog - WooTag AI Generator
 
+## [2.0.8] - 2026-04-01
+### Added
+- **Persistencia de credenciales Woo en la cuenta Cloud** (`App.tsx`): Al iniciar sesión con Firebase en un dispositivo nuevo (ej: el teléfono móvil), la aplicación ahora restaura automáticamente la sesión cifrada de WooCommerce almacenada en el perfil de la nube y la archiva localmente. Esto garantiza que el explorador de la aplicación tenga inmediatamente la conexión lista para escanear y buscar sin obligar al usuario a recargar la página o volver a tipear las contraseñas. Además, si el usuario tiene una sesión local conectada y sube a una cuenta en la nube recién creada, se migran automáticamente esas credenciales al perfil Cloud de forma bidireccional.
+
 ## [2.0.7] - 2026-04-01
 ### Fixed
 - **Sincronización en la nube fallaba silenciosamente** (`services/cloudProfiles.ts`): Al actualizar los productos en tiempo real, ciertos campos que venían nulos o vacíos desde la API de WooCommerce (como `salePrice`, `image`, o `category`) se representaban como `undefined` en el objeto `Product`. El SDK de Firebase rechaza terminantemente cualquier escritura que contenga `undefined`, lo que provocaba que la aplicación móvil cancelara silenciosamente la sincronización hacia la nube. Se añadió una "limpieza segura" transparente antes de llamar a Firestore, eliminando los campos `undefined` para que los productos se inserten correctamente y aparezcan al instante en la PC.

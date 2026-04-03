@@ -139,7 +139,32 @@ export default function App() {
       loadCloudProfile(currentUser.uid).then(cloudData => {
         if (cloudData.tagConfig) setConfig(cloudData.tagConfig);
         if (cloudData.designProfiles.length > 0) setProfiles(cloudData.designProfiles);
-        if (cloudData.wooSession) setSession(cloudData.wooSession);
+        
+        // Sincronización bidireccional de credenciales (wooSession)
+        if (cloudData.wooSession) {
+          // La nube tiene credenciales -> Las adoptamos y las guardamos localmente
+          setSession(cloudData.wooSession);
+          try {
+            const encrypted = encrypt(cloudData.wooSession);
+            localStorage.setItem(SESSION_KEY, encrypted);
+          } catch (e) {
+            console.error('Error encrypting session from cloud', e);
+          }
+        } else {
+          // La nube NO tiene credenciales, pero el dispositivo LOCAL sí -> Las subimos
+          try {
+            const savedEncrypted = localStorage.getItem(SESSION_KEY);
+            if (savedEncrypted) {
+              const parsed = decrypt(savedEncrypted) as AuthSession;
+              if (parsed && Date.now() < parsed.expiresAt) {
+                updateCloudProfile(currentUser.uid, { wooSession: parsed }).catch(console.error);
+              }
+            }
+          } catch (e) {
+            console.error('Error uploading local session to cloud', e);
+          }
+        }
+
         // Cargar productos iniciales desde la nube si los hay
         if (cloudData.products && cloudData.products.length > 0) {
           skipNextCloudWrite.current = true;
