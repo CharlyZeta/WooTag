@@ -34,8 +34,8 @@ Desarrollado con la asistencia de **Antigravity** (Google DeepMind).
 ### ☁️ Cuenta en la Nube (Firebase)
 
 - **Autenticación**: Login, registro y recuperación de contraseña con Firebase Authentication.
-- **Sincronización**: Los perfiles de diseño, la configuración de etiqueta y las credenciales de WooCommerce se sincronizan automáticamente en Firestore.
-- **Multi-dispositivo**: Los datos se restauran automáticamente al iniciar sesión en cualquier navegador.
+- **Sincronización Bidireccional**: Los perfiles de diseño, la configuración de etiqueta, los productos seleccionados y las credenciales de WooCommerce se sincronizan automáticamente en tiempo real (Firestore).
+- **Multi-dispositivo**: Al iniciar sesión en tu teléfono, tus credenciales del PC se restauran instantáneamente de forma segura, permitiendo usar el escáner móvil de inmediato sin volver a ingresar claves. Todo producto escaneado aparece mágicamente en tu computadora principal.
 - Opcional — la app es completamente funcional sin cuenta.
 
 ### 📱 Modo Companion (Emparejamiento por QR)
@@ -60,6 +60,7 @@ Desarrollado con la asistencia de **Antigravity** (Google DeepMind).
 
 | Método | Descripción |
 |--------|-------------|
+| **Escáner QR Nativo** | Abre la cámara del dispositivo móvil para escanear el SKU de la etiqueta física y recuperar el producto desde WooCommerce automáticamente. |
 | **Planilla XLS** | Descarga la plantilla oficial `.xlsx`, completá los datos y subila con drag & drop. Sin necesidad de conexión a la tienda. |
 | **Por SKU** | Búsqueda exacta por código. Filtra solo productos publicados (`status=publish`). |
 | **Por nombre** | Autocompletado en tiempo real (debounce 400ms) con imagen, nombre y SKU en dropdown. |
@@ -267,4 +268,3 @@ Backend Developer | Java & Spring Boot
 ## 🤝 Créditos
 
 Desarrollado para potenciar la gestión de tiendas físicas WooCommerce.  
-*Powered by **Antigravity** (Google DeepMind)*
