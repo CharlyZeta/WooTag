@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
-import { X, Smartphone, Loader2 } from 'lucide-react';
-import { createRoom, closeRoom } from '../services/realtimeSession';
+import { X, Smartphone, Loader2, CheckCircle2 } from 'lucide-react';
+import { createRoom, closeRoom, subscribeToRoom } from '../services/realtimeSession';
 import { AuthSession } from '../types';
 
 interface HostRoomModalProps {
@@ -14,6 +14,7 @@ interface HostRoomModalProps {
 
 export const HostRoomModal: React.FC<HostRoomModalProps> = ({ isOpen, onClose, wooSession, hostUid, onRoomCreated }) => {
   const [roomId, setLocalRoomId] = useState<string | null>(null);
+  const [isGuestConnected, setIsGuestConnected] = useState(false);
 
   useEffect(() => {
     if (isOpen && !roomId) {
@@ -24,11 +25,25 @@ export const HostRoomModal: React.FC<HostRoomModalProps> = ({ isOpen, onClose, w
     }
   }, [isOpen, roomId, hostUid, wooSession, onRoomCreated]);
 
+  // Suscribirse a la sala para detectar cuando el invitado se une
+  useEffect(() => {
+    if (!roomId) return;
+    const unsub = subscribeToRoom(roomId, (room) => {
+      if (room?.guestJoined && !isGuestConnected) {
+        setIsGuestConnected(true);
+        // Opcional: Cerrar automáticamente después de unos segundos
+        setTimeout(() => onClose(), 3000);
+      }
+    });
+    return unsub;
+  }, [roomId, isGuestConnected, onClose]);
+
   const handleClose = () => {
     if (roomId) {
       closeRoom(roomId);
     }
     setLocalRoomId(null);
+    setIsGuestConnected(false);
     onClose();
   };
 
@@ -41,13 +56,15 @@ export const HostRoomModal: React.FC<HostRoomModalProps> = ({ isOpen, onClose, w
       <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden animate-in zoom-in-95">
         <div className="p-6 pb-4 border-b border-slate-100 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="bg-indigo-100 p-2.5 rounded-xl text-indigo-600">
-              <Smartphone className="w-5 h-5" />
+            <div className={`p-2.5 rounded-xl transition-colors ${isGuestConnected ? 'bg-emerald-100 text-emerald-600' : 'bg-indigo-100 text-indigo-600'}`}>
+              {isGuestConnected ? <CheckCircle2 className="w-5 h-5" /> : <Smartphone className="w-5 h-5" />}
             </div>
             <div>
-              <h2 className="text-lg font-black text-slate-800 leading-tight">Emparejar Celular</h2>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-emerald-500">
-                Sala Activa
+              <h2 className="text-lg font-black text-slate-800 leading-tight">
+                {isGuestConnected ? '¡Conectado!' : 'Emparejar Celular'}
+              </h2>
+              <p className={`text-[10px] font-bold uppercase tracking-widest ${isGuestConnected ? 'text-emerald-500' : 'text-slate-400'}`}>
+                {isGuestConnected ? 'Dispositivo vinculado' : 'Sala Activa'}
               </p>
             </div>
           </div>
@@ -61,6 +78,20 @@ export const HostRoomModal: React.FC<HostRoomModalProps> = ({ isOpen, onClose, w
             <div className="py-12 flex flex-col items-center">
               <Loader2 className="w-8 h-8 text-indigo-500 animate-spin mb-4" />
               <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Generando sala segura...</p>
+            </div>
+          ) : isGuestConnected ? (
+            <div className="py-8 flex flex-col items-center text-center animate-in zoom-in">
+              <div className="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center mb-4">
+                <CheckCircle2 className="w-10 h-10 text-emerald-500" />
+              </div>
+              <p className="text-sm font-black text-slate-800 mb-1">Celular vinculado con éxito</p>
+              <p className="text-xs text-slate-500 font-bold mb-6">Ya podés empezar a escanear productos</p>
+              <button
+                onClick={onClose}
+                className="w-full py-3 bg-slate-900 text-white rounded-xl font-black text-xs uppercase tracking-widest"
+              >
+                Cerrar y Empezar
+              </button>
             </div>
           ) : (
             <>

@@ -8,6 +8,7 @@ export interface RoomSession {
   products: Product[]; // Los productos sincronizados en la lista
   hostUid: string; // Quien creó la sala
   createdAt: number;
+  guestJoined?: boolean; // Feedback para que la PC sepa que el móvil se conectó
 }
 
 // 1. Host (PC): Crea una sala y empieza a escuchar cambios
@@ -67,7 +68,10 @@ export const joinRoom = async (roomId: string): Promise<RoomSession | null> => {
   const roomRef = doc(db, 'rooms', roomId);
   const snap = await getDoc(roomRef);
   if (snap.exists()) {
-    return snap.data() as RoomSession;
+    const data = snap.data() as RoomSession;
+    // Notificar al host que nos unimos
+    await updateDoc(roomRef, { guestJoined: true });
+    return data;
   }
   return null;
 };

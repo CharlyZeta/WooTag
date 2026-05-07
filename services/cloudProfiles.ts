@@ -1,14 +1,34 @@
-import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
+import { doc, getDoc, setDoc, onSnapshot, updateDoc, arrayUnion } from 'firebase/firestore';
 import { db } from './firebase';
-import { DesignProfile, AuthSession, TagConfig, Product } from '../types';
+import { DesignProfile, AuthSession, TagConfig, Product, WooSite } from '../types';
 
 export interface UserCloudProfile {
   wooSession: AuthSession | null;
+  wooSites?: WooSite[];
+  activeSiteId?: string | null;
   designProfiles: DesignProfile[];
   tagConfig: TagConfig | null;
   products: Product[];
   lastProductsDevice: string; // Device ID of last writer — prevents sync loops
 }
+
+/**
+ * Agrega un producto de forma atómica a la lista del usuario en la nube.
+ * Evita condiciones de carrera donde un dispositivo pisa la lista de otro.
+ */
+export const addProductToCloudProfile = async (uid: string, product: Product, deviceId: string) => {
+  const userRef = doc(db, 'users', uid);
+  
+  // Limpieza de campos undefined para Firestore
+  const cleanProduct = JSON.parse(JSON.stringify(product), (_, v) => v === undefined ? null : v);
+  // Re-id para garantizar unicidad absoluta en arrayUnion si el mismo SKU se escanea 2 veces
+  const uniqueProduct = { ...cleanProduct, id: `${cleanProduct.id}-${Date.now()}` };
+
+  await updateDoc(userRef, {
+    products: arrayUnion(uniqueProduct),
+    lastProductsDevice: deviceId
+  });
+};
 
 const DEFAULT_PROFILE: UserCloudProfile = {
   wooSession: null,

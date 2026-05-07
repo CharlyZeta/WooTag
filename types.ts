@@ -104,10 +104,20 @@ export interface WpUser {
   roles: string[];
 }
 
+export interface WooSite {
+  id: string;
+  name: string;
+  url: string;
+  consumerKey: string;
+  consumerSecret: string;
+  lastUsed: number;
+}
+
 export interface AuthSession {
   user: WpUser;
   config: WooConfig;
   expiresAt: number;
+  siteId?: string; // ID del sitio vinculado en el perfil cloud
 }
 
 export interface WooCategory {

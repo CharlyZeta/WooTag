@@ -6,7 +6,7 @@ import { ConnectionModal } from './components/ConnectionModal';
 import { optimizeDescription } from './services/geminiService';
 import { encrypt, decrypt } from './utils/security';
 import { useAuth } from './contexts/AuthContext';
-import { loadCloudProfile, updateCloudProfile, subscribeToCloudProfile } from './services/cloudProfiles';
+import { loadCloudProfile, updateCloudProfile, subscribeToCloudProfile, addProductToCloudProfile } from './services/cloudProfiles';
 import { subscribeToRoom, syncRoomProducts, closeRoom } from './services/realtimeSession';
 
 // Identificador único por dispositivo/navegador — persiste en localStorage
@@ -25,10 +25,13 @@ const SESSION_KEY = 'wootag_session_v2';
 const CONFIG_KEY = 'wootag_config_v2';
 const PROFILES_KEY = 'wootag_profiles';
 const PRINT_LOG_KEY = 'wootag_print_log';
+const ACTIVE_SITE_KEY = 'wootag_active_site';
 const SESSION_DURATION = 24 * 60 * 60 * 1000;
 
 export default function App() {
   const [session, setSession] = useState<AuthSession | null>(null);
+  const [wooSites, setWooSites] = useState<WooSite[]>([]);
+  const [activeSiteId, setActiveSiteId] = useState<string | null>(() => localStorage.getItem(ACTIVE_SITE_KEY));
   const [loadingSession, setLoadingSession] = useState(true);
   const [isConnectionModalOpen, setIsConnectionModalOpen] = useState(false);
   const { currentUser } = useAuth();
@@ -140,30 +143,18 @@ export default function App() {
       loadCloudProfile(currentUser.uid).then(cloudData => {
         if (cloudData.tagConfig) setConfig(cloudData.tagConfig);
         if (cloudData.designProfiles.length > 0) setProfiles(cloudData.designProfiles);
+        if (cloudData.wooSites) setWooSites(cloudData.wooSites);
         
-        // Sincronización bidireccional de credenciales (wooSession)
-        if (cloudData.wooSession) {
-          // La nube tiene credenciales -> Las adoptamos y las guardamos localmente
+        // Sincronización de sesión activa
+        const siteToLoad = activeSiteId 
+          ? cloudData.wooSites?.find(s => s.id === activeSiteId) 
+          : cloudData.wooSites?.[0];
+
+        if (siteToLoad) {
+          handleConnect(siteToLoad, { id: 0, name: 'Usuario Cloud', slug: '', roles: [] }, false, siteToLoad.id);
+        } else if (cloudData.wooSession) {
+          // Fallback para retrocompatibilidad
           setSession(cloudData.wooSession);
-          try {
-            const encrypted = encrypt(cloudData.wooSession);
-            localStorage.setItem(SESSION_KEY, encrypted);
-          } catch (e) {
-            console.error('Error encrypting session from cloud', e);
-          }
-        } else {
-          // La nube NO tiene credenciales, pero el dispositivo LOCAL sí -> Las subimos
-          try {
-            const savedEncrypted = localStorage.getItem(SESSION_KEY);
-            if (savedEncrypted) {
-              const parsed = decrypt(savedEncrypted) as AuthSession;
-              if (parsed && Date.now() < parsed.expiresAt) {
-                updateCloudProfile(currentUser.uid, { wooSession: parsed }).catch(console.error);
-              }
-            }
-          } catch (e) {
-            console.error('Error uploading local session to cloud', e);
-          }
         }
 
         // Cargar productos iniciales desde la nube si los hay
@@ -175,15 +166,17 @@ export default function App() {
     }
   }, [currentUser]);
 
-  // Suscripción en tiempo real a productos de la nube (sync entre dispositivos)
+  // Suscripción en tiempo real a perfil (sync entre dispositivos)
   useEffect(() => {
     if (!currentUser) return;
     const unsubscribe = subscribeToCloudProfile(currentUser.uid, (cloudData) => {
-      // Solo sincronizar si el update lo hizo otro dispositivo
+      // Sincronizar productos si el update lo hizo otro dispositivo
       if (cloudData.lastProductsDevice !== MY_DEVICE_ID && Array.isArray(cloudData.products)) {
         skipNextCloudWrite.current = true;
         setProducts(cloudData.products);
       }
+      // Sincronizar sitios si cambiaron en otro dispositivo
+      if (cloudData.wooSites) setWooSites(cloudData.wooSites);
     });
     return unsubscribe;
   }, [currentUser]);
@@ -215,12 +208,21 @@ export default function App() {
     if (currentUser) updateCloudProfile(currentUser.uid, { designProfiles: profiles });
   }, [profiles, currentUser]);
 
-  // Sync productos a la nube con debounce
+  // Detección de dispositivo para lógica de autoridad
+  const [isMobileDevice] = useState(() => /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768);
+
+  // Sync productos a la nube con debounce (Authority model)
   useEffect(() => {
-    // Deshabilitar sync SOLO si somos Guest en una sala. El Host DEBE seguir sincronizando.
+    // 1. Si no hay usuario, no hay sync.
+    // 2. Si somos GUEST en una sala, NO sobrescribimos la nube (el Host lo hará).
+    // 3. Si somos MOBILE, evitamos sobrescribir el estado global para no pisar cambios del PC, 
+    //    EXCEPTO si no hay sala y somos el único dispositivo (se maneja con lastProductsDevice).
     if (!currentUser || (activeRoomId && roomRole === 'guest')) return;
     
-    // Si el update vino de la nube, salteamos la escritura de vuelta
+    // Si somos móvil fuera de sala, preferimos sync atómico en handleAddProduct.
+    // Solo permitimos sobrescritura completa desde PC para permitir "Limpiar lista" o reordenar.
+    if (isMobileDevice && !activeRoomId) return;
+
     if (skipNextCloudWrite.current) {
       skipNextCloudWrite.current = false;
       return;
@@ -230,20 +232,45 @@ export default function App() {
         products,
         lastProductsDevice: MY_DEVICE_ID,
       }).catch(console.error);
-    }, 1500); // Debounce de 1.5s para no saturar Firestore
+    }, 2000); 
     return () => clearTimeout(timer);
-  }, [products, currentUser, activeRoomId, roomRole]);
+  }, [products, currentUser, activeRoomId, roomRole, isMobileDevice]);
 
   // Auth Handlers
-  const handleConnect = (wooConfig: WooConfig, user: WpUser, remember: boolean) => {
+  const handleConnect = (wooConfig: WooConfig, user: WpUser, remember: boolean, siteId?: string) => {
     const newSession: AuthSession = {
       user,
       config: wooConfig,
-      expiresAt: Date.now() + SESSION_DURATION
+      expiresAt: Date.now() + SESSION_DURATION,
+      siteId
     };
     setSession(newSession);
 
     if (currentUser) {
+      const siteData: WooSite = {
+        id: siteId || Math.random().toString(36).substring(2, 9),
+        name: new URL(wooConfig.url).hostname,
+        url: wooConfig.url,
+        consumerKey: wooConfig.consumerKey,
+        consumerSecret: wooConfig.consumerSecret,
+        lastUsed: Date.now()
+      };
+
+      // Si es un sitio nuevo, lo agregamos a la lista
+      if (!siteId) {
+        setWooSites(prev => {
+          const updated = [siteData, ...prev.filter(s => s.url !== siteData.url)];
+          updateCloudProfile(currentUser.uid, { wooSites: updated, activeSiteId: siteData.id });
+          return updated;
+        });
+        setActiveSiteId(siteData.id);
+        localStorage.setItem(ACTIVE_SITE_KEY, siteData.id);
+      } else {
+        setActiveSiteId(siteId);
+        localStorage.setItem(ACTIVE_SITE_KEY, siteId);
+        updateCloudProfile(currentUser.uid, { activeSiteId: siteId });
+      }
+      
       updateCloudProfile(currentUser.uid, { wooSession: newSession });
     }
 
@@ -252,6 +279,21 @@ export default function App() {
       localStorage.setItem(SESSION_KEY, encrypted);
     } else {
       localStorage.removeItem(SESSION_KEY);
+    }
+  };
+
+  const handleSelectSite = (site: WooSite) => {
+    handleConnect(site, { id: 0, name: 'Usuario Cloud', slug: '', roles: [] }, true, site.id);
+  };
+
+  const handleDeleteSite = (siteId: string) => {
+    const updated = wooSites.filter(s => s.id !== siteId);
+    setWooSites(updated);
+    if (currentUser) updateCloudProfile(currentUser.uid, { wooSites: updated });
+    if (activeSiteId === siteId) {
+      setSession(null);
+      setActiveSiteId(null);
+      localStorage.removeItem(ACTIVE_SITE_KEY);
     }
   };
 
@@ -287,12 +329,34 @@ export default function App() {
   const wrappedSetProducts: React.Dispatch<React.SetStateAction<Product[]>> = useCallback((val) => {
     setProducts((prev) => {
       const updated = typeof val === 'function' ? val(prev) : val;
+      
+      // Si somos Guest en sala, sync room
+      if (activeRoomIdRef.current && roomRole === 'guest') {
+        // En addUniqueProduct ya lo manejamos con addProductToRoom
+        return updated;
+      }
+      
+      // Si somos Host en sala, sync room completo
       if (activeRoomIdRef.current && roomRole === 'host') {
         syncRoomProducts(activeRoomIdRef.current, updated).catch(console.error);
       }
+
+      // Sync atómico a la nube si un producto se agregó individualmente y somos móvil (o guest)
+      // Nota: addUniqueProduct ahora llamará a addProductToCloudProfile directamente
+      
       return updated;
     });
   }, [roomRole]);
+
+  const handleAddProduct = useCallback((p: Product) => {
+    // Si estamos logueados, usamos sync atómico para evitar pisar datos de otros dispositivos
+    if (currentUser) {
+      addProductToCloudProfile(currentUser.uid, p, MY_DEVICE_ID).catch(console.error);
+    }
+    
+    // Actualización local inmediata para feedback
+    setProducts(prev => [...prev, { ...p, id: `${p.id}-${Date.now()}` }]);
+  }, [currentUser]);
 
   const handleSaveProfile = (name: string) => {
     const newProfile: DesignProfile = {
@@ -340,6 +404,10 @@ export default function App() {
         onClose={() => setIsConnectionModalOpen(false)}
         onConnect={handleConnect}
         currentConfig={session?.config ?? null}
+        wooSites={wooSites}
+        activeSiteId={activeSiteId}
+        onSelectSite={handleSelectSite}
+        onDeleteSite={handleDeleteSite}
       />
 
       {/* Controles: Ocultos en impresión */}
@@ -349,6 +417,7 @@ export default function App() {
           setConfig={setConfig}
           products={products}
           setProducts={wrappedSetProducts}
+          onAddProduct={handleAddProduct}
           wooConfig={session?.config || null} // Pass null if guest
           user={session?.user || null}       // Pass null if guest
           onOptimize={handleOptimizeDescription}

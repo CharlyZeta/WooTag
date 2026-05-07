@@ -1,5 +1,27 @@
 # Changelog - WooTag AI Generator
 
+## [2.1.1] - 2026-05-07
+### Improved
+- **Modelo de Autoridad en Sincronización**: Refinamiento de la lógica de guardado en la nube para evitar que los dispositivos móviles sobrescriban accidentalmente el estado global gestionado por la PC. El móvil ahora utiliza preferentemente sincronización atómica (adición de productos), mientras que la PC mantiene la autoridad para realizar limpiezas de lista o reordenamientos.
+- **Detección Automática de Dispositivo**: Mejorada la detección de móviles para aplicar políticas de sincronización diferenciadas.
+
+## [2.1.0] - 2026-05-07
+### Added
+- **Sistema Multi-Sitio WooCommerce**: Ahora puedes guardar múltiples tiendas en tu perfil de la nube. El `ConnectionModal` ha sido rediseñado para permitir listar, seleccionar, eliminar y agregar nuevas tiendas fácilmente sin reingresar credenciales constantemente.
+- **Sincronización Atómica (Cloud Sync)**: Implementación de `arrayUnion` para la adición de productos en la nube. Esto resuelve definitivamente los conflictos de sincronización cuando múltiples dispositivos (móvil y PC) están logueados en la misma cuenta y escanean simultáneamente.
+- **Feedback de Emparejamiento QR**: El modal de emparejamiento en la PC ahora muestra un estado de "¡Conectado!" y feedback visual instantáneo cuando el celular escanea el código QR, eliminando la incertidumbre del usuario.
+- **Sesión Persistente Progresiva**: El sitio activo se recuerda localmente para reconexiones instantáneas al abrir la app.
+
+### Changed
+- Refactorización de `App.tsx` para orquestar el cambio de sitios activos y la carga de perfiles cloud expandidos.
+- Optimización de `Controls.tsx` para integrar el nuevo flujo de adición de productos atómica.
+
+## [2.0.9] - 2026-05-07
+### Added
+- **Persistencia en Cloud Profile durante Companion Mode** (`App.tsx`): El Host (PC) ahora mantiene activa la sincronización con su perfil en la nube incluso mientras está en una sesión de sala activa. Esto garantiza que todos los productos escaneados desde dispositivos móviles se guarden permanentemente en la cuenta del usuario sin esperar al cierre de la sala.
+- **Sincronización Atómica de Sala** (`Controls.tsx`, `realtimeSession.ts`): Se implementó el uso de `arrayUnion` para los dispositivos invitados (Guest). Esto permite que múltiples celulares agreguen productos simultáneamente sin riesgo de condiciones de carrera o de sobrescribir los cambios manuales realizados por el Host en la lista maestra.
+- **Gestión de Roles de Sala** (`App.tsx`): Introducción del estado `roomRole` para diferenciar el comportamiento de la aplicación según sea Host o Guest, optimizando la lógica de escritura en Firestore y la integridad de los datos.
+
 ## [2.0.8] - 2026-04-01
 ### Added
 - **Persistencia de credenciales Woo en la cuenta Cloud** (`App.tsx`): Al iniciar sesión con Firebase en un dispositivo nuevo (ej: el teléfono móvil), la aplicación ahora restaura automáticamente la sesión cifrada de WooCommerce almacenada en el perfil de la nube y la archiva localmente. Esto garantiza que el explorador de la aplicación tenga inmediatamente la conexión lista para escanear y buscar sin obligar al usuario a recargar la página o volver a tipear las contraseñas. Además, si el usuario tiene una sesión local conectada y sube a una cuenta en la nube recién creada, se migran automáticamente esas credenciales al perfil Cloud de forma bidireccional.

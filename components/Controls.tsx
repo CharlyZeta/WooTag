@@ -20,6 +20,7 @@ interface ControlsProps {
   setConfig: (config: TagConfig) => void;
   products: Product[];
   setProducts: React.Dispatch<React.SetStateAction<Product[]>>;
+  onAddProduct: (p: Product) => void;
   wooConfig: WooConfig | null;
   user: WpUser | null;
   onOptimize: (productId: string) => void;
@@ -45,6 +46,7 @@ export const Controls: React.FC<ControlsProps> = ({
   setConfig,
   products,
   setProducts,
+  onAddProduct,
   wooConfig,
   user,
   onOptimize,
@@ -227,9 +229,13 @@ export const Controls: React.FC<ControlsProps> = ({
     }
 
     if (activeRoomId && roomRole === 'guest') {
-      // Si somos Guest, usamos la operación atómica arrayUnion para evitar pisar cambios del Host
+      // Si somos Guest en sala, usamos la operación atómica arrayUnion específica de salas
       addProductToRoom(activeRoomId, p).catch(console.error);
+    } else if (currentUser && !activeRoomId) {
+      // Si estamos logueados y NO hay sala, usamos sync atómico al perfil cloud
+      onAddProduct(p);
     } else {
+      // Modo offline o Host con sala: actualización local clásica
       const uniqueProduct = { ...p, id: `${p.id}-${Date.now()}-${Math.random()}` };
       setProducts(prev => [...prev, uniqueProduct]);
     }
