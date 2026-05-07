@@ -10,6 +10,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { HostRoomModal } from './HostRoomModal';
 import { MobileJoinScanner } from './MobileJoinScanner';
 import { AuthSession } from '../types';
+import { addProductToRoom } from '../services/realtimeSession';
 import {
   Cloud, Settings, Layout, Type, Palette, Printer, Plus, Trash2, Sparkles, AlertCircle, LogOut, Image as ImageIcon, Layers, Calculator, Eye, Save, FolderOpen, Download, MessageSquare, Globe, Search, Eraser, LayoutGrid, ChevronRight, Tags, BookOpen, History, Clock, Package, FileSpreadsheet, Upload, AlertTriangle, CheckCircle2, PackagePlus, ScanLine, Smartphone
 } from 'lucide-react';
@@ -34,6 +35,7 @@ interface ControlsProps {
   printLog: PrintRecord[];
   onClearPrintLog: () => void;
   activeRoomId: string | null;
+  roomRole: 'host' | 'guest' | null;
   onRoomCreated: (id: string) => void;
   onRoomJoined: (id: string, wooConfig: AuthSession) => void;
 }
@@ -58,6 +60,7 @@ export const Controls: React.FC<ControlsProps> = ({
   printLog,
   onClearPrintLog,
   activeRoomId,
+  roomRole,
   onRoomCreated,
   onRoomJoined
 }) => {
@@ -222,8 +225,14 @@ export const Controls: React.FC<ControlsProps> = ({
         return;
       }
     }
-    const uniqueProduct = { ...p, id: `${p.id}-${Date.now()}-${Math.random()}` };
-    setProducts(prev => [...prev, uniqueProduct]);
+
+    if (activeRoomId && roomRole === 'guest') {
+      // Si somos Guest, usamos la operación atómica arrayUnion para evitar pisar cambios del Host
+      addProductToRoom(activeRoomId, p).catch(console.error);
+    } else {
+      const uniqueProduct = { ...p, id: `${p.id}-${Date.now()}-${Math.random()}` };
+      setProducts(prev => [...prev, uniqueProduct]);
+    }
   };
 
   const handleSearch = async () => {

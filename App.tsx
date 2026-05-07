@@ -60,6 +60,7 @@ export default function App() {
   const [activeRoomId, setActiveRoomId] = useState<string | null>(null);
   const activeRoomIdRef = useRef<string | null>(null);
   activeRoomIdRef.current = activeRoomId;
+  const [roomRole, setRoomRole] = useState<'host' | 'guest' | null>(null);
 
   // Flag anti-loop: cuando actualizamos products DESDE Firestore, evitamos
   // escribir de vuelta en Firestore en ese mismo ciclo de React.
@@ -196,6 +197,7 @@ export default function App() {
       } else {
         // La sala se cerró u host desconectó
         setActiveRoomId(null);
+        setRoomRole(null);
         alert("La sesión enlazada ha finalizado.");
       }
     });
@@ -213,9 +215,11 @@ export default function App() {
     if (currentUser) updateCloudProfile(currentUser.uid, { designProfiles: profiles });
   }, [profiles, currentUser]);
 
-  // Sync productos a la nube con debounce (solo si logueado y fuera de sala QR)
+  // Sync productos a la nube con debounce
   useEffect(() => {
-    if (!currentUser || activeRoomId) return;
+    // Deshabilitar sync SOLO si somos Guest en una sala. El Host DEBE seguir sincronizando.
+    if (!currentUser || (activeRoomId && roomRole === 'guest')) return;
+    
     // Si el update vino de la nube, salteamos la escritura de vuelta
     if (skipNextCloudWrite.current) {
       skipNextCloudWrite.current = false;
@@ -228,7 +232,7 @@ export default function App() {
       }).catch(console.error);
     }, 1500); // Debounce de 1.5s para no saturar Firestore
     return () => clearTimeout(timer);
-  }, [products, currentUser, activeRoomId]);
+  }, [products, currentUser, activeRoomId, roomRole]);
 
   // Auth Handlers
   const handleConnect = (wooConfig: WooConfig, user: WpUser, remember: boolean) => {
@@ -255,6 +259,7 @@ export default function App() {
     if (activeRoomIdRef.current) {
       closeRoom(activeRoomIdRef.current).catch(console.error);
       setActiveRoomId(null);
+      setRoomRole(null);
     }
     setSession(null);
     localStorage.removeItem(SESSION_KEY);
@@ -282,12 +287,12 @@ export default function App() {
   const wrappedSetProducts: React.Dispatch<React.SetStateAction<Product[]>> = useCallback((val) => {
     setProducts((prev) => {
       const updated = typeof val === 'function' ? val(prev) : val;
-      if (activeRoomIdRef.current) {
+      if (activeRoomIdRef.current && roomRole === 'host') {
         syncRoomProducts(activeRoomIdRef.current, updated).catch(console.error);
       }
       return updated;
     });
-  }, []);
+  }, [roomRole]);
 
   const handleSaveProfile = (name: string) => {
     const newProfile: DesignProfile = {
@@ -359,10 +364,15 @@ export default function App() {
           printLog={printLog}
           onClearPrintLog={() => setPrintLog([])}
           activeRoomId={activeRoomId}
-          onRoomCreated={setActiveRoomId}
+          roomRole={roomRole}
+          onRoomCreated={(id) => {
+            setActiveRoomId(id);
+            setRoomRole('host');
+          }}
           onRoomJoined={(id: string, newSession: AuthSession) => {
             setActiveRoomId(id);
             setSession(newSession); // Se hereda la sesión de Woo desde el host
+            setRoomRole('guest');
           }}
         />
       </div>
