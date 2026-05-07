@@ -1,5 +1,15 @@
 # Changelog - WooTag AI Generator
 
+## [2.2.0] - 2026-05-07
+### Added
+- **Sincronización Transparente por Identidad**: Se eliminó la fricción de crear salas manuales. Si inicias sesión con la misma cuenta en PC y Móvil, ambos dispositivos se sincronizan automáticamente a través de la nube. El móvil actúa ahora como un periférico de captura transparente.
+- **Sistema de Notificaciones (Toasts)**: La PC ahora muestra avisos visuales instantáneos ("Producto recibido") cuando se inyectan etiquetas desde el móvil, proporcionando un acuse de recibo profesional similar al hardware industrial.
+- **Rehidratación Automática de Estado**: Al refrescar la aplicación (F5), se recupera automáticamente la última lista de productos desde la nube, garantizando que el trabajo nunca se pierda.
+
+### Improved
+- **Interfaz de Usuario Pro**: El botón de sincronización en la nube ahora muestra un estado de "Cuenta Sincronizada" con una animación de pulso cuando la conexión está activa.
+- **Modelo de Datos Unificado**: Centralización de la lógica de adición de productos para asegurar consistencia entre búsquedas manuales (SKU/Categorías) e inyecciones remotas.
+
 ## [2.1.2] - 2026-05-07
 ### Fixed
 - **Fallo Crítico de Emparejamiento QR**: Corregida la inicialización de la sala que provocaba que el modal de PC se quedara bloqueado. Ahora el campo `guestJoined` se inicializa correctamente y el listener detecta instantáneamente la conexión del móvil.

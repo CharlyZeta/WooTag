@@ -425,7 +425,7 @@ export const Controls: React.FC<ControlsProps> = ({
                   onClick={() => setIsHostModalOpen(true)}
                   disabled={activeRoomId !== null && isHostModalOpen === false}
                   className={`p-2 rounded-xl transition-all border-2 border-transparent hover:border-indigo-100 group relative ${activeRoomId ? 'bg-emerald-50 text-emerald-600' : 'text-slate-400'}`}
-                  title={activeRoomId ? `Sala ${activeRoomId} activa` : "Conectar Móvil"}
+                  title={activeRoomId ? `Sala ${activeRoomId} activa` : "Vincular Celular Externo"}
                 >
                   <Smartphone className={`w-5 h-5 transition-transform group-hover:-translate-y-0.5 ${activeRoomId ? 'text-emerald-500' : 'group-hover:text-indigo-500'}`} />
                   {activeRoomId && <div className="absolute top-0 right-0 w-2 h-2 bg-emerald-500 border border-white rounded-full translate-x-1 -translate-y-1" />}
@@ -435,11 +435,13 @@ export const Controls: React.FC<ControlsProps> = ({
               <button 
                 onClick={() => setIsCloudModalOpen(true)}
                 className={`p-2 rounded-xl transition-all border-2 border-transparent hover:border-indigo-100 flex items-center gap-2 group relative`}
-                title="Cuenta en la Nube"
+                title={currentUser ? "Cuenta Sincronizada" : "Iniciar Sesión en la Nube"}
               >
                 <div className="relative">
                   <Cloud className={`w-5 h-5 transition-transform group-hover:-translate-y-0.5 ${currentUser ? 'text-indigo-600' : 'text-slate-400 group-hover:text-indigo-500'}`} />
-                  {currentUser && <div className="absolute top-0 right-0 w-2 h-2 bg-emerald-500 border border-white rounded-full translate-x-1 -translate-y-1" />}
+                  {currentUser && (
+                    <div className="absolute top-0 right-0 w-2 h-2 bg-emerald-500 border border-white rounded-full translate-x-1 -translate-y-1 animate-pulse" />
+                  )}
                 </div>
               </button>
             </div>

@@ -7,7 +7,7 @@ import { optimizeDescription } from './services/geminiService';
 import { encrypt, decrypt } from './utils/security';
 import { useAuth } from './contexts/AuthContext';
 import { loadCloudProfile, updateCloudProfile, subscribeToCloudProfile, addProductToCloudProfile } from './services/cloudProfiles';
-import { subscribeToRoom, syncRoomProducts, closeRoom } from './services/realtimeSession';
+import { ShoppingBag, Bell, CheckCircle2, Smartphone, Loader2, X } from 'lucide-react';
 
 // Identificador único por dispositivo/navegador — persiste en localStorage
 const DEVICE_ID_KEY = 'wootag_device_id';
@@ -28,6 +28,12 @@ const PRINT_LOG_KEY = 'wootag_print_log';
 const ACTIVE_SITE_KEY = 'wootag_active_site';
 const SESSION_DURATION = 24 * 60 * 60 * 1000;
 
+interface Toast {
+  id: string;
+  message: string;
+  type: 'info' | 'success';
+}
+
 export default function App() {
   const [session, setSession] = useState<AuthSession | null>(null);
   const [wooSites, setWooSites] = useState<WooSite[]>([]);
@@ -35,6 +41,15 @@ export default function App() {
   const [loadingSession, setLoadingSession] = useState(true);
   const [isConnectionModalOpen, setIsConnectionModalOpen] = useState(false);
   const { currentUser } = useAuth();
+  const [toasts, setToasts] = useState<Toast[]>([]);
+
+  const addToast = useCallback((message: string, type: 'info' | 'success' = 'info') => {
+    const id = Math.random().toString(36).substring(2, 9);
+    setToasts(prev => [...prev, { id, message, type }]);
+    setTimeout(() => {
+      setToasts(prev => prev.filter(t => t.id !== id));
+    }, 4000);
+  }, []);
 
   // Tag Config
   const [config, setConfig] = useState<TagConfig>(() => {
@@ -57,6 +72,9 @@ export default function App() {
   });
 
   const [products, setProducts] = useState<Product[]>([]);
+  const productsRef = useRef<Product[]>([]);
+  productsRef.current = products;
+
   const [optimizingId, setOptimizingId] = useState<string | null>(null);
   
   // Room Matching State
@@ -172,6 +190,14 @@ export default function App() {
     const unsubscribe = subscribeToCloudProfile(currentUser.uid, (cloudData) => {
       // Sincronizar productos si el update lo hizo otro dispositivo
       if (cloudData.lastProductsDevice !== MY_DEVICE_ID && Array.isArray(cloudData.products)) {
+        const newCount = cloudData.products.length;
+        const currentCount = productsRef.current.length;
+        
+        if (newCount > currentCount) {
+          const added = cloudData.products[newCount - 1];
+          addToast(`Producto recibido: ${added.sku}`, 'info');
+        }
+
         skipNextCloudWrite.current = true;
         setProducts(cloudData.products);
       }
@@ -179,23 +205,26 @@ export default function App() {
       if (cloudData.wooSites) setWooSites(cloudData.wooSites);
     });
     return unsubscribe;
-  }, [currentUser]);
+  }, [currentUser, addToast]);
 
   // Room subscription
   useEffect(() => {
     if (!activeRoomId) return;
     const unsubscribe = subscribeToRoom(activeRoomId, (room) => {
       if (room) {
+        if (room.products.length > productsRef.current.length) {
+           addToast("Etiqueta recibida vía sala", 'success');
+        }
         setProducts(room.products);
       } else {
         // La sala se cerró u host desconectó
         setActiveRoomId(null);
         setRoomRole(null);
-        alert("La sesión enlazada ha finalizado.");
+        addToast("Sincronización de sala finalizada", 'info');
       }
     });
     return () => unsubscribe();
-  }, [activeRoomId]);
+  }, [activeRoomId, addToast]);
 
   // Persist State
   useEffect(() => {
@@ -485,6 +514,23 @@ export default function App() {
         </div>
       )}
 
+      <ToastContainer toasts={toasts} />
+
     </div>
   );
 }
+
+const ToastContainer = ({ toasts }: { toasts: Toast[] }) => (
+  <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-[200] flex flex-col gap-2 pointer-events-none">
+    {toasts.map(t => (
+      <div 
+        key={t.id} 
+        className={`px-4 py-3 rounded-2xl shadow-2xl flex items-center gap-3 animate-in slide-in-from-bottom-4 fade-in duration-300 backdrop-blur-md border border-white/20
+          ${t.type === 'success' ? 'bg-emerald-600/90 text-white' : 'bg-slate-900/90 text-white'}`}
+      >
+        {t.type === 'success' ? <CheckCircle2 className="w-5 h-5 text-emerald-300" /> : <Smartphone className="w-5 h-5 text-indigo-300" />}
+        <span className="text-sm font-black tracking-tight">{t.message}</span>
+      </div>
+    ))}
+  </div>
+);
