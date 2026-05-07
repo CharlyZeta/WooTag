@@ -9,30 +9,33 @@ interface HostRoomModalProps {
   onClose: () => void;
   wooSession: AuthSession;
   hostUid: string;
+  initialProducts: Product[];
   onRoomCreated: (roomId: string) => void;
 }
 
-export const HostRoomModal: React.FC<HostRoomModalProps> = ({ isOpen, onClose, wooSession, hostUid, onRoomCreated }) => {
+export const HostRoomModal: React.FC<HostRoomModalProps> = ({ isOpen, onClose, wooSession, hostUid, initialProducts, onRoomCreated }) => {
   const [roomId, setLocalRoomId] = useState<string | null>(null);
   const [isGuestConnected, setIsGuestConnected] = useState(false);
 
   useEffect(() => {
     if (isOpen && !roomId) {
-      createRoom(hostUid, wooSession).then(id => {
+      createRoom(hostUid, wooSession, initialProducts).then(id => {
         setLocalRoomId(id);
         onRoomCreated(id);
       });
     }
-  }, [isOpen, roomId, hostUid, wooSession, onRoomCreated]);
+  }, [isOpen, roomId, hostUid, wooSession, initialProducts, onRoomCreated]);
 
   // Suscribirse a la sala para detectar cuando el invitado se une
   useEffect(() => {
-    if (!roomId) return;
+    if (!roomId || isGuestConnected) return;
+    
     const unsub = subscribeToRoom(roomId, (room) => {
-      if (room?.guestJoined && !isGuestConnected) {
+      if (room?.guestJoined) {
         setIsGuestConnected(true);
-        // Opcional: Cerrar automáticamente después de unos segundos
-        setTimeout(() => onClose(), 3000);
+        // Cerrar automáticamente después de unos segundos
+        const timer = setTimeout(() => onClose(), 3000);
+        return () => clearTimeout(timer);
       }
     });
     return unsub;

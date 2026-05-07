@@ -12,16 +12,17 @@ export interface RoomSession {
 }
 
 // 1. Host (PC): Crea una sala y empieza a escuchar cambios
-export const createRoom = async (hostUid: string, wooSession: AuthSession): Promise<string> => {
+export const createRoom = async (hostUid: string, wooSession: AuthSession, initialProducts: Product[] = []): Promise<string> => {
   const roomId = Math.random().toString(36).substring(2, 8).toUpperCase(); // ej: A7B9F1
   const roomRef = doc(db, 'rooms', roomId);
   
   await setDoc(roomRef, {
     roomId,
     wooSession,
-    products: [],
+    products: initialProducts,
     hostUid,
-    createdAt: Date.now()
+    createdAt: Date.now(),
+    guestJoined: false // Inicializar explícitamente
   } as RoomSession);
   
   return roomId;

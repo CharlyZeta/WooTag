@@ -330,33 +330,37 @@ export default function App() {
     setProducts((prev) => {
       const updated = typeof val === 'function' ? val(prev) : val;
       
-      // Si somos Guest en sala, sync room
-      if (activeRoomIdRef.current && roomRole === 'guest') {
-        // En addUniqueProduct ya lo manejamos con addProductToRoom
-        return updated;
+      // Sincronizar con la sala si hay una activa
+      if (activeRoomIdRef.current) {
+        syncRoomProducts(activeRoomIdRef.current, updated).catch(err => {
+          console.error("Error syncing room products:", err);
+        });
       }
-      
-      // Si somos Host en sala, sync room completo
-      if (activeRoomIdRef.current && roomRole === 'host') {
-        syncRoomProducts(activeRoomIdRef.current, updated).catch(console.error);
-      }
-
-      // Sync atómico a la nube si un producto se agregó individualmente y somos móvil (o guest)
-      // Nota: addUniqueProduct ahora llamará a addProductToCloudProfile directamente
-      
       return updated;
     });
-  }, [roomRole]);
+  }, []);
 
   const handleAddProduct = useCallback((p: Product) => {
-    // Si estamos logueados, usamos sync atómico para evitar pisar datos de otros dispositivos
+    const uniqueProduct = { ...p, id: `${p.id}-${Date.now()}` };
+
+    // 1. Sincronización atómica con la nube (Cloud Profile)
     if (currentUser) {
-      addProductToCloudProfile(currentUser.uid, p, MY_DEVICE_ID).catch(console.error);
+      addProductToCloudProfile(currentUser.uid, uniqueProduct, MY_DEVICE_ID).catch(console.error);
+    }
+
+    // 2. Sincronización con la sala (Companion Mode)
+    if (activeRoomIdRef.current) {
+      if (roomRole === 'guest') {
+        // El Guest usa adición atómica para no pisar cambios del Host
+        addProductToRoom(activeRoomIdRef.current, uniqueProduct).catch(console.error);
+      } else {
+        // El Host sincroniza la lista completa (está enwrappedSetProducts vía setProducts)
+      }
     }
     
-    // Actualización local inmediata para feedback
-    setProducts(prev => [...prev, { ...p, id: `${p.id}-${Date.now()}` }]);
-  }, [currentUser]);
+    // 3. Actualización local inmediata para feedback instantáneo
+    setProducts(prev => [...prev, uniqueProduct]);
+  }, [currentUser, roomRole]);
 
   const handleSaveProfile = (name: string) => {
     const newProfile: DesignProfile = {

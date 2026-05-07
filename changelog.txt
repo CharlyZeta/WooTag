@@ -1,5 +1,11 @@
 # Changelog - WooTag AI Generator
 
+## [2.1.2] - 2026-05-07
+### Fixed
+- **Fallo Crítico de Emparejamiento QR**: Corregida la inicialización de la sala que provocaba que el modal de PC se quedara bloqueado. Ahora el campo `guestJoined` se inicializa correctamente y el listener detecta instantáneamente la conexión del móvil.
+- **Pérdida de Datos al Iniciar Sala**: Se solucionó un bug donde la PC borraba su lista de productos local al crear una sala nueva. Ahora la sala se inicializa con los productos actuales de la PC, permitiendo al móvil verlos de inmediato.
+- **Latencia en Sincronización Móvil**: El móvil ahora actualiza su interfaz local inmediatamente al escanear, mientras realiza la sincronización atómica en segundo plano, mejorando drásticamente la sensación de velocidad.
+
 ## [2.1.1] - 2026-05-07
 ### Improved
 - **Modelo de Autoridad en Sincronización**: Refinamiento de la lógica de guardado en la nube para evitar que los dispositivos móviles sobrescriban accidentalmente el estado global gestionado por la PC. El móvil ahora utiliza preferentemente sincronización atómica (adición de productos), mientras que la PC mantiene la autoridad para realizar limpiezas de lista o reordenamientos.

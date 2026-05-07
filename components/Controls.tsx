@@ -1076,6 +1076,7 @@ export const Controls: React.FC<ControlsProps> = ({
           onClose={() => setIsHostModalOpen(false)}
           hostUid={currentUser.uid}
           wooSession={{ config: wooConfig, user: user as any, expiresAt: Date.now() }}
+          initialProducts={products}
           onRoomCreated={(id) => onRoomCreated(id)}
         />
       )}
