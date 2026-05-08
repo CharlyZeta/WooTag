@@ -420,12 +420,13 @@ export const Controls: React.FC<ControlsProps> = ({
           <div className="flex items-center gap-2">
             {/* Botón de Nube (Auth) */}
             <div className="flex gap-2 mr-2 border-r-2 border-slate-100 pr-2">
-              {!isMobile && (
+              {/* Solo mostrar vinculación manual si NO hay usuario logueado (Identidad automática) */}
+              {!isMobile && !currentUser && (
                 <button
                   onClick={() => setIsHostModalOpen(true)}
                   disabled={activeRoomId !== null && isHostModalOpen === false}
                   className={`p-2 rounded-xl transition-all border-2 border-transparent hover:border-indigo-100 group relative ${activeRoomId ? 'bg-emerald-50 text-emerald-600' : 'text-slate-400'}`}
-                  title={activeRoomId ? `Sala ${activeRoomId} activa` : "Vincular Celular Externo"}
+                  title={activeRoomId ? `Sala ${activeRoomId} activa` : "Generar QR para invitado externo"}
                 >
                   <Smartphone className={`w-5 h-5 transition-transform group-hover:-translate-y-0.5 ${activeRoomId ? 'text-emerald-500' : 'group-hover:text-indigo-500'}`} />
                   {activeRoomId && <div className="absolute top-0 right-0 w-2 h-2 bg-emerald-500 border border-white rounded-full translate-x-1 -translate-y-1" />}
@@ -435,7 +436,7 @@ export const Controls: React.FC<ControlsProps> = ({
               <button 
                 onClick={() => setIsCloudModalOpen(true)}
                 className={`p-2 rounded-xl transition-all border-2 border-transparent hover:border-indigo-100 flex items-center gap-2 group relative`}
-                title={currentUser ? "Cuenta Sincronizada" : "Iniciar Sesión en la Nube"}
+                title={currentUser ? "Cuenta Sincronizada Automáticamente" : "Iniciar Sesión en la Nube"}
               >
                 <div className="relative">
                   <Cloud className={`w-5 h-5 transition-transform group-hover:-translate-y-0.5 ${currentUser ? 'text-indigo-600' : 'text-slate-400 group-hover:text-indigo-500'}`} />
@@ -593,11 +594,29 @@ export const Controls: React.FC<ControlsProps> = ({
               </div>
             )}
 
-            {/* Companion Mode: solo en PC (no en mobile, porque el mobile ES el companion) */}
-            {!isMobile && !wooConfig && !activeRoomId && (
+            {/* Companion Mode: solo se muestra si NO hay usuario logueado como método alternativo */}
+            {!isMobile && !currentUser && !activeRoomId && (
               <div className="space-y-3 pt-6 border-t-2 border-slate-100">
                 <label className="text-[11px] font-black text-slate-600 uppercase tracking-[0.15em] flex items-center gap-2">
-                  <Smartphone className="w-4 h-4 text-emerald-500" /> VINCULAR CELULAR
+                  <Smartphone className="w-4 h-4 text-emerald-500" /> VINCULAR CELULAR INVITADO
+                </label>
+                <button
+                  onClick={() => setIsHostModalOpen(true)}
+                  className="w-full flex items-center justify-center gap-3 py-3.5 bg-emerald-50 text-emerald-700 border-2 border-emerald-200 rounded-xl font-black text-sm hover:bg-emerald-100 transition-all active:scale-[0.98]"
+                >
+                  <Smartphone className="w-5 h-5" />
+                  Generar QR de PC
+                </button>
+                <p className="text-[10px] text-slate-400 font-bold text-center">
+                  Usá esta opción para que un celular externo escanee sin iniciar sesión.
+                </p>
+              </div>
+            )}
+
+            {isMobile && !currentUser && !wooConfig && (
+              <div className="space-y-3 pt-6 border-t-2 border-slate-100">
+                <label className="text-[11px] font-black text-slate-600 uppercase tracking-[0.15em] flex items-center gap-2">
+                  <Smartphone className="w-4 h-4 text-emerald-500" /> UNIRSE A PC
                 </label>
                 <button
                   onClick={() => setIsJoinModalOpen(true)}
@@ -606,9 +625,6 @@ export const Controls: React.FC<ControlsProps> = ({
                   <Smartphone className="w-5 h-5" />
                   Escanear QR de PC
                 </button>
-                <p className="text-[10px] text-slate-400 font-bold text-center">
-                  Escaneá el código brillante en tu computadora para compartir el escáner del celular.
-                </p>
               </div>
             )}
             

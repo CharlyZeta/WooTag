@@ -237,25 +237,18 @@ export default function App() {
     if (currentUser) updateCloudProfile(currentUser.uid, { designProfiles: profiles });
   }, [profiles, currentUser]);
 
-  // Detección de dispositivo para lógica de autoridad
-  const [isMobileDevice] = useState(() => /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768);
-
-  // Sync productos a la nube con debounce (Authority model)
+  // Sync productos a la nube con debounce
   useEffect(() => {
     // 1. Si no hay usuario, no hay sync.
-    // 2. Si somos GUEST en una sala, NO sobrescribimos la nube (el Host lo hará).
-    // 3. Si somos MOBILE, evitamos sobrescribir el estado global para no pisar cambios del PC, 
-    //    EXCEPTO si no hay sala y somos el único dispositivo (se maneja con lastProductsDevice).
+    // 2. Si somos GUEST en una sala manual (fallback), NO sobrescribimos la nube (el Host lo hará).
     if (!currentUser || (activeRoomId && roomRole === 'guest')) return;
     
-    // Si somos móvil fuera de sala, preferimos sync atómico en handleAddProduct.
-    // Solo permitimos sobrescritura completa desde PC para permitir "Limpiar lista" o reordenar.
-    if (isMobileDevice && !activeRoomId) return;
-
+    // Si el update vino de la nube, salteamos la escritura de vuelta (Anti-loop)
     if (skipNextCloudWrite.current) {
       skipNextCloudWrite.current = false;
       return;
     }
+
     const timer = setTimeout(() => {
       updateCloudProfile(currentUser.uid, {
         products,
@@ -263,7 +256,7 @@ export default function App() {
       }).catch(console.error);
     }, 2000); 
     return () => clearTimeout(timer);
-  }, [products, currentUser, activeRoomId, roomRole, isMobileDevice]);
+  }, [products, currentUser, activeRoomId, roomRole]);
 
   // Auth Handlers
   const handleConnect = (wooConfig: WooConfig, user: WpUser, remember: boolean, siteId?: string) => {

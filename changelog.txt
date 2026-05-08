@@ -1,5 +1,11 @@
 # Changelog - WooTag AI Generator
 
+## [2.2.1] - 2026-05-07
+### Fixed
+- **Fallo de Inyección Móvil**: Se eliminó una restricción de autoridad que impedía a los dispositivos móviles actualizar el estado global en la nube cuando no había una sala activa. Ahora la sincronización por identidad es bidireccional y total.
+- **Limpieza de UI Residual**: Se ocultaron los botones de "Vincular Celular" y "Escanear QR de PC" para usuarios logueados, ya que la sincronización ocurre de forma automática y transparente. El botón de sala (QR) ahora solo es visible para invitados o usuarios no autenticados como método alternativo.
+- **Lógica de Companion Invertida**: Corregida la visibilidad de los botones de vinculación manual en dispositivos móviles.
+
 ## [2.2.0] - 2026-05-07
 ### Added
 - **Sincronización Transparente por Identidad**: Se eliminó la fricción de crear salas manuales. Si inicias sesión con la misma cuenta en PC y Móvil, ambos dispositivos se sincronizan automáticamente a través de la nube. El móvil actúa ahora como un periférico de captura transparente.

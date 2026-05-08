@@ -8,7 +8,7 @@ Desarrollado con la asistencia de **Antigravity** (Google DeepMind).
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.0-3178C6?style=flat-square&logo=typescript)
 ![Vite](https://img.shields.io/badge/Vite-6.0-646CFF?style=flat-square&logo=vite)
 ![Firebase](https://img.shields.io/badge/Firebase-12-FFCA28?style=flat-square&logo=firebase)
-![Version](https://img.shields.io/badge/versión-2.0.1-indigo?style=flat-square)
+![Version](https://img.shields.io/badge/versión-2.2.0-indigo?style=flat-square)
 ![Tests](https://img.shields.io/badge/tests-97%20passing-brightgreen?style=flat-square)
 
 ---
@@ -172,20 +172,29 @@ GEMINI_API_KEY="..."
 
 ## 🧪 Tests Automatizados
 
+La aplicación cuenta con una robusta suite de pruebas unitarias y de integración que garantizan la estabilidad del sistema ante cada cambio.
+
 ```bash
 npm test               # Ejecuta los 97 tests una vez
 npm run test:watch     # Modo watch para desarrollo
 npm run test:coverage  # Genera reporte de cobertura en /coverage
 ```
 
-| Archivo | Tests | Cubre |
-|---------|-------|-------|
-| `utils/xlsImport.test.ts` | 39 | Extensión, tamaño, estructura, columnas, happy paths, advertencias, límite de filas, sanitización de URLs y celdas |
-| `services/wooService.test.ts` | 26 | Conexión WooCommerce, fallback auth 401, búsqueda por SKU/nombre/categoría, paginación de categorías, mensajes de error en español |
-| `utils/security.test.ts` | 10 | Round-trip encrypt/decrypt, datos corruptos, salt manipulado, preservación de tipos |
-| `services/geminiService.test.ts` | 6 | Respuesta AI exitosa, fallback a descripción original, API Key ausente, errores de red |
-| `services/cloudProfiles.test.ts` | 8 | loadCloudProfile (existente/nuevo/error), updateCloudProfile (merge/error), subscribeToCloudProfile (callback/inexistente/unsubscribe) |
-| `contexts/AuthContext.test.tsx` | 8 | Estado inicial, loading, currentUser, login, register, logout, resetPassword |
+### Arquitectura de Testing
+- **Motor**: [Vitest](https://vitest.dev/) (compatible con Vite, ultra rápido).
+- **DOM**: [JSDOM](https://github.com/jsdom/jsdom) para simular el navegador en Node.
+- **Componentes**: [React Testing Library](https://testing-library.com/docs/react-testing-library/intro/) para pruebas de comportamiento de usuario.
+
+### Cobertura de la Suite (97 tests passing)
+
+| Archivo de Test | Cant. | Áreas Críticas Verificadas |
+|-----------------|-------|---------------------------|
+| `xlsImport.test.ts` | 39 | Sanitización de datos, límites de archivos (5MB), rechazo de macros VBA, mapeo de columnas y manejo de errores XLS/XLSX. |
+| `wooService.test.ts` | 26 | Handshake con API WooCommerce, fallbacks de autenticación (401), paginación de categorías y normalización de productos. |
+| `security.test.ts` | 10 | Integridad del cifrado AES-style (base64+salt), detección de manipulación de datos y persistencia de tipos. |
+| `cloudProfiles.test.ts` | 8 | Sincronización con Firestore, persistencia de perfiles de diseño y gestión de suscripciones en tiempo real. |
+| `AuthContext.test.tsx` | 8 | Flujos de autenticación Firebase (Login/Registro/Logout) y estados de carga de sesión. |
+| `geminiService.test.ts` | 6 | Integración con IA, gestión de cuotas de API y fallbacks de red para optimización de descripciones. |
 
 ---
 
