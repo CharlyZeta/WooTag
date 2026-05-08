@@ -1,5 +1,11 @@
 # Changelog - WooTag AI Generator
 
+## [2.2.2] - 2026-05-07
+### Optimized
+- **Latencia de Sincronización**: Se redujo el tiempo de espera (debounce) para actualizaciones globales de 2s a 1s, haciendo que los cambios se reflejen mucho más rápido entre dispositivos.
+- **Consistencia de Datos**: Se unificó la generación de IDs de productos entre el estado local y la base de datos de Firebase. Esto garantiza que la PC identifique correctamente los nuevos escaneos del móvil sin duplicados ni retrasos por inconsistencia de identificadores.
+- **Inyección Atómica Prioritaria**: El móvil ahora prioriza la inyección directa del producto escaneado sobre la actualización de la lista completa, acelerando la aparición de la etiqueta en la pantalla de la PC.
+
 ## [2.2.1] - 2026-05-07
 ### Fixed
 - **Fallo de Inyección Móvil**: Se eliminó una restricción de autoridad que impedía a los dispositivos móviles actualizar el estado global en la nube cuando no había una sala activa. Ahora la sincronización por identidad es bidireccional y total.

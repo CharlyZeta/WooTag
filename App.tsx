@@ -254,7 +254,7 @@ export default function App() {
         products,
         lastProductsDevice: MY_DEVICE_ID,
       }).catch(console.error);
-    }, 2000); 
+    }, 1000); // Reducido a 1s para mayor agilidad
     return () => clearTimeout(timer);
   }, [products, currentUser, activeRoomId, roomRole]);
 
@@ -363,24 +363,29 @@ export default function App() {
   }, []);
 
   const handleAddProduct = useCallback((p: Product) => {
-    const uniqueProduct = { ...p, id: `${p.id}-${Date.now()}` };
+    // Generar un ID único una sola vez para ambos estados (local y nube)
+    const uniqueId = `${p.id}-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+    const uniqueProduct = { ...p, id: uniqueId };
 
-    // 1. Sincronización atómica con la nube (Cloud Profile)
+    // 1. Sincronización atómica inmediata con la nube (Cloud Profile)
     if (currentUser) {
-      addProductToCloudProfile(currentUser.uid, uniqueProduct, MY_DEVICE_ID).catch(console.error);
+      // Bloqueamos el siguiente debounce de este dispositivo para no enviar el mismo producto 2 veces
+      skipNextCloudWrite.current = true;
+      addProductToCloudProfile(currentUser.uid, uniqueProduct, MY_DEVICE_ID).catch(err => {
+        console.error("Fallo de inyección atómica:", err);
+        // Si falla la atómica, el debounce de 1s servirá de respaldo
+        skipNextCloudWrite.current = false;
+      });
     }
 
-    // 2. Sincronización con la sala (Companion Mode)
+    // 2. Sincronización con la sala manual (Fallback para invitados)
     if (activeRoomIdRef.current) {
       if (roomRole === 'guest') {
-        // El Guest usa adición atómica para no pisar cambios del Host
         addProductToRoom(activeRoomIdRef.current, uniqueProduct).catch(console.error);
-      } else {
-        // El Host sincroniza la lista completa (está enwrappedSetProducts vía setProducts)
       }
     }
     
-    // 3. Actualización local inmediata para feedback instantáneo
+    // 3. Actualización local inmediata (Feedback visual instantáneo en el móvil)
     setProducts(prev => [...prev, uniqueProduct]);
   }, [currentUser, roomRole]);
 
