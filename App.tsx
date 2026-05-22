@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { APP_VERSION, DEFAULT_CONFIG, PrintRecord, Product, TagConfig, WooConfig, AuthSession, WpUser, DesignProfile } from './types';
+import { APP_VERSION, DEFAULT_CONFIG, PrintRecord, Product, TagConfig, WooConfig, WooSite, AuthSession, WpUser, DesignProfile } from './types';
 import { TagSheet } from './components/TagSheet';
 import { Controls } from './components/Controls';
 import { ConnectionModal } from './components/ConnectionModal';
@@ -165,15 +165,22 @@ export default function App() {
         if (cloudData.designProfiles.length > 0) setProfiles(cloudData.designProfiles);
         if (cloudData.wooSites) setWooSites(cloudData.wooSites);
         
-        // Sincronización de sesión activa
+        // Sincronización de sesión activa: buscar el sitio activo o usar el primero disponible
         const siteToLoad = activeSiteId 
           ? cloudData.wooSites?.find(s => s.id === activeSiteId) 
           : cloudData.wooSites?.[0];
 
         if (siteToLoad) {
-          handleConnect(siteToLoad, { id: 0, name: 'Usuario Cloud', slug: '', roles: [] }, false, siteToLoad.id);
+          // Construir el WooConfig a partir del WooSite antes de conectar
+          const wooConfig: WooConfig = {
+            url: siteToLoad.url,
+            consumerKey: siteToLoad.consumerKey,
+            consumerSecret: siteToLoad.consumerSecret,
+          };
+          // remember=true: persiste localmente para no pedir credenciales la próxima vez
+          handleConnect(wooConfig, { id: 0, name: 'Usuario Cloud', slug: '', roles: [] }, true, siteToLoad.id);
         } else if (cloudData.wooSession) {
-          // Fallback para retrocompatibilidad
+          // Fallback para retrocompatibilidad (perfiles sin wooSites)
           setSession(cloudData.wooSession);
         }
 
