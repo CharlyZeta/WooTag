@@ -48,8 +48,10 @@ jobs:
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
           local-dir: ./dist/
-          server-dir: ${{ secrets.FTP_REMOTE_DIR || './' }}
-          # Exclusions to prevent unnecessary uploads
+          # Ruta absoluta en el servidor FTP — evita que el action use el home del
+          # usuario como raíz y cree subcarpetas inesperadas (ej: /github/).
+          # Si el home del usuario FTP ya apunta a esta carpeta, usar solo: ./
+          server-dir: ${{ secrets.FTP_REMOTE_DIR || '/home/dualequi/wootag.dualequipamientos.com.ar/' }}
           exclude: |
             **/.git*
             **/.git*/**
