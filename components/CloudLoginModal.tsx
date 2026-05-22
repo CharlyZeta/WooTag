@@ -1,13 +1,27 @@
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { X, Cloud, Mail, Lock, AlertCircle, Eye, EyeOff } from 'lucide-react';
+import { X, Cloud, Mail, Lock, AlertCircle, Eye, EyeOff, AlertTriangle, Globe, RefreshCw, CheckCircle2, Database, Smartphone, UploadCloud } from 'lucide-react';
+import { WooSite } from '../types';
 
 interface CloudLoginModalProps {
   isOpen: boolean;
   onClose: () => void;
+  wooSites?: WooSite[];
+  activeSiteId?: string | null;
+  onForcePushWooSession?: () => Promise<void>;
+  productsCount?: number;
+  deviceId?: string;
 }
 
-export const CloudLoginModal: React.FC<CloudLoginModalProps> = ({ isOpen, onClose }) => {
+export const CloudLoginModal: React.FC<CloudLoginModalProps> = ({
+  isOpen,
+  onClose,
+  wooSites = [],
+  activeSiteId = null,
+  onForcePushWooSession,
+  productsCount = 0,
+  deviceId = '',
+}) => {
   const { login, register, resetPassword, currentUser, logout } = useAuth();
   const [isRegistering, setIsRegistering] = useState(false);
   const [email, setEmail] = useState('');
@@ -19,7 +33,25 @@ export const CloudLoginModal: React.FC<CloudLoginModalProps> = ({ isOpen, onClos
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState('');
 
+  const [pushing, setPushing] = useState(false);
+  const [pushSuccess, setPushSuccess] = useState(false);
+
   if (!isOpen) return null;
+
+  const handleForcePush = async () => {
+    if (onForcePushWooSession) {
+      setPushing(true);
+      try {
+        await onForcePushWooSession();
+        setPushSuccess(true);
+        setTimeout(() => setPushSuccess(false), 3000);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setPushing(false);
+      }
+    }
+  };
 
   const switchMode = (registering: boolean) => {
     setIsRegistering(registering);
@@ -117,21 +149,131 @@ export const CloudLoginModal: React.FC<CloudLoginModalProps> = ({ isOpen, onClos
         {/* Body */}
         <div className="p-6">
           {currentUser ? (
-            <div className="text-center space-y-4">
-              <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto">
-                <Cloud className="w-8 h-8" />
+            <div className="space-y-5 text-slate-700">
+              {/* Usuario info */}
+              <div className="flex items-center gap-3 bg-slate-50 p-3.5 rounded-2xl border border-slate-100">
+                <div className="bg-emerald-100 p-2 rounded-xl text-emerald-600">
+                  <Cloud className="w-6 h-6 animate-pulse" />
+                </div>
+                <div className="text-left flex-1 min-w-0">
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Sesión en la Nube</p>
+                  <p className="font-black text-slate-800 text-sm truncate">{currentUser.email}</p>
+                </div>
               </div>
-              <div>
-                <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Sesión Iniciada Como</p>
-                <p className="font-black text-slate-800">{currentUser.email}</p>
+
+              {/* Diagnóstico de WooCommerce */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+                    <Globe className="w-3.5 h-3.5 text-indigo-500" /> Tiendas en la Nube
+                  </span>
+                  <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-md">
+                    Total: {wooSites.length}
+                  </span>
+                </div>
+
+                {wooSites.length === 0 ? (
+                  <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-left space-y-2">
+                    <div className="flex items-center gap-2 text-amber-800 font-bold text-xs">
+                      <AlertTriangle className="w-4 h-4 text-amber-500 flex-shrink-0" />
+                      <span>Sin credenciales en la nube</span>
+                    </div>
+                    <p className="text-[11px] text-amber-700 leading-normal">
+                      No hay tiendas WooCommerce sincronizadas en tu perfil. Conectá tu tienda en la PC y hacé clic en el botón de abajo para sincronizarla.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="border border-slate-100 rounded-2xl divide-y divide-slate-100 max-h-32 overflow-y-auto">
+                    {wooSites.map((site) => {
+                      const isActive = site.id === activeSiteId;
+                      return (
+                        <div key={site.id} className="p-3 flex items-center justify-between text-xs hover:bg-slate-50 transition-colors">
+                          <div className="flex flex-col text-left min-w-0 pr-2">
+                            <span className="font-bold text-slate-800 truncate">{site.name}</span>
+                            <span className="text-[10px] text-slate-400 truncate">{site.url}</span>
+                          </div>
+                          {isActive ? (
+                            <span className="flex-shrink-0 bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full font-black text-[9px] uppercase tracking-wider border border-emerald-200">
+                              Activa
+                            </span>
+                          ) : (
+                            <span className="flex-shrink-0 bg-slate-50 text-slate-400 px-2 py-0.5 rounded-full font-bold text-[9px] uppercase tracking-wider border border-slate-200">
+                              Guardada
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
-              <p className="text-xs text-slate-500 px-4">Tus perfiles y configuraciones se están sincronizando automáticamente con Firebase.</p>
-              <button
-                onClick={async () => { await logout(); onClose(); }}
-                className="w-full mt-4 py-3 bg-red-50 text-red-600 hover:bg-red-100 rounded-xl font-bold transition-colors"
-              >
-                Cerrar Sesión
-              </button>
+
+              {/* Botón de Sincronización Forzada */}
+              {onForcePushWooSession && (
+                <div className="space-y-1">
+                  <button
+                    onClick={handleForcePush}
+                    disabled={pushing}
+                    className={`w-full py-3 px-4 rounded-xl text-xs font-black flex items-center justify-center gap-2 border-2 transition-all active:scale-[0.98] ${
+                      pushSuccess
+                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                        : 'bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border-indigo-100 hover:border-indigo-200'
+                    }`}
+                  >
+                    {pushing ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 animate-spin text-indigo-600" />
+                        <span>Subiendo credenciales...</span>
+                      </>
+                    ) : pushSuccess ? (
+                      <>
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                        <span>¡Sincronizado correctamente!</span>
+                      </>
+                    ) : (
+                      <>
+                        <UploadCloud className="w-4 h-4 text-indigo-600" />
+                        <span>Subir Credenciales a la Nube</span>
+                      </>
+                    )}
+                  </button>
+                  <p className="text-[9px] text-slate-400 leading-normal px-2">
+                    Si estás en la PC, usá este botón para subir tus credenciales locales WooCommerce y que el móvil las herede automáticamente al loguearse.
+                  </p>
+                </div>
+              )}
+
+              {/* Stats Técnicas */}
+              <div className="grid grid-cols-2 gap-2 bg-slate-50 p-3 rounded-2xl border border-slate-100 text-[10px] text-left">
+                <div className="space-y-0.5">
+                  <span className="text-slate-400 font-bold block">Dispositivo</span>
+                  <span className="font-mono text-slate-600 font-black truncate block" title={deviceId}>
+                    {deviceId ? `${deviceId.substring(0, 10)}...` : 'N/D'}
+                  </span>
+                </div>
+                <div className="space-y-0.5 pl-2 border-l border-slate-200">
+                  <span className="text-slate-400 font-bold block">Productos locales</span>
+                  <span className="font-mono text-slate-600 font-black block">
+                    {productsCount} item{productsCount !== 1 ? 's' : ''}
+                  </span>
+                </div>
+              </div>
+
+              {/* Botón de Logout */}
+              <div className="pt-2 border-t border-slate-100 flex gap-2">
+                <button
+                  onClick={onClose}
+                  className="flex-1 py-3 border border-slate-200 hover:bg-slate-50 rounded-xl font-bold text-xs transition-colors"
+                >
+                  Cerrar Ventana
+                </button>
+                <button
+                  onClick={async () => { await logout(); onClose(); }}
+                  className="flex-1 py-3 bg-red-50 text-red-600 hover:bg-red-100 rounded-xl font-bold text-xs transition-colors flex items-center justify-center gap-1.5"
+                >
+                  Cerrar Sesión
+                </button>
+              </div>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">

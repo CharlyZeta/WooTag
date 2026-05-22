@@ -257,6 +257,14 @@ export default function App() {
             setActiveSiteId(cloudData.wooSession.siteId);
             localStorage.setItem(ACTIVE_SITE_KEY, cloudData.wooSession.siteId);
           }
+        } else {
+          // No hay datos de sesión en la nube ni sesión local previa.
+          // Inicializamos la referencia de sincronización con estados vacíos para evitar escrituras en bucle.
+          lastSyncedData.current = {
+            wooSites: [],
+            activeSiteId: null,
+            wooSession: null
+          };
         }
 
         // Cargar productos iniciales desde la nube si los hay
@@ -483,6 +491,44 @@ export default function App() {
     wrappedSetProducts([]);
   };
 
+  const handleForcePushWooSession = async () => {
+    if (!currentUser || !session) return;
+
+    const targetSiteId = session.siteId || Math.random().toString(36).substring(2, 9);
+    const siteData: WooSite = {
+      id: targetSiteId,
+      name: new URL(session.config.url).hostname,
+      url: session.config.url,
+      consumerKey: session.config.consumerKey,
+      consumerSecret: session.config.consumerSecret,
+      lastUsed: Date.now()
+    };
+
+    const updatedSites = [siteData, ...wooSites.filter(s => s.id !== targetSiteId && s.url !== session.config.url)];
+    setWooSites(updatedSites);
+    setActiveSiteId(targetSiteId);
+    localStorage.setItem(ACTIVE_SITE_KEY, targetSiteId);
+
+    const updatedSession = { ...session, siteId: targetSiteId };
+    setSession(updatedSession);
+
+    const encrypted = encrypt(updatedSession);
+    localStorage.setItem(SESSION_KEY, encrypted);
+
+    lastSyncedData.current = {
+      wooSites: updatedSites,
+      activeSiteId: targetSiteId,
+      wooSession: updatedSession
+    };
+
+    await updateCloudProfile(currentUser.uid, {
+      wooSites: updatedSites,
+      activeSiteId: targetSiteId,
+      wooSession: updatedSession
+    });
+    addToast("Credenciales subidas a la nube con éxito", "success");
+  };
+
   const handleOptimizeDescription = async (productId: string) => {
     const product = products.find(p => p.id === productId);
     if (!product) return;
@@ -626,6 +672,10 @@ export default function App() {
             setSession(newSession); // Se hereda la sesión de Woo desde el host
             setRoomRole('guest');
           }}
+          wooSites={wooSites}
+          activeSiteId={activeSiteId}
+          onForcePushWooSession={handleForcePushWooSession}
+          deviceId={MY_DEVICE_ID}
         />
       </div>
 

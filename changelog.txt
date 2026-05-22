@@ -1,5 +1,14 @@
 # Changelog - WooTag AI Generator
 
+## [2.2.5] - 2026-05-22
+### Added
+- **Panel de Diagnóstico Visual en CloudLoginModal**: Muestra información en tiempo real sobre la cuenta en la nube, incluyendo el ID de dispositivo único, el recuento de productos locales, y la lista completa de tiendas WooCommerce asociadas al perfil con insignias de estado ("Activa" / "Guardada").
+- **Botón Manual de Sincronización Forzada**: Permite al usuario en la PC (o dispositivo host) subir instantáneamente sus credenciales y sesión activas a Firestore para que el dispositivo móvil las herede inmediatamente tras iniciar sesión, evitando la latencia del debounce.
+- **Advertencias Visuales**: Agregada una alerta amarilla llamativa en el modal de la nube si no hay ninguna tienda WooCommerce guardada, instruyendo detalladamente al usuario sobre cómo sincronizar por primera vez.
+
+### Fixed
+- **Fix de Sobrescritura de Perfil Vacío (Race Condition)**: Inicializa `lastSyncedData.current` con estados vacíos (`wooSites: []`, `activeSiteId: null`, `wooSession: null`) al cargar un perfil en la nube vacío y sin sesión local previa. Esto evita que los dispositivos móviles recién logueados interpreten la diferencia con `undefined` como un cambio local y sobrescriban o borren accidentalmente datos válidos del perfil.
+
 ## [2.2.4] - 2026-05-22
 ### Added
 - **Sincronización robusta y bidireccional de credenciales de WooCommerce** (`App.tsx`):

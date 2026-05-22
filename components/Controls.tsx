@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { APP_VERSION, PrintRecord, TagConfig, Product, WooConfig, WpUser, WooCategory, DesignProfile } from '../types';
+import { APP_VERSION, PrintRecord, TagConfig, Product, WooConfig, WpUser, WooCategory, DesignProfile, WooSite } from '../types';
 import { fetchProductBySku, fetchCategories, fetchProductsByCategory, fetchProductsByName } from '../services/wooService';
 import { downloadTemplate, parseXlsFile } from '../utils/xlsImport';
 import { logEvent } from '../utils/ipLogger';
@@ -39,6 +39,10 @@ interface ControlsProps {
   roomRole: 'host' | 'guest' | null;
   onRoomCreated: (id: string) => void;
   onRoomJoined: (id: string, wooConfig: AuthSession) => void;
+  wooSites: WooSite[];
+  activeSiteId: string | null;
+  onForcePushWooSession: () => Promise<void>;
+  deviceId: string;
 }
 
 export const Controls: React.FC<ControlsProps> = ({
@@ -64,7 +68,11 @@ export const Controls: React.FC<ControlsProps> = ({
   activeRoomId,
   roomRole,
   onRoomCreated,
-  onRoomJoined
+  onRoomJoined,
+  wooSites,
+  activeSiteId,
+  onForcePushWooSession,
+  deviceId,
 }) => {
   const [activeTab, setActiveTab] = useState<'data' | 'import' | 'layout' | 'design' | 'history'>('data');
   const [skuSearch, setSkuSearch] = useState('');
@@ -1086,6 +1094,11 @@ export const Controls: React.FC<ControlsProps> = ({
       <CloudLoginModal
         isOpen={isCloudModalOpen}
         onClose={() => setIsCloudModalOpen(false)}
+        wooSites={wooSites}
+        activeSiteId={activeSiteId}
+        onForcePushWooSession={onForcePushWooSession}
+        productsCount={products.length}
+        deviceId={deviceId}
       />
 
       {wooConfig && currentUser && (
