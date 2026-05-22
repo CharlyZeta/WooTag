@@ -248,17 +248,41 @@ export default function App() {
             wooSession: { ...localSession, siteId: localSite.id }
           }).catch(err => console.error("Error migrating local session to cloud", err));
         } else if (cloudData.wooSession) {
-          // Fallback para retrocompatibilidad (perfiles sin wooSites)
-          lastSyncedData.current = {
-            wooSites: [],
-            activeSiteId: null,
-            wooSession: cloudData.wooSession
+          // Fallback para retrocompatibilidad: Convertir wooSession heredada en un sitio de wooSites
+          const legacySession = cloudData.wooSession;
+          const legacySiteId = legacySession.siteId || Math.random().toString(36).substring(2, 9);
+          const legacySite: WooSite = {
+            id: legacySiteId,
+            name: new URL(legacySession.config.url).hostname,
+            url: legacySession.config.url,
+            consumerKey: legacySession.config.consumerKey,
+            consumerSecret: legacySession.config.consumerSecret,
+            lastUsed: Date.now()
           };
-          setSession(cloudData.wooSession);
-          if (cloudData.wooSession.siteId) {
-            setActiveSiteId(cloudData.wooSession.siteId);
-            localStorage.setItem(ACTIVE_SITE_KEY, cloudData.wooSession.siteId);
-          }
+          const updatedSites = [legacySite];
+          const updatedSession = { ...legacySession, siteId: legacySiteId };
+
+          lastSyncedData.current = {
+            wooSites: updatedSites,
+            activeSiteId: legacySiteId,
+            wooSession: updatedSession
+          };
+
+          setWooSites(updatedSites);
+          setActiveSiteId(legacySiteId);
+          localStorage.setItem(ACTIVE_SITE_KEY, legacySiteId);
+          setSession(updatedSession);
+
+          // Persistir localmente la sesión cifrada
+          const encrypted = encrypt(updatedSession);
+          localStorage.setItem(SESSION_KEY, encrypted);
+
+          // Subir a la nube de inmediato para migrar el perfil de la base de datos al formato multisitio
+          updateCloudProfile(currentUser.uid, {
+            wooSites: updatedSites,
+            activeSiteId: legacySiteId,
+            wooSession: updatedSession
+          }).catch(err => console.error("Error migrating legacy cloud session to multisite", err));
         } else {
           // No hay datos de sesión en la nube ni sesión local previa.
           // Inicializamos la referencia de sincronización con estados vacíos para evitar escrituras en bucle.

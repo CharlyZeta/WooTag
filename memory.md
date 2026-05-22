@@ -1,7 +1,7 @@
 # Memory of WooTag AI Generator
 
 ## 📌 Contexto General del Proyecto
-- **Nombre**: WooTag AI Generator (versión 2.2.6)
+- **Nombre**: WooTag AI Generator (versión 2.2.7)
 - **Propósito**: Generar e imprimir etiquetas de precio profesionales A4 conectando con WooCommerce o cargando plantillas Excel (XLS/XLSX). Permite optimización de descripciones usando Google Gemini AI (`gemini-2.0-flash`) y sincronización en tiempo real vía Firebase (Firestore y Auth) entre PC y dispositivos móviles (modo Companion QR o identidad compartida).
 - **Stack Tecnológico**: React 19, TypeScript, Vite, Firebase, SheetJS (XLSX), Lucide React, Tailwind CSS (vía CDN en `index.html`).
 

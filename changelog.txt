@@ -1,5 +1,10 @@
 # Changelog - WooTag AI Generator
 
+## [2.2.7] - 2026-05-22
+### Fixed
+- **Migración de Sesiones Heredadas a Multisitio (Retrocompatibilidad)**: Corregida la rama de fallback para cuentas con perfiles antiguos en la base de datos (que tenían `wooSession` pero carecían de `wooSites` y `activeSiteId`), transformándola automáticamente al formato multisitio y guardándola de forma consistente tanto de forma local como en la nube.
+- **Diagnóstico y Documentación de Expiración de Firestore Rules**: Se identificó que el bloqueo de sincronización fue causado por la expiración de las reglas de prueba de Firestore (límite del 25 de abril de 2026). Se documentó el conjunto de reglas óptimas y seguras para resolver el error de "Permiso Denegado" en la consola de Firebase.
+
 ## [2.2.6] - 2026-05-22
 ### Fixed
 - **Fix de Condición de Carrera en Login de Móviles/Secundarios (Sincronización)**: Implementación de la compuerta reactiva `isCloudProfileLoaded` en `App.tsx` para bloquear cualquier escritura automática a Firestore (que sobrescribía el perfil en la nube con estados vacíos iniciales) y la suscripción en tiempo real hasta que la descarga asincrónica del perfil cloud haya culminado satisfactoriamente.
