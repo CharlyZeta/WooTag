@@ -158,16 +158,19 @@ export default function App() {
   }, []);
 
   // Load Cloud Profile when user logs in
+  // handleConnect en las dependencias asegura que el efecto use siempre
+  // la versión más reciente del callback (con el currentUser correcto).
   useEffect(() => {
     if (currentUser) {
       loadCloudProfile(currentUser.uid).then(cloudData => {
         if (cloudData.tagConfig) setConfig(cloudData.tagConfig);
         if (cloudData.designProfiles.length > 0) setProfiles(cloudData.designProfiles);
         if (cloudData.wooSites) setWooSites(cloudData.wooSites);
-        
+
         // Sincronización de sesión activa: buscar el sitio activo o usar el primero disponible
-        const siteToLoad = activeSiteId 
-          ? cloudData.wooSites?.find(s => s.id === activeSiteId) 
+        const savedSiteId = localStorage.getItem(ACTIVE_SITE_KEY);
+        const siteToLoad = savedSiteId
+          ? cloudData.wooSites?.find(s => s.id === savedSiteId)
           : cloudData.wooSites?.[0];
 
         if (siteToLoad) {
@@ -191,7 +194,7 @@ export default function App() {
         }
       }).catch(err => console.error("Error loading cloud profile", err));
     }
-  }, [currentUser]);
+  }, [currentUser, handleConnect]);
 
   // Suscripción en tiempo real a perfil (sync entre dispositivos)
   useEffect(() => {
@@ -268,7 +271,10 @@ export default function App() {
   }, [products, currentUser, activeRoomId, roomRole]);
 
   // Auth Handlers
-  const handleConnect = (wooConfig: WooConfig, user: WpUser, remember: boolean, siteId?: string) => {
+  // useCallback garantiza que el closure de currentUser sea siempre el valor
+  // actual, evitando referencias stale cuando se llama desde promesas asíncronas
+  // como loadCloudProfile.then().
+  const handleConnect = useCallback((wooConfig: WooConfig, user: WpUser, remember: boolean, siteId?: string) => {
     const newSession: AuthSession = {
       user,
       config: wooConfig,
@@ -301,7 +307,7 @@ export default function App() {
         localStorage.setItem(ACTIVE_SITE_KEY, siteId);
         updateCloudProfile(currentUser.uid, { activeSiteId: siteId });
       }
-      
+
       updateCloudProfile(currentUser.uid, { wooSession: newSession });
     }
 
@@ -311,13 +317,13 @@ export default function App() {
     } else {
       localStorage.removeItem(SESSION_KEY);
     }
-  };
+  }, [currentUser]);
 
-  const handleSelectSite = (site: WooSite) => {
+  const handleSelectSite = useCallback((site: WooSite) => {
     handleConnect(site, { id: 0, name: 'Usuario Cloud', slug: '', roles: [] }, true, site.id);
-  };
+  }, [handleConnect]);
 
-  const handleDeleteSite = (siteId: string) => {
+  const handleDeleteSite = useCallback((siteId: string) => {
     const updated = wooSites.filter(s => s.id !== siteId);
     setWooSites(updated);
     if (currentUser) updateCloudProfile(currentUser.uid, { wooSites: updated });
@@ -326,7 +332,7 @@ export default function App() {
       setActiveSiteId(null);
       localStorage.removeItem(ACTIVE_SITE_KEY);
     }
-  };
+  }, [currentUser, wooSites, activeSiteId]);
 
   const handleDisconnect = () => {
     if (activeRoomIdRef.current) {
