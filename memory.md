@@ -1,7 +1,7 @@
 # Memory of WooTag AI Generator
 
 ## 📌 Contexto General del Proyecto
-- **Nombre**: WooTag AI Generator (versión 2.2.3)
+- **Nombre**: WooTag AI Generator (versión 2.2.4)
 - **Propósito**: Generar e imprimir etiquetas de precio profesionales A4 conectando con WooCommerce o cargando plantillas Excel (XLS/XLSX). Permite optimización de descripciones usando Google Gemini AI (`gemini-2.0-flash`) y sincronización en tiempo real vía Firebase (Firestore y Auth) entre PC y dispositivos móviles (modo Companion QR o identidad compartida).
 - **Stack Tecnológico**: React 19, TypeScript, Vite, Firebase, SheetJS (XLSX), Lucide React, Tailwind CSS (vía CDN en `index.html`).
 
@@ -15,7 +15,7 @@
 3. **Rol de Sesión**:
    - Cargado el rol: **Arquitecto / Desarrollador Principal**.
 4. **Misión de Sesión (2026-05-22)**:
-   - Corregir bugs de persistencia de credenciales WooCommerce entre dispositivos al hacer login con cuenta Firebase compartida.
+   - Implementar una sincronización de WooCommerce bidireccional y robusta entre dispositivos mediante un efecto debounce unificado y prevención de bucles/condiciones de carrera.
 
 ---
 
@@ -26,10 +26,11 @@
   - Excelente separación y modularización del estado global de la aplicación (cola de productos, configuración visual `TagConfig`, perfiles de diseño guardados e historial de impresión).
   - Manejo eficiente de rehidratación de sesión con credenciales WooCommerce de forma cifrada/ofuscada en `localStorage`.
   - Excelente uso de referencias (`useRef`) y de un indicador flotante de páginas A4 que actualiza el estado de manera reactiva mediante el scroll del contenedor.
-- **Bugs Corregidos en v2.2.3 ✅**:
-  - **Type mismatch en auto-login**: Al hacer login con Firebase, se pasaba el objeto `WooSite` directamente donde `handleConnect` esperaba `WooConfig`. Corregido extrayendo `url`, `consumerKey` y `consumerSecret` antes de llamar al handler.
-  - **`remember=false` en restauración cloud**: La sesión no se persistía en `localStorage` al restaurarse desde Firestore, causando pérdida de sesión al recargar. Corregido a `remember=true`.
-  - **`WooSite` faltaba en los imports**: Agregado explícitamente al import de `types.ts`.
+- **Mejoras y Fixes en v2.2.4 ✅**:
+  - **Evitar bucles de escritura**: Implementación de referencias `sessionRef` y `lastSyncedData` para realizar comparaciones profundas antes de escribir a Firestore y omitir loops redundantes en las suscripciones.
+  - **Sincronización en tiempo real reactiva**: Modificación de la suscripción en tiempo real (`subscribeToCloudProfile`) para conectar automáticamente si el sitio activo en la nube cambia o si el móvil no tiene sesión local.
+  - **Migración transparente de sesión local**: Si un usuario tiene sesión local iniciada (modo invitado) y se loguea en Firebase con una base de datos vacía, sus credenciales locales se guardan automáticamente en su perfil en la nube.
+  - **Debounce unificado**: Integración de todo el flujo de sincronización de WooCommerce hacia Firestore en un único `useEffect` con debounce de 1000ms, simplificando los handlers y removiendo llamadas directas duplicadas.
 
 ### 2. Panel de Control (`components/Controls.tsx`)
 - **Fortalezas**:
@@ -54,7 +55,7 @@
 - **`geminiService.ts`**:
   - Implementa fallback robusto de red y control de cuotas para que la app continúe funcionando de forma transparente si falla la optimización de descripciones con IA.
 
-### 5. Flujo de Credenciales Cloud (post-fix v2.2.3)
+### 5. Flujo de Credenciales Cloud (post-fix v2.2.4)
 ```
 Firebase Login (PC o móvil)
     → loadCloudProfile(uid)           // Lee Firestore: users/{uid}

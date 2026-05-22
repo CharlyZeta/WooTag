@@ -1,5 +1,13 @@
 # Changelog - WooTag AI Generator
 
+## [2.2.4] - 2026-05-22
+### Added
+- **Sincronización robusta y bidireccional de credenciales de WooCommerce** (`App.tsx`):
+  - **Referencias de sincronización (`sessionRef`, `lastSyncedData`)**: Añadidas para evitar bucles de escritura y lecturas concurrentes al interactuar con Firestore.
+  - **Migración transparente de sesión local**: Al iniciar sesión, si la nube está vacía pero el usuario ya tenía una conexión activa local (modo invitado), se migra de manera transparente convirtiéndola en un sitio de la nube.
+  - **Auto-conexión reactiva en tiempo real**: Actualizada la suscripción de perfil cloud para conectar automáticamente si el sitio activo en la nube cambia o si el dispositivo (por ejemplo, el móvil) no tiene sesión activa.
+  - **Efecto de guardado único con debounce**: Unificado todo el flujo de sincronización de WooCommerce en un único `useEffect` con un debounce de 1000ms, simplificando los handlers de conexión (`handleConnect`, `handleDeleteSite`, `handleDisconnect`) y eliminando las llamadas directas concurrentes.
+
 ## [2.2.3] - 2026-05-22
 ### Fixed
 - **Bug crítico: Auto-login de credenciales WooCommerce desde perfil cloud** (`App.tsx`):

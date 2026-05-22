@@ -89,6 +89,16 @@ export default function App() {
   // escribir de vuelta en Firestore en ese mismo ciclo de React.
   const skipNextCloudWrite = useRef(false);
 
+  // Referencias para controlar la sincronización de WooCommerce y evitar bucles de escritura
+  const sessionRef = useRef<AuthSession | null>(null);
+  sessionRef.current = session;
+
+  const lastSyncedData = useRef<{
+    wooSites?: WooSite[];
+    activeSiteId?: string | null;
+    wooSession?: AuthSession | null;
+  }>({});
+
   // Print history
   const [printLog, setPrintLog] = useState<PrintRecord[]>(() => {
     try {
@@ -158,33 +168,95 @@ export default function App() {
   }, []);
 
   // Load Cloud Profile when user logs in
-  // handleConnect en las dependencias asegura que el efecto use siempre
-  // la versión más reciente del callback (con el currentUser correcto).
   useEffect(() => {
     if (currentUser) {
       loadCloudProfile(currentUser.uid).then(cloudData => {
         if (cloudData.tagConfig) setConfig(cloudData.tagConfig);
         if (cloudData.designProfiles.length > 0) setProfiles(cloudData.designProfiles);
-        if (cloudData.wooSites) setWooSites(cloudData.wooSites);
+        
+        const currentSites = cloudData.wooSites || [];
+        const currentActiveSiteId = cloudData.activeSiteId || null;
 
-        // Sincronización de sesión activa: buscar el sitio activo o usar el primero disponible
-        const savedSiteId = localStorage.getItem(ACTIVE_SITE_KEY);
-        const siteToLoad = savedSiteId
-          ? cloudData.wooSites?.find(s => s.id === savedSiteId)
-          : cloudData.wooSites?.[0];
+        if (currentSites.length > 0) {
+          const localActiveSiteId = localStorage.getItem(ACTIVE_SITE_KEY);
+          const targetSiteId = currentActiveSiteId || localActiveSiteId || currentSites[0].id;
+          const siteToLoad = currentSites.find(s => s.id === targetSiteId) || currentSites[0];
 
-        if (siteToLoad) {
-          // Construir el WooConfig a partir del WooSite antes de conectar
-          const wooConfig: WooConfig = {
-            url: siteToLoad.url,
-            consumerKey: siteToLoad.consumerKey,
-            consumerSecret: siteToLoad.consumerSecret,
+          if (siteToLoad) {
+            const wooConfig: WooConfig = {
+              url: siteToLoad.url,
+              consumerKey: siteToLoad.consumerKey,
+              consumerSecret: siteToLoad.consumerSecret,
+            };
+            const newSession: AuthSession = {
+              user: { id: 0, name: 'Usuario Cloud', slug: '', roles: [] },
+              config: wooConfig,
+              expiresAt: Date.now() + SESSION_DURATION,
+              siteId: siteToLoad.id
+            };
+
+            // Sincronizar referencia con el estado final esperado
+            lastSyncedData.current = {
+              wooSites: currentSites,
+              activeSiteId: siteToLoad.id,
+              wooSession: newSession
+            };
+
+            setWooSites(currentSites);
+            setActiveSiteId(siteToLoad.id);
+            localStorage.setItem(ACTIVE_SITE_KEY, siteToLoad.id);
+            setSession(newSession);
+
+            // Persistir localmente la sesión cifrada
+            const encrypted = encrypt(newSession);
+            localStorage.setItem(SESSION_KEY, encrypted);
+          }
+        } else if (sessionRef.current) {
+          // No hay sitios en la nube, pero el usuario tiene una sesión local activa (modo invitado previo)
+          // Migrar la sesión local de WooCommerce al perfil del usuario en la nube
+          const localSession = sessionRef.current;
+          const localSite: WooSite = {
+            id: localSession.siteId || Math.random().toString(36).substring(2, 9),
+            name: new URL(localSession.config.url).hostname,
+            url: localSession.config.url,
+            consumerKey: localSession.config.consumerKey,
+            consumerSecret: localSession.config.consumerSecret,
+            lastUsed: Date.now()
           };
-          // remember=true: persiste localmente para no pedir credenciales la próxima vez
-          handleConnect(wooConfig, { id: 0, name: 'Usuario Cloud', slug: '', roles: [] }, true, siteToLoad.id);
+          const updatedSites = [localSite];
+          
+          lastSyncedData.current = {
+            wooSites: updatedSites,
+            activeSiteId: localSite.id,
+            wooSession: { ...localSession, siteId: localSite.id }
+          };
+
+          setWooSites(updatedSites);
+          setActiveSiteId(localSite.id);
+          localStorage.setItem(ACTIVE_SITE_KEY, localSite.id);
+          setSession({
+            ...localSession,
+            siteId: localSite.id
+          });
+
+          // Subir a la nube de inmediato para consolidar
+          updateCloudProfile(currentUser.uid, {
+            wooSites: updatedSites,
+            activeSiteId: localSite.id,
+            wooSession: { ...localSession, siteId: localSite.id }
+          }).catch(err => console.error("Error migrating local session to cloud", err));
         } else if (cloudData.wooSession) {
           // Fallback para retrocompatibilidad (perfiles sin wooSites)
+          lastSyncedData.current = {
+            wooSites: [],
+            activeSiteId: null,
+            wooSession: cloudData.wooSession
+          };
           setSession(cloudData.wooSession);
+          if (cloudData.wooSession.siteId) {
+            setActiveSiteId(cloudData.wooSession.siteId);
+            localStorage.setItem(ACTIVE_SITE_KEY, cloudData.wooSession.siteId);
+          }
         }
 
         // Cargar productos iniciales desde la nube si los hay
@@ -194,7 +266,7 @@ export default function App() {
         }
       }).catch(err => console.error("Error loading cloud profile", err));
     }
-  }, [currentUser, handleConnect]);
+  }, [currentUser]);
 
   // Suscripción en tiempo real a perfil (sync entre dispositivos)
   useEffect(() => {
@@ -213,11 +285,91 @@ export default function App() {
         skipNextCloudWrite.current = true;
         setProducts(cloudData.products);
       }
+
       // Sincronizar sitios si cambiaron en otro dispositivo
-      if (cloudData.wooSites) setWooSites(cloudData.wooSites);
+      if (cloudData.wooSites) {
+        lastSyncedData.current = {
+          ...lastSyncedData.current,
+          wooSites: cloudData.wooSites,
+          activeSiteId: cloudData.activeSiteId || null
+        };
+        setWooSites(cloudData.wooSites);
+
+        // Si el dispositivo actual no tiene sesión WooCommerce activa o si el sitio activo en la nube cambió,
+        // conectar de forma automática
+        const activeSite = cloudData.wooSites.find(s => s.id === cloudData.activeSiteId) || cloudData.wooSites[0];
+        
+        if (activeSite && (!sessionRef.current || sessionRef.current.siteId !== activeSite.id)) {
+          const wooConfig: WooConfig = {
+            url: activeSite.url,
+            consumerKey: activeSite.consumerKey,
+            consumerSecret: activeSite.consumerSecret,
+          };
+          const newSession: AuthSession = {
+            user: { id: 0, name: 'Usuario Cloud', slug: '', roles: [] },
+            config: wooConfig,
+            expiresAt: Date.now() + SESSION_DURATION,
+            siteId: activeSite.id
+          };
+
+          lastSyncedData.current.wooSession = newSession;
+          lastSyncedData.current.activeSiteId = activeSite.id;
+
+          setSession(newSession);
+          setActiveSiteId(activeSite.id);
+          localStorage.setItem(ACTIVE_SITE_KEY, activeSite.id);
+          
+          const encrypted = encrypt(newSession);
+          localStorage.setItem(SESSION_KEY, encrypted);
+          addToast(`Conectado automáticamente a ${activeSite.name}`, 'success');
+        }
+      }
     });
     return unsubscribe;
   }, [currentUser, addToast]);
+
+  // Sync de wooSites, activeSiteId y wooSession hacia la nube con debounce
+  useEffect(() => {
+    if (!currentUser) return;
+
+    const prev = lastSyncedData.current;
+    const isSameSites = JSON.stringify(prev.wooSites) === JSON.stringify(wooSites);
+    const isSameActiveId = prev.activeSiteId === activeSiteId;
+    const isSameSession = JSON.stringify(prev.wooSession) === JSON.stringify(session);
+
+    if (isSameSites && isSameActiveId && isSameSession) {
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      // Re-verificar antes de escribir para asegurar consistencia
+      const currentPrev = lastSyncedData.current;
+      const currentIsSameSites = JSON.stringify(currentPrev.wooSites) === JSON.stringify(wooSites);
+      const currentIsSameActiveId = currentPrev.activeSiteId === activeSiteId;
+      const currentIsSameSession = JSON.stringify(currentPrev.wooSession) === JSON.stringify(session);
+
+      if (currentIsSameSites && currentIsSameActiveId && currentIsSameSession) {
+        return;
+      }
+
+      const dataToSync: Partial<UserCloudProfile> = {};
+      if (!currentIsSameSites) dataToSync.wooSites = wooSites;
+      if (!currentIsSameActiveId) dataToSync.activeSiteId = activeSiteId;
+      if (!currentIsSameSession) dataToSync.wooSession = session;
+
+      updateCloudProfile(currentUser.uid, dataToSync)
+        .then(() => {
+          lastSyncedData.current = {
+            wooSites,
+            activeSiteId,
+            wooSession: session
+          };
+        })
+        .catch(console.error);
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [wooSites, activeSiteId, session, currentUser]);
 
   // Room subscription
   useEffect(() => {
@@ -271,45 +423,32 @@ export default function App() {
   }, [products, currentUser, activeRoomId, roomRole]);
 
   // Auth Handlers
-  // useCallback garantiza que el closure de currentUser sea siempre el valor
-  // actual, evitando referencias stale cuando se llama desde promesas asíncronas
-  // como loadCloudProfile.then().
-  const handleConnect = useCallback((wooConfig: WooConfig, user: WpUser, remember: boolean, siteId?: string) => {
+  const handleConnect = (wooConfig: WooConfig, user: WpUser, remember: boolean, siteId?: string) => {
+    const targetSiteId = siteId || Math.random().toString(36).substring(2, 9);
     const newSession: AuthSession = {
       user,
       config: wooConfig,
       expiresAt: Date.now() + SESSION_DURATION,
-      siteId
+      siteId: targetSiteId
     };
     setSession(newSession);
 
-    if (currentUser) {
-      const siteData: WooSite = {
-        id: siteId || Math.random().toString(36).substring(2, 9),
-        name: new URL(wooConfig.url).hostname,
-        url: wooConfig.url,
-        consumerKey: wooConfig.consumerKey,
-        consumerSecret: wooConfig.consumerSecret,
-        lastUsed: Date.now()
-      };
+    const siteData: WooSite = {
+      id: targetSiteId,
+      name: new URL(wooConfig.url).hostname,
+      url: wooConfig.url,
+      consumerKey: wooConfig.consumerKey,
+      consumerSecret: wooConfig.consumerSecret,
+      lastUsed: Date.now()
+    };
 
-      // Si es un sitio nuevo, lo agregamos a la lista
-      if (!siteId) {
-        setWooSites(prev => {
-          const updated = [siteData, ...prev.filter(s => s.url !== siteData.url)];
-          updateCloudProfile(currentUser.uid, { wooSites: updated, activeSiteId: siteData.id });
-          return updated;
-        });
-        setActiveSiteId(siteData.id);
-        localStorage.setItem(ACTIVE_SITE_KEY, siteData.id);
-      } else {
-        setActiveSiteId(siteId);
-        localStorage.setItem(ACTIVE_SITE_KEY, siteId);
-        updateCloudProfile(currentUser.uid, { activeSiteId: siteId });
-      }
+    setWooSites(prev => {
+      const filtered = prev.filter(s => s.id !== targetSiteId && s.url !== wooConfig.url);
+      return [siteData, ...filtered];
+    });
 
-      updateCloudProfile(currentUser.uid, { wooSession: newSession });
-    }
+    setActiveSiteId(targetSiteId);
+    localStorage.setItem(ACTIVE_SITE_KEY, targetSiteId);
 
     if (remember) {
       const encrypted = encrypt(newSession);
@@ -317,22 +456,21 @@ export default function App() {
     } else {
       localStorage.removeItem(SESSION_KEY);
     }
-  }, [currentUser]);
+  };
 
-  const handleSelectSite = useCallback((site: WooSite) => {
+  const handleSelectSite = (site: WooSite) => {
     handleConnect(site, { id: 0, name: 'Usuario Cloud', slug: '', roles: [] }, true, site.id);
-  }, [handleConnect]);
+  };
 
-  const handleDeleteSite = useCallback((siteId: string) => {
+  const handleDeleteSite = (siteId: string) => {
     const updated = wooSites.filter(s => s.id !== siteId);
     setWooSites(updated);
-    if (currentUser) updateCloudProfile(currentUser.uid, { wooSites: updated });
     if (activeSiteId === siteId) {
       setSession(null);
       setActiveSiteId(null);
       localStorage.removeItem(ACTIVE_SITE_KEY);
     }
-  }, [currentUser, wooSites, activeSiteId]);
+  };
 
   const handleDisconnect = () => {
     if (activeRoomIdRef.current) {
@@ -342,7 +480,6 @@ export default function App() {
     }
     setSession(null);
     localStorage.removeItem(SESSION_KEY);
-    if (currentUser) updateCloudProfile(currentUser.uid, { wooSession: null });
     wrappedSetProducts([]);
   };
 
