@@ -26,6 +26,10 @@
   - Excelente separación y modularización del estado global de la aplicación (cola de productos, configuración visual `TagConfig`, perfiles de diseño guardados e historial de impresión).
   - Manejo eficiente de rehidratación de sesión con credenciales WooCommerce de forma cifrada/ofuscada en `localStorage`.
   - Excelente uso de referencias (`useRef`) y de un indicador flotante de páginas A4 que actualiza el estado de manera reactiva mediante el scroll del contenedor.
+- **Mejoras y Fixes en v2.2.7 ✅**:
+  - **Migración de Perfiles Heredados a Multisitio (Retrocompatibilidad)**: Corregida la rama de fallback en `App.tsx` para cuentas con perfiles antiguos en la base de datos (que tenían `wooSession` pero carecían de `wooSites` y `activeSiteId`), transformándola automáticamente al formato multisitio y guardándola de forma consistente tanto localmente en `localStorage` como en Firestore.
+  - **Diagnóstico de Expiración de Firestore Rules**: Identificación de la expiración de las reglas de prueba de Firestore (límite del 25 de abril de 2026) que bloqueaba toda sincronización de datos con un error de permisos denegados. Se redactó y proporcionó al usuario una regla de producción segura y segmentada.
+
 - **Mejoras y Fixes en v2.2.6 ✅**:
   - **Compuerta de Sincronización Reactiva (`isCloudProfileLoaded`)**: Introducción del estado `isCloudProfileLoaded` en `App.tsx` para bloquear escrituras y suscripciones automáticas en Firebase hasta que los datos iniciales de la nube se hayan descargado por completo, previniendo la pérdida de credenciales y configuraciones en móviles.
   - **Limpieza Completa de Estados en Logout**: Al cerrar sesión de Firebase, se resetean todos los estados de tiendas, sesión activa de WooCommerce y cola de productos locales, removiendo datos confidenciales de `localStorage` para garantizar transiciones seguras.
