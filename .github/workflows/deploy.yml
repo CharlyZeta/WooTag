@@ -48,10 +48,10 @@ jobs:
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
           local-dir: ./dist/
-          # Ruta absoluta en el servidor FTP — evita que el action use el home del
-          # usuario como raíz y cree subcarpetas inesperadas (ej: /github/).
-          # Si el home del usuario FTP ya apunta a esta carpeta, usar solo: ./
-          server-dir: ${{ secrets.FTP_REMOTE_DIR || '/home/dualequi/wootag.dualequipamientos.com.ar/' }}
+          # Ruta destino en el servidor. Configurar en:
+          # GitHub → Settings → Secrets → Actions → FTP_REMOTE_DIR
+          # Valor correcto: /home/dualequi/wootag.dualequipamientos.com.ar/
+          server-dir: ${{ secrets.FTP_REMOTE_DIR }}
           exclude: |
             **/.git*
             **/.git*/**
