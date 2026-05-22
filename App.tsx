@@ -7,7 +7,9 @@ import { optimizeDescription } from './services/geminiService';
 import { encrypt, decrypt } from './utils/security';
 import { useAuth } from './contexts/AuthContext';
 import { loadCloudProfile, updateCloudProfile, subscribeToCloudProfile, addProductToCloudProfile } from './services/cloudProfiles';
+import { subscribeToRoom, closeRoom, syncRoomProducts, addProductToRoom } from './services/realtimeSession';
 import { ShoppingBag, Bell, CheckCircle2, Smartphone, Loader2, X } from 'lucide-react';
+
 
 // Identificador único por dispositivo/navegador — persiste en localStorage
 const DEVICE_ID_KEY = 'wootag_device_id';
