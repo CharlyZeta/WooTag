@@ -1,5 +1,6 @@
 # Changelog - WooTag AI Generator
 
+
 ## [2.2.2] - 2026-05-07
 ### Optimized
 - **Latencia de Sincronización**: Se redujo el tiempo de espera (debounce) para actualizaciones globales de 2s a 1s, haciendo que los cambios se reflejen mucho más rápido entre dispositivos.
