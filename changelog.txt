@@ -1,5 +1,10 @@
 # Changelog - WooTag AI Generator
 
+## [2.2.6] - 2026-05-22
+### Fixed
+- **Fix de Condición de Carrera en Login de Móviles/Secundarios (Sincronización)**: Implementación de la compuerta reactiva `isCloudProfileLoaded` en `App.tsx` para bloquear cualquier escritura automática a Firestore (que sobrescribía el perfil en la nube con estados vacíos iniciales) y la suscripción en tiempo real hasta que la descarga asincrónica del perfil cloud haya culminado satisfactoriamente.
+- **Limpieza de Sesión en Logout**: Añadido efecto de limpieza que restablece los estados de WooCommerce (`wooSites`, `activeSiteId`, `session`), la cola de productos y remueve la sesión de `localStorage` al cerrar la sesión de Firebase (`currentUser === null`), garantizando una transición limpia y segura a modo invitado.
+
 ## [2.2.5] - 2026-05-22
 ### Added
 - **Panel de Diagnóstico Visual en CloudLoginModal**: Muestra información en tiempo real sobre la cuenta en la nube, incluyendo el ID de dispositivo único, el recuento de productos locales, y la lista completa de tiendas WooCommerce asociadas al perfil con insignias de estado ("Activa" / "Guardada").

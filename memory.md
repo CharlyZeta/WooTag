@@ -1,7 +1,7 @@
 # Memory of WooTag AI Generator
 
 ## 📌 Contexto General del Proyecto
-- **Nombre**: WooTag AI Generator (versión 2.2.5)
+- **Nombre**: WooTag AI Generator (versión 2.2.6)
 - **Propósito**: Generar e imprimir etiquetas de precio profesionales A4 conectando con WooCommerce o cargando plantillas Excel (XLS/XLSX). Permite optimización de descripciones usando Google Gemini AI (`gemini-2.0-flash`) y sincronización en tiempo real vía Firebase (Firestore y Auth) entre PC y dispositivos móviles (modo Companion QR o identidad compartida).
 - **Stack Tecnológico**: React 19, TypeScript, Vite, Firebase, SheetJS (XLSX), Lucide React, Tailwind CSS (vía CDN en `index.html`).
 
@@ -26,6 +26,10 @@
   - Excelente separación y modularización del estado global de la aplicación (cola de productos, configuración visual `TagConfig`, perfiles de diseño guardados e historial de impresión).
   - Manejo eficiente de rehidratación de sesión con credenciales WooCommerce de forma cifrada/ofuscada en `localStorage`.
   - Excelente uso de referencias (`useRef`) y de un indicador flotante de páginas A4 que actualiza el estado de manera reactiva mediante el scroll del contenedor.
+- **Mejoras y Fixes en v2.2.6 ✅**:
+  - **Compuerta de Sincronización Reactiva (`isCloudProfileLoaded`)**: Introducción del estado `isCloudProfileLoaded` en `App.tsx` para bloquear escrituras y suscripciones automáticas en Firebase hasta que los datos iniciales de la nube se hayan descargado por completo, previniendo la pérdida de credenciales y configuraciones en móviles.
+  - **Limpieza Completa de Estados en Logout**: Al cerrar sesión de Firebase, se resetean todos los estados de tiendas, sesión activa de WooCommerce y cola de productos locales, removiendo datos confidenciales de `localStorage` para garantizar transiciones seguras.
+
 - **Mejoras y Fixes en v2.2.5 ✅**:
   - **Panel de diagnóstico en la nube (`CloudLoginModal`)**: Visualización detallada del ID del dispositivo, el recuento de productos locales, y el estado de todas las tiendas guardadas en la nube con insignias dinámicas ("Activa" / "Guardada").
   - **Sincronización forzada manual (`handleForcePushWooSession`)**: Permite la carga instantánea de credenciales y sesión desde la PC a Firestore, actualizando `lastSyncedData.current` en el proceso para evitar bucles.

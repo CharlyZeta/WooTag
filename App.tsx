@@ -44,6 +44,7 @@ export default function App() {
   const [isConnectionModalOpen, setIsConnectionModalOpen] = useState(false);
   const { currentUser } = useAuth();
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const [isCloudProfileLoaded, setIsCloudProfileLoaded] = useState(false);
 
   const addToast = useCallback((message: string, type: 'info' | 'success' = 'info') => {
     const id = Math.random().toString(36).substring(2, 9);
@@ -170,6 +171,7 @@ export default function App() {
   // Load Cloud Profile when user logs in
   useEffect(() => {
     if (currentUser) {
+      setIsCloudProfileLoaded(false);
       loadCloudProfile(currentUser.uid).then(cloudData => {
         if (cloudData.tagConfig) setConfig(cloudData.tagConfig);
         if (cloudData.designProfiles.length > 0) setProfiles(cloudData.designProfiles);
@@ -272,13 +274,28 @@ export default function App() {
           skipNextCloudWrite.current = true;
           setProducts(cloudData.products);
         }
+
+        setIsCloudProfileLoaded(true);
       }).catch(err => console.error("Error loading cloud profile", err));
+    }
+  }, [currentUser]);
+
+  // Limpieza al cerrar sesión de Firebase (currentUser es null)
+  useEffect(() => {
+    if (!currentUser) {
+      setIsCloudProfileLoaded(false);
+      setWooSites([]);
+      setActiveSiteId(null);
+      setSession(null);
+      wrappedSetProducts([]);
+      localStorage.removeItem(SESSION_KEY);
+      localStorage.removeItem(ACTIVE_SITE_KEY);
     }
   }, [currentUser]);
 
   // Suscripción en tiempo real a perfil (sync entre dispositivos)
   useEffect(() => {
-    if (!currentUser) return;
+    if (!currentUser || !isCloudProfileLoaded) return;
     const unsubscribe = subscribeToCloudProfile(currentUser.uid, (cloudData) => {
       // Sincronizar productos si el update lo hizo otro dispositivo
       if (cloudData.lastProductsDevice !== MY_DEVICE_ID && Array.isArray(cloudData.products)) {
@@ -334,11 +351,11 @@ export default function App() {
       }
     });
     return unsubscribe;
-  }, [currentUser, addToast]);
+  }, [currentUser, isCloudProfileLoaded, addToast]);
 
   // Sync de wooSites, activeSiteId y wooSession hacia la nube con debounce
   useEffect(() => {
-    if (!currentUser) return;
+    if (!currentUser || !isCloudProfileLoaded) return;
 
     const prev = lastSyncedData.current;
     const isSameSites = JSON.stringify(prev.wooSites) === JSON.stringify(wooSites);
@@ -377,7 +394,7 @@ export default function App() {
     }, 1000);
 
     return () => clearTimeout(timer);
-  }, [wooSites, activeSiteId, session, currentUser]);
+  }, [wooSites, activeSiteId, session, currentUser, isCloudProfileLoaded]);
 
   // Room subscription
   useEffect(() => {
@@ -401,19 +418,25 @@ export default function App() {
   // Persist State
   useEffect(() => {
     localStorage.setItem(CONFIG_KEY, JSON.stringify(config));
-    if (currentUser) updateCloudProfile(currentUser.uid, { tagConfig: config });
-  }, [config, currentUser]);
+    if (currentUser) {
+      if (!isCloudProfileLoaded) return;
+      updateCloudProfile(currentUser.uid, { tagConfig: config });
+    }
+  }, [config, currentUser, isCloudProfileLoaded]);
 
   useEffect(() => {
     localStorage.setItem(PROFILES_KEY, JSON.stringify(profiles));
-    if (currentUser) updateCloudProfile(currentUser.uid, { designProfiles: profiles });
-  }, [profiles, currentUser]);
+    if (currentUser) {
+      if (!isCloudProfileLoaded) return;
+      updateCloudProfile(currentUser.uid, { designProfiles: profiles });
+    }
+  }, [profiles, currentUser, isCloudProfileLoaded]);
 
   // Sync productos a la nube con debounce
   useEffect(() => {
-    // 1. Si no hay usuario, no hay sync.
+    // 1. Si no hay usuario o no se ha cargado el perfil de la nube, no hay sync.
     // 2. Si somos GUEST en una sala manual (fallback), NO sobrescribimos la nube (el Host lo hará).
-    if (!currentUser || (activeRoomId && roomRole === 'guest')) return;
+    if (!currentUser || !isCloudProfileLoaded || (activeRoomId && roomRole === 'guest')) return;
     
     // Si el update vino de la nube, salteamos la escritura de vuelta (Anti-loop)
     if (skipNextCloudWrite.current) {
@@ -428,7 +451,7 @@ export default function App() {
       }).catch(console.error);
     }, 1000); // Reducido a 1s para mayor agilidad
     return () => clearTimeout(timer);
-  }, [products, currentUser, activeRoomId, roomRole]);
+  }, [products, currentUser, activeRoomId, roomRole, isCloudProfileLoaded]);
 
   // Auth Handlers
   const handleConnect = (wooConfig: WooConfig, user: WpUser, remember: boolean, siteId?: string) => {
