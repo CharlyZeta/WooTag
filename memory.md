@@ -1,7 +1,7 @@
 # Memory of WooTag AI Generator
 
 ## 📌 Contexto General del Proyecto
-- **Nombre**: WooTag AI Generator (versión 2.2.2)
+- **Nombre**: WooTag AI Generator (versión 2.2.3)
 - **Propósito**: Generar e imprimir etiquetas de precio profesionales A4 conectando con WooCommerce o cargando plantillas Excel (XLS/XLSX). Permite optimización de descripciones usando Google Gemini AI (`gemini-2.0-flash`) y sincronización en tiempo real vía Firebase (Firestore y Auth) entre PC y dispositivos móviles (modo Companion QR o identidad compartida).
 - **Stack Tecnológico**: React 19, TypeScript, Vite, Firebase, SheetJS (XLSX), Lucide React, Tailwind CSS (vía CDN en `index.html`).
 
@@ -14,8 +14,8 @@
    - Analizado el archivo [ENGINEERING_CONTEXT.md](file:///d:/ProyectosDual/WooTag/WooTag/ENGINEERING_CONTEXT.md) y el historial en [changelog.txt](file:///d:/ProyectosDual/WooTag/WooTag/changelog.txt).
 3. **Rol de Sesión**:
    - Cargado el rol: **Arquitecto / Desarrollador Principal**.
-4. **Misión de Sesión**:
-   - Realizar una revisión exhaustiva del código, identificando fortalezas, debilidades, áreas de mejora y potenciales bugs, y sentar las bases en `memory.md` para futuros desarrollos.
+4. **Misión de Sesión (2026-05-22)**:
+   - Corregir bugs de persistencia de credenciales WooCommerce entre dispositivos al hacer login con cuenta Firebase compartida.
 
 ---
 
@@ -26,19 +26,17 @@
   - Excelente separación y modularización del estado global de la aplicación (cola de productos, configuración visual `TagConfig`, perfiles de diseño guardados e historial de impresión).
   - Manejo eficiente de rehidratación de sesión con credenciales WooCommerce de forma cifrada/ofuscada en `localStorage`.
   - Excelente uso de referencias (`useRef`) y de un indicador flotante de páginas A4 que actualiza el estado de manera reactiva mediante el scroll del contenedor.
-- **Hallazgo Crítico (Bug Detectado) ⚠️**:
-  - En `App.tsx` se utilizan las funciones `subscribeToRoom`, `closeRoom`, `syncRoomProducts` y `addProductToRoom` (líneas 213, 324, 357 y 384) asociadas a la lógica de salas (Companion Mode). Sin embargo, **estas funciones no están importadas en las líneas de imports de `App.tsx`**. Esto provocará un fallo de compilación.
-  - **Solución propuesta**: Agregar el correspondiente import al inicio del archivo:
-    ```typescript
-    import { subscribeToRoom, closeRoom, syncRoomProducts, addProductToRoom } from './services/realtimeSession';
-    ```
+- **Bugs Corregidos en v2.2.3 ✅**:
+  - **Type mismatch en auto-login**: Al hacer login con Firebase, se pasaba el objeto `WooSite` directamente donde `handleConnect` esperaba `WooConfig`. Corregido extrayendo `url`, `consumerKey` y `consumerSecret` antes de llamar al handler.
+  - **`remember=false` en restauración cloud**: La sesión no se persistía en `localStorage` al restaurarse desde Firestore, causando pérdida de sesión al recargar. Corregido a `remember=true`.
+  - **`WooSite` faltaba en los imports**: Agregado explícitamente al import de `types.ts`.
 
 ### 2. Panel de Control (`components/Controls.tsx`)
 - **Fortalezas**:
   - Componente robusto de control lateral dividido en 5 pestañas (Lista, Importar, Ajustes, Diseño e Historial).
   - Manejo transparente del modo responsivo/móvil bloqueando funciones de anfitrión (Host) en viewports pequeños (< 768px).
 - **Áreas de Mejora**:
-  - El archivo supera las 1,100 líneas. Contiene lógica inline muy extensa (ej: `XlsImportBlock`). Es un fuerte candidato a refactorización dividiéndose en sub-componentes independientes por cada pestaña para facilitar el testing y mantenimiento.
+  - El archivo supera las 1,100 líneas. Es un fuerte candidato a refactorización dividiéndose en sub-componentes independientes por cada pestaña.
 
 ### 3. Renderizado de Etiquetas (`components/Tag.tsx` & `components/TagSheet.tsx`)
 - **Fortalezas**:
@@ -52,10 +50,22 @@
   - Paginación automática segura para categorías usando el header `X-WP-TotalPages`.
 - **`realtimeSession.ts` & `cloudProfiles.ts`**:
   - Uso de sincronización atómica con `arrayUnion` de Firestore para evitar que múltiples dispositivos móviles en una misma cuenta sobrescriban datos concurrentemente.
+  - `subscribeToCloudProfile` activo mientras haya `currentUser`, sincronizando productos y `wooSites` en tiempo real entre dispositivos.
 - **`geminiService.ts`**:
   - Implementa fallback robusto de red y control de cuotas para que la app continúe funcionando de forma transparente si falla la optimización de descripciones con IA.
 
-### 5. Utilidades y Seguridad (`utils/`)
+### 5. Flujo de Credenciales Cloud (post-fix v2.2.3)
+```
+Firebase Login (PC o móvil)
+    → loadCloudProfile(uid)           // Lee Firestore: users/{uid}
+    → Extrae WooConfig desde WooSite  // FIX: ya no pasa WooSite donde se esperaba WooConfig
+    → handleConnect(wooConfig, ..., remember=true, siteId)
+    → setSession()                    // Estado React actualizado ✅
+    → localStorage cifrado            // Persistencia local ✅ (FIX: remember=true)
+    → Firestore activeSiteId          // Persistencia cloud ✅
+```
+
+### 6. Utilidades y Seguridad (`utils/`)
 - **`security.ts`**:
   - Ofuscación base64 rápida con un Salt estático para evitar la inspección visual casual en las DevTools del navegador. Cumple bien su propósito, pero se destaca en la documentación que no es un cifrado criptográfico estricto.
 - **`xlsImport.ts`**:
@@ -64,6 +74,6 @@
 ---
 
 ## 🚀 Próximos Pasos Recomendados
-1. **Corregir el bug de importación** en `App.tsx` agregando la referencia a `services/realtimeSession.ts`.
-2. **Dividir `Controls.tsx`** en submódulos por pestaña para reducir la complejidad cognitiva del archivo.
-3. **Verificar la suite de pruebas** ejecutando `npm test` para asegurar que el cambio de importaciones no rompa nada en el bundle de Vite.
+1. **Dividir `Controls.tsx`** en submódulos por pestaña para reducir la complejidad cognitiva del archivo.
+2. **Verificar la suite de pruebas** ejecutando `npm test` para asegurar que el cambio de importaciones no rompa nada en el bundle de Vite.
+3. **Considerar cifrado real** de las credenciales WooCommerce en Firestore (actualmente se guardan en texto plano en el documento del usuario).

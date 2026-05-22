@@ -1,6 +1,16 @@
 # Changelog - WooTag AI Generator
 
 
+## [2.2.3] - 2026-05-22
+### Fixed
+- **Bug crítico: Auto-login de credenciales WooCommerce desde perfil cloud** (`App.tsx`):
+  Al iniciar sesión con una cuenta Firebase en cualquier dispositivo (PC o móvil), el sistema recuperaba el objeto `WooSite` desde Firestore pero lo pasaba directamente donde se esperaba un `WooConfig`. Esto causaba que `wooConfig.url`, `consumerKey` y `consumerSecret` fueran `undefined`, impidiendo que la sesión se restaurara correctamente — el usuario veía la app desconectada de WooCommerce pese a tener sus credenciales guardadas en la nube.
+  - **Causa raíz**: Type mismatch — `WooSite` pasado como `WooConfig` en `handleConnect`.
+  - **Fix**: Se construye explícitamente un objeto `WooConfig` extrayendo los campos `url`, `consumerKey` y `consumerSecret` del `WooSite` antes de llamar a `handleConnect`.
+- **Sesión local no persistía al restaurar desde la nube** (`App.tsx`):
+  Al recuperar las credenciales del perfil cloud, se llamaba con `remember=false`, por lo que la sesión nunca se escribía en `localStorage`. Al recargar la página, la sesión se perdía hasta que Firebase volvía a entregar el perfil (con latencia de red). Fix: `remember=true` cuando la sesión se restaura automáticamente desde Firestore, garantizando persistencia local inmediata.
+- **`WooSite` faltaba en los imports de `App.tsx`**: El tipo se usaba en `useState<WooSite[]>` y `handleSelectSite` sin estar importado explícitamente. Agregado al import de `types.ts`.
+
 ## [2.2.2] - 2026-05-07
 ### Optimized
 - **Latencia de Sincronización**: Se redujo el tiempo de espera (debounce) para actualizaciones globales de 2s a 1s, haciendo que los cambios se reflejen mucho más rápido entre dispositivos.
