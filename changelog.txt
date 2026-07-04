@@ -1,5 +1,9 @@
 # Changelog - WooTag AI Generator
 
+## [2.2.8] - 2026-07-04
+### Refactored
+- **Desacoplamiento de Panel de Control (`Controls.tsx`)**: Dividido el componente monolítico de control lateral en 5 subcomponentes especializados bajo `components/controls/` (`DataTab`, `ImportTab`, `LayoutTab`, `DesignTab` y `HistoryTab`). Esto redujo su tamaño de más de 1,100 líneas a unas 230 líneas, simplificando el flujo de estados locales, aislando responsabilidades visuales y mejorando la mantenibilidad a largo plazo.
+
 ## [2.2.7] - 2026-05-22
 ### Fixed
 - **Migración de Sesiones Heredadas a Multisitio (Retrocompatibilidad)**: Corregida la rama de fallback para cuentas con perfiles antiguos en la base de datos (que tenían `wooSession` pero carecían de `wooSites` y `activeSiteId`), transformándola automáticamente al formato multisitio y guardándola de forma consistente tanto de forma local como en la nube.
