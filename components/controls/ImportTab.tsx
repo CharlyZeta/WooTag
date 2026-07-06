@@ -351,6 +351,7 @@ export const ImportTab: React.FC<ImportTabProps> = ({
 
             {!isLoading && catProducts.map(p => {
               const isProdSelected = !!selectedProducts[p.id];
+              const isOutOfStock = p.manageStock && (p.stockQuantity === null || p.stockQuantity === undefined || p.stockQuantity <= 0);
               return (
                 <div
                   key={p.id}
@@ -362,8 +363,7 @@ export const ImportTab: React.FC<ImportTabProps> = ({
                   <input
                     type="checkbox"
                     checked={isProdSelected}
-                    onChange={() => {}}
-                    onClick={e => e.stopPropagation()}
+                    readOnly
                     className="rounded text-indigo-600 h-4 w-4 border-slate-300 focus:ring-indigo-500 cursor-pointer"
                   />
                   <div className="w-7 h-7 rounded bg-slate-100 overflow-hidden flex-shrink-0 border border-slate-200">
@@ -374,8 +374,10 @@ export const ImportTab: React.FC<ImportTabProps> = ({
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="text-xs font-black text-slate-800 truncate">{p.name}</div>
-                    <div className="text-[9px] font-mono text-slate-400 font-bold">SKU: {p.sku}</div>
+                    <div className={`text-xs font-black truncate ${isOutOfStock ? 'text-red-600 font-bold' : 'text-slate-800'}`}>
+                      {p.name} {isOutOfStock && <span className="text-[9px] font-black text-red-500 uppercase ml-1 tracking-tighter">(Sin Stock)</span>}
+                    </div>
+                    <div className={`text-[9px] font-mono font-bold ${isOutOfStock ? 'text-red-400' : 'text-slate-400'}`}>SKU: {p.sku}</div>
                   </div>
                 </div>
               );

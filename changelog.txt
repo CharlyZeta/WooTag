@@ -1,5 +1,12 @@
 # Changelog - WooTag AI Generator
 
+## [2.3.0] - 2026-07-06
+### Added
+- **Visualización de Stock Crítico**: Los productos sin stock (`stockQuantity <= 0` con gestión de stock activa) se visualizan con el nombre y SKU en color **rojo** y una etiqueta `(Sin Stock)` tanto en la previsualización del árbol como en el listado de etiquetas a imprimir (`DataTab`).
+
+### Fixed
+- **Selección Individual de Artículos**: Corregida la condición de clicks sobre el checkbox del producto en la vista de árbol (eliminando `stopPropagation` de eventos y usando `readOnly`), garantizando la selección y deselección de artículos de forma individual al hacer clic en cualquier parte de la fila.
+
 ## [2.2.9] - 2026-07-06
 ### Added
 - **Sub-pestañas superiores en Importación**: Organizado el tab "Importar" en 3 sub-pestañas (`WooCommerce`, `Planilla Excel`, `Escáner & Móvil`) mejorando drásticamente el espacio visual y la preparación para nuevos formatos de etiquetas (ej: etiquetas de depósito).

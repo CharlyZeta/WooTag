@@ -43,9 +43,11 @@ export const DataTab: React.FC<DataTabProps> = ({
               <img src={p.image || ''} className="w-full h-full object-contain" alt={p.name} />
             </div>
             <div className="flex-1 min-w-0">
-              <div className="text-sm font-black truncate text-slate-900">{p.name}</div>
+              <div className={`text-sm font-black truncate ${p.manageStock && Number(p.stockQuantity) <= 0 ? 'text-red-600 font-bold' : 'text-slate-900'}`}>
+                {p.name}
+              </div>
               <div className="flex items-center gap-2 mt-0.5">
-                <span className="text-[10px] text-slate-600 font-mono font-black">SKU: {p.sku}</span>
+                <span className={`text-[10px] font-mono font-black ${p.manageStock && Number(p.stockQuantity) <= 0 ? 'text-red-400' : 'text-slate-600'}`}>SKU: {p.sku}</span>
                 {p.manageStock && (
                   <span
                     className={`text-[10px] px-1.5 py-0.5 rounded font-black ${
