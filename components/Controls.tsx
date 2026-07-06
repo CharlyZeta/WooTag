@@ -224,7 +224,7 @@ export const Controls: React.FC<ControlsProps> = ({
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-5 space-y-8 bg-white scrollbar-thin scrollbar-thumb-slate-200">
-        {activeTab === 'data' && (
+        <div className={activeTab === 'data' ? '' : 'hidden'}>
           <DataTab
             products={products}
             setProducts={setProducts}
@@ -232,9 +232,9 @@ export const Controls: React.FC<ControlsProps> = ({
             optimizingId={optimizingId}
             onGoToImport={() => setActiveTab('import')}
           />
-        )}
+        </div>
 
-        {activeTab === 'import' && (
+        <div className={activeTab === 'import' ? '' : 'hidden'}>
           <ImportTab
             wooConfig={wooConfig}
             currentUser={currentUser}
@@ -250,16 +250,16 @@ export const Controls: React.FC<ControlsProps> = ({
             onOpenQrScanner={() => setIsQrScannerOpen(true)}
             deviceId={deviceId}
           />
-        )}
+        </div>
 
-        {activeTab === 'layout' && (
+        <div className={activeTab === 'layout' ? '' : 'hidden'}>
           <LayoutTab
             config={config}
             setConfig={setConfig}
           />
-        )}
+        </div>
 
-        {activeTab === 'design' && (
+        <div className={activeTab === 'design' ? '' : 'hidden'}>
           <DesignTab
             config={config}
             setConfig={setConfig}
@@ -269,14 +269,14 @@ export const Controls: React.FC<ControlsProps> = ({
             onDeleteProfile={onDeleteProfile}
             onImportProfile={onImportProfile}
           />
-        )}
+        </div>
 
-        {activeTab === 'history' && (
+        <div className={activeTab === 'history' ? '' : 'hidden'}>
           <HistoryTab
             printLog={printLog}
             onClearPrintLog={onClearPrintLog}
           />
-        )}
+        </div>
       </div>
 
       {/* Footer: App Version */}

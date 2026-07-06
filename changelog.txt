@@ -1,5 +1,12 @@
 # Changelog - WooTag AI Generator
 
+## [2.2.9] - 2026-07-06
+### Added
+- **Sub-pestañas superiores en Importación**: Organizado el tab "Importar" en 3 sub-pestañas (`WooCommerce`, `Planilla Excel`, `Escáner & Móvil`) mejorando drásticamente el espacio visual y la preparación para nuevos formatos de etiquetas (ej: etiquetas de depósito).
+- **Explorador Jerárquico de WooCommerce (Árbol)**: Incorporado un explorador de categorías y subcategorías de WooCommerce en forma de árbol interactivo con checkboxes. Soporta selección de categorías completas o unidades individuales.
+- **Carga Perezosa (Lazy Loading)**: Los productos y subcategorías se descargan asíncronamente solo al expandir sus respectivos nodos del árbol, mostrando avisos dinámicos de carga ("Cargando...") para notificar al usuario.
+- **Persistencia de Búsquedas**: Cambiado el renderizado de las pestañas principales en `Controls.tsx` a visibilidad con `hidden` para que la búsqueda y las selecciones en el árbol no se reinicien al navegar en la barra lateral.
+
 ## [2.2.8] - 2026-07-04
 ### Refactored
 - **Desacoplamiento de Panel de Control (`Controls.tsx`)**: Dividido el componente monolítico de control lateral en 5 subcomponentes especializados bajo `components/controls/` (`DataTab`, `ImportTab`, `LayoutTab`, `DesignTab` y `HistoryTab`). Esto redujo su tamaño de más de 1,100 líneas a unas 230 líneas, simplificando el flujo de estados locales, aislando responsabilidades visuales y mejorando la mantenibilidad a largo plazo.
