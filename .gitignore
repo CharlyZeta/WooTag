@@ -28,3 +28,6 @@ pnpm-debug.log*
 
 # Context de ingeniería (compartir manualmente, no subir al repo)
 ENGINEERING_CONTEXT.md
+
+# Graphify
+graphify-out/
