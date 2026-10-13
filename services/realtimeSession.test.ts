@@ -57,4 +57,22 @@ describe('realtimeSession - createRoom (FIX-0002)', () => {
     const url = new URL(`https://example.com/app?joinRoom=${roomId}`);
     expect(url.searchParams.get('joinRoom')).toBe(roomId);
   });
+
+  it('AC-002: createRoom no guarda el secret ni key en texto plano en Firestore (FIX-0003)', async () => {
+    const sessionWithSecret: AuthSession = {
+      user: { id: 1, name: 'Admin', slug: 'admin', roles: ['admin'] },
+      config: { url: 'https://tienda.com', consumerKey: 'ck_room_KEY', consumerSecret: 'cs_test_SECRET' },
+      expiresAt: Date.now() + 3600000,
+    };
+
+    await createRoom('host_123', sessionWithSecret, []);
+
+    expect(mockSetDoc).toHaveBeenCalled();
+    const calls = mockSetDoc.mock.calls;
+    const lastCall = calls[calls.length - 1];
+    const writtenRoom = lastCall[1];
+    const jsonWritten = JSON.stringify(writtenRoom);
+    expect(jsonWritten).not.toContain('cs_test_SECRET');
+    expect(jsonWritten).not.toContain('ck_room_KEY');
+  });
 });

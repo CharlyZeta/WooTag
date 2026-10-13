@@ -120,12 +120,33 @@ describe('updateCloudProfile', () => {
 
     await expect(updateCloudProfile(UID, {})).rejects.toThrow('Write permission denied');
   });
+
+  it('AC-001: no guarda el secret ni key en texto plano en Firestore (FIX-0003)', async () => {
+    const profileWithSecrets: Partial<UserCloudProfile> = {
+      wooSession: {
+        user: { id: 1, name: 'Admin', slug: 'admin', roles: ['admin'] },
+        config: { url: 'https://tienda.com', consumerKey: 'ck_test_KEY', consumerSecret: 'cs_test_SECRET' },
+        expiresAt: Date.now() + 10000,
+      },
+      wooSites: [
+        { id: '1', name: 'Tienda', url: 'https://tienda.com', consumerKey: 'ck_test_KEY', consumerSecret: 'cs_test_SECRET', lastUsed: Date.now() }
+      ]
+    };
+
+    await updateCloudProfile(UID, profileWithSecrets);
+
+    expect(mockSetDoc).toHaveBeenCalledTimes(1);
+    const [, writtenData] = mockSetDoc.mock.calls[0];
+    const jsonWritten = JSON.stringify(writtenData);
+    expect(jsonWritten).not.toContain('cs_test_SECRET');
+    expect(jsonWritten).not.toContain('ck_test_KEY');
+  });
 });
 
 // ─── 3. subscribeToCloudProfile ───────────────────────────────────────────────
 
 describe('subscribeToCloudProfile', () => {
-  it('invoca el callback con los datos cuando el documento existe', () => {
+  it('invoca el callback con los datos cuando el documento existe', async () => {
     const mockUnsubscribe = vi.fn();
 
     // onSnapshot invoca el handler inmediatamente con el docSnap
@@ -137,7 +158,7 @@ describe('subscribeToCloudProfile', () => {
     const callback = vi.fn();
     const unsubscribe = subscribeToCloudProfile(UID, callback);
 
-    expect(callback).toHaveBeenCalledTimes(1);
+    await vi.waitFor(() => expect(callback).toHaveBeenCalledTimes(1));
     expect(callback).toHaveBeenCalledWith(MOCK_PROFILE);
     expect(typeof unsubscribe).toBe('function');
   });

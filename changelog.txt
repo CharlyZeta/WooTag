@@ -1,5 +1,14 @@
 # Changelog - WooTag AI Generator
 
+## [2.3.8] - 2026-10-13
+### Security
+- **Contrato SDD-GL FIX-0003 (Cifrado cliente AES-GCM para credenciales en Firestore)**:
+  - Creado módulo `utils/crypto.ts` con cifrado simétrico WebCrypto AES-GCM de 256 bits y derivación HKDF-SHA256 con salts e IVs aleatorios.
+  - En `services/cloudProfiles.ts`, las credenciales (`consumerKey` y `consumerSecret`) se cifran antes de persistirse en `users/{uid}` y se descifran automáticamente al cargarse o sincronizarse.
+  - En `services/realtimeSession.ts`, las credenciales de la sala se cifran antes de escribirse en `rooms/{roomId}` y se descifran al unirse (`joinRoom`) o escuchar cambios (`subscribeToRoom`).
+  - Previene que credenciales viajen o se almacenen en texto plano en la base de datos de Firestore.
+  - Añadidas pruebas unitarias TDD en `utils/crypto.test.ts`, `services/cloudProfiles.test.ts` (AC-001) y `services/realtimeSession.test.ts` (AC-002).
+
 ## [2.3.7] - 2026-10-13
 ### Fixed
 - **Contrato SDD-GL FIX-0007 (Validación de precio determinable para productos WooCommerce)**:

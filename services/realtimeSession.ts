@@ -1,6 +1,7 @@
 import { doc, setDoc, onSnapshot, arrayUnion, updateDoc, getDoc } from 'firebase/firestore';
 import { db } from './firebase';
 import { Product, AuthSession } from '../types';
+import { encryptSecret, decryptSecret } from '../utils/crypto';
 
 export interface RoomSession {
   roomId: string; // Generado por la PC
@@ -9,6 +10,19 @@ export interface RoomSession {
   hostUid: string; // Quien creó la sala
   createdAt: number;
   guestJoined?: boolean; // Feedback para que la PC sepa que el móvil se conectó
+}
+
+async function decryptRoomSession(data: RoomSession, roomId: string): Promise<RoomSession> {
+  const cloned: RoomSession = JSON.parse(JSON.stringify(data));
+  if (cloned.wooSession?.config) {
+    if (cloned.wooSession.config.consumerKey) {
+      cloned.wooSession.config.consumerKey = await decryptSecret(cloned.wooSession.config.consumerKey, roomId);
+    }
+    if (cloned.wooSession.config.consumerSecret) {
+      cloned.wooSession.config.consumerSecret = await decryptSecret(cloned.wooSession.config.consumerSecret, roomId);
+    }
+  }
+  return cloned;
 }
 
 // 1. Host (PC): Crea una sala y empieza a escuchar cambios
@@ -23,9 +37,20 @@ export const createRoom = async (hostUid: string, wooSession: AuthSession, initi
   const roomId = btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
   const roomRef = doc(db, 'rooms', roomId);
   
+  // FIX-0003: Cifrar credenciales antes de persistir en Firestore
+  const encryptedWooSession: AuthSession = JSON.parse(JSON.stringify(wooSession));
+  if (encryptedWooSession.config) {
+    if (encryptedWooSession.config.consumerKey) {
+      encryptedWooSession.config.consumerKey = await encryptSecret(encryptedWooSession.config.consumerKey, roomId);
+    }
+    if (encryptedWooSession.config.consumerSecret) {
+      encryptedWooSession.config.consumerSecret = await encryptSecret(encryptedWooSession.config.consumerSecret, roomId);
+    }
+  }
+
   await setDoc(roomRef, {
     roomId,
-    wooSession,
+    wooSession: encryptedWooSession,
     products: initialProducts,
     hostUid,
     createdAt: Date.now(),
@@ -38,9 +63,11 @@ export const createRoom = async (hostUid: string, wooSession: AuthSession, initi
 // 2. Mobile / Host: Escuchar cambios en la sala en tiempo real
 export const subscribeToRoom = (roomId: string, callback: (room: RoomSession | null) => void) => {
   const roomRef = doc(db, 'rooms', roomId);
-  return onSnapshot(roomRef, (snapshot) => {
+  return onSnapshot(roomRef, async (snapshot) => {
     if (snapshot.exists()) {
-      callback(snapshot.data() as RoomSession);
+      const raw = snapshot.data() as RoomSession;
+      const decrypted = await decryptRoomSession(raw, roomId);
+      callback(decrypted);
     } else {
       callback(null); // La sala fue cerrada
     }
@@ -71,12 +98,13 @@ export const closeRoom = async (roomId: string) => {
   await deleteDoc(roomRef);
 };
 
-// 6. Mobile: Join Room (Obtiene config inicial)
+// 6. Mobile: Join Room (Obtiene config inicial con descifrado)
 export const joinRoom = async (roomId: string): Promise<RoomSession | null> => {
   const roomRef = doc(db, 'rooms', roomId);
   const snap = await getDoc(roomRef);
   if (snap.exists()) {
-    const data = snap.data() as RoomSession;
+    const raw = snap.data() as RoomSession;
+    const data = await decryptRoomSession(raw, roomId);
     // Notificar al host que nos unimos
     await updateDoc(roomRef, { guestJoined: true });
     return data;
