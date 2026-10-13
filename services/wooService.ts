@@ -98,6 +98,14 @@ export const fetchCategories = async (config: WooConfig): Promise<WooCategory[]>
   return allCategories;
 };
 
+export const isPriceDeterminable = (wooProd: any): boolean => {
+  if (wooProd.type === 'variable') {
+    return false;
+  }
+  const regularPrice = parseFloat(wooProd.regular_price);
+  return !isNaN(regularPrice) && regularPrice > 0;
+};
+
 const mapWooProduct = (wooProd: any): Product => ({
   id: String(wooProd.id),
   sku: wooProd.sku || String(wooProd.id),
@@ -127,7 +135,13 @@ export const fetchProductsByCategory = async (categoryId: number, config: WooCon
     }
     const data = await response.json();
     if (Array.isArray(data)) {
-      allProducts.push(...data.map(mapWooProduct));
+      for (const item of data) {
+        if (isPriceDeterminable(item)) {
+          allProducts.push(mapWooProduct(item));
+        } else {
+          console.warn(`[WooTag] Omitiendo producto ${item.sku || item.id} ("${item.name}") por precio no determinable o variable.`);
+        }
+      }
     }
     totalPages = parseInt(response.headers.get('X-WP-TotalPages') || '1', 10);
     page++;
@@ -148,7 +162,11 @@ export const fetchProductBySku = async (sku: string, config: WooConfig): Promise
   const data = await response.json();
   console.log(`[WooTag] SKU Search Result:`, data);
   if (Array.isArray(data) && data.length > 0) {
-    return mapWooProduct(data[0]);
+    const rawProd = data[0];
+    if (!isPriceDeterminable(rawProd)) {
+      throw new Error(`El producto "${sku}" tiene un precio no determinable o es de tipo variable.`);
+    }
+    return mapWooProduct(rawProd);
   }
   console.warn(`[WooTag] SKU not found (empty array)`);
   return null;
@@ -163,5 +181,16 @@ export const fetchProductsByName = async (query: string, config: WooConfig): Pro
   );
   if (!response.ok) return [];
   const data = await response.json();
-  return Array.isArray(data) ? data.map(mapWooProduct) : [];
+  if (Array.isArray(data)) {
+    return data
+      .filter(item => {
+        if (!isPriceDeterminable(item)) {
+          console.warn(`[WooTag] Omitiendo producto ${item.sku || item.id} ("${item.name}") por precio no determinable o variable.`);
+          return false;
+        }
+        return true;
+      })
+      .map(mapWooProduct);
+  }
+  return [];
 };

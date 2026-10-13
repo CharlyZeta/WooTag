@@ -136,8 +136,8 @@ export const ImportTab: React.FC<ImportTabProps> = ({
       } else {
         setFetchError("SKU no encontrado.");
       }
-    } catch (err) {
-      setFetchError("Error de red.");
+    } catch (err: any) {
+      setFetchError(err?.message || "Error de red.");
     } finally {
       setIsSearchLoading(false);
     }

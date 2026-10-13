@@ -1,5 +1,13 @@
 # Changelog - WooTag AI Generator
 
+## [2.3.7] - 2026-10-13
+### Fixed
+- **Contrato SDD-GL FIX-0007 (Validación de precio determinable para productos WooCommerce)**:
+  - Implementada función `isPriceDeterminable` en `services/wooService.ts` para verificar la existencia de un `regular_price` numérico válido (> 0) y descartar productos padre de tipo `variable`.
+  - En importaciones por categoría y búsqueda por nombre, se omiten automáticamente productos sin precio determinable, evitando que se impriman etiquetas con precio `$0,00`.
+  - En búsqueda directa por SKU (`fetchProductBySku`), se rechaza con mensaje de dominio tipado y se muestra la advertencia en el formulario de búsqueda de `ImportTab.tsx`.
+  - Añadidas pruebas unitarias TDD (AC-001..AC-004) en `services/wooService.test.ts`.
+
 ## [2.3.6] - 2026-10-13
 ### Security
 - **Contrato SDD-GL FIX-0004 (Exigencia estricta de HTTPS para WooCommerce)**:

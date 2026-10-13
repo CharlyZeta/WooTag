@@ -48,7 +48,7 @@ const MOCK_MINIMAL_PRODUCT = {
   id: 99,
   sku: '',
   name: 'Producto Mínimo',
-  regular_price: '',
+  regular_price: '5000',
   sale_price: '',
   price: '5000',
   short_description: '',
@@ -121,6 +121,75 @@ describe('HTTPS Enforcement (FIX-0004)', () => {
     const user = await validateConnection(LOCALHOST_CONFIG);
     expect(user).toBeDefined();
     expect(fetchSpy).toHaveBeenCalledTimes(1);
+  });
+});
+
+// ─── Determinable Price Enforcement (FIX-0007) ───────────────────────────────
+
+describe('Determinable Price Enforcement (FIX-0007)', () => {
+  it('AC-001: fetchProductBySku rechaza si el producto es type variable sin regular_price aunque tenga price', async () => {
+    const variableProd = {
+      id: 50,
+      sku: 'VAR-1',
+      name: 'Remera Variable',
+      type: 'variable',
+      regular_price: '',
+      sale_price: '',
+      price: '1500',
+    };
+    fetchSpy.mockResolvedValueOnce(mockResponse([variableProd]));
+
+    await expect(fetchProductBySku('VAR-1', VALID_CONFIG)).rejects.toThrow(
+      /precio no determinable|variable/i
+    );
+  });
+
+  it('AC-002: fetchProductBySku rechaza si el producto es type simple pero no tiene precio', async () => {
+    const noPriceProd = {
+      id: 51,
+      sku: 'NO-PRICE',
+      name: 'Sin Precio',
+      type: 'simple',
+      regular_price: '',
+      sale_price: '',
+      price: '',
+    };
+    fetchSpy.mockResolvedValueOnce(mockResponse([noPriceProd]));
+
+    await expect(fetchProductBySku('NO-PRICE', VALID_CONFIG)).rejects.toThrow(
+      /precio no determinable|variable/i
+    );
+  });
+
+  it('AC-003: importa producto simple con regular_price numérico válido con su precio exacto', async () => {
+    const validProd = {
+      id: 52,
+      sku: 'VAL-1',
+      name: 'Producto Valido',
+      type: 'simple',
+      regular_price: '2500',
+      sale_price: '',
+      price: '2500',
+    };
+    fetchSpy.mockResolvedValueOnce(mockResponse([validProd]));
+
+    const result = await fetchProductBySku('VAL-1', VALID_CONFIG);
+    expect(result).not.toBeNull();
+    expect(result?.price).toBe(2500);
+  });
+
+  it('AC-004: fetchProductsByCategory omite productos sin precio determinable y devuelve solo los válidos', async () => {
+    const prod1 = { ...MOCK_WOO_PRODUCT, id: 101, sku: 'OK-1', regular_price: '1000' };
+    const prod2 = { ...MOCK_WOO_PRODUCT, id: 102, sku: 'VAR-2', type: 'variable', regular_price: '' };
+    const prod3 = { ...MOCK_WOO_PRODUCT, id: 103, sku: 'OK-2', regular_price: '2000' };
+
+    fetchSpy.mockResolvedValueOnce(
+      mockResponse([prod1, prod2, prod3], 200, { 'X-WP-TotalPages': '1' })
+    );
+
+    const result = await fetchProductsByCategory(5, VALID_CONFIG);
+    expect(result).toHaveLength(2);
+    expect(result.map(p => p.sku)).toEqual(['OK-1', 'OK-2']);
   });
 });
 
