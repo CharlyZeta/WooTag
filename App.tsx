@@ -6,7 +6,7 @@ import { ConnectionModal } from './components/ConnectionModal';
 import { optimizeDescription } from './services/geminiService';
 import { encrypt, decrypt } from './utils/security';
 import { useAuth } from './contexts/AuthContext';
-import { loadCloudProfile, updateCloudProfile, subscribeToCloudProfile, addProductToCloudProfile } from './services/cloudProfiles';
+import { loadCloudProfile, updateCloudProfile, subscribeToCloudProfile, addProductToCloudProfile, UserCloudProfile } from './services/cloudProfiles';
 import { subscribeToRoom, closeRoom, syncRoomProducts, addProductToRoom } from './services/realtimeSession';
 import { ShoppingBag, Bell, CheckCircle2, Smartphone, Loader2, X } from 'lucide-react';
 

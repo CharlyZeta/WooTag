@@ -13,7 +13,14 @@ export interface RoomSession {
 
 // 1. Host (PC): Crea una sala y empieza a escuchar cambios
 export const createRoom = async (hostUid: string, wooSession: AuthSession, initialProducts: Product[] = []): Promise<string> => {
-  const roomId = Math.random().toString(36).substring(2, 8).toUpperCase(); // ej: A7B9F1
+  // FIX-0002: Genera un ID criptográfico con 128 bits de entropía (base64url safe)
+  const bytes = new Uint8Array(16);
+  crypto.getRandomValues(bytes);
+  let binary = '';
+  for (let i = 0; i < bytes.length; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  const roomId = btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
   const roomRef = doc(db, 'rooms', roomId);
   
   await setDoc(roomRef, {

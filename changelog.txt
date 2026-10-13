@@ -1,5 +1,33 @@
 # Changelog - WooTag AI Generator
 
+## [2.3.4] - 2026-10-13
+### Fixed
+- **Contrato SDD-GL FIX-0006 (Paginación completa en `fetchProductsByCategory`)**:
+  - Implementada paginación automática iterando páginas (`page=1`, `page=2`, ...) basada en el header de respuesta `X-WP-TotalPages`.
+  - Evita que categorías con más de 100 productos queden truncadas silenciosamente.
+  - Añadido rechazo estricto ante fallos HTTP (`!response.ok`), evitando que fallos de red o errores 500 del servidor entreguen resultados parciales silenciosos.
+  - Añadidas pruebas unitarias TDD (AC-001..AC-005) en `services/wooService.test.ts`.
+
+## [2.3.3] - 2026-10-13
+### Fixed
+- **Contrato SDD-GL FIX-0002 (Generación criptográfica de ID de sala Companion)**:
+  - Reemplazado el generador de `roomId` basado en `Math.random()` (6 caracteres alfanuméricos) por un generador criptográfico con `crypto.getRandomValues(new Uint8Array(16))`.
+  - El nuevo identificador provee 128 bits de entropía y codificación base64url segura (22 caracteres URL-safe), previniendo ataques de adivinación o enumeración de salas en el modo Companion.
+  - Implementada suite de pruebas unitarias TDD en `services/realtimeSession.test.ts`.
+
+## [2.3.2] - 2026-10-13
+### Fixed
+- **Contrato SDD-GL FIX-0008 (Codificación de SKU en `fetchProductBySku`)**:
+  - Aplicado `encodeURIComponent` al parámetro SKU en la URL del endpoint `/wp-json/wc/v3/products?sku=...&status=publish`.
+  - Previene que caracteres especiales (`&`, `#`, `+`, `%` o espacios) rompan la consulta o inyecten parámetros no autorizados a la API.
+
+## [2.3.1] - 2026-10-13
+### Fixed
+- **Contrato SDD-GL FIX-0009 (Tipado estricto y Typecheck en CI)**:
+  - Corregidos 9 errores de tipos de TypeScript en `App.tsx`, `components/controls/ImportTab.tsx`, `components/HostRoomModal.tsx`, `services/cloudProfiles.test.ts` y `services/wooService.test.ts`.
+  - Añadido script `"typecheck": "tsc --noEmit"` a `package.json`.
+  - Integrado paso de verificación de tipos estática en `.github/workflows/deploy.yml` previo a la fase de compilación y despliegue por FTP.
+
 ## [2.3.0] - 2026-07-06
 ### Added
 - **Visualización de Stock Crítico**: Los productos sin stock (`stockQuantity <= 0` con gestión de stock activa) se visualizan con el nombre y SKU en color **rojo** y una etiqueta `(Sin Stock)` tanto en la previsualización del árbol como en el listado de etiquetas a imprimir (`DataTab`).

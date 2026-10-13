@@ -29,6 +29,9 @@ jobs:
       - name: 🧪 Run tests (Vitest)
         run: npm run test
 
+      - name: 🔎 Typecheck (TypeScript)
+        run: npm run typecheck
+
       - name: 🔍 Verificar secrets disponibles (diagnóstico)
         run: |
           echo "FTP_SERVER definido: ${{ secrets.FTP_SERVER != '' }}"

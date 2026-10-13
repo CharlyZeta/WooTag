@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { X, Smartphone, Loader2, CheckCircle2 } from 'lucide-react';
 import { createRoom, closeRoom, subscribeToRoom } from '../services/realtimeSession';
-import { AuthSession } from '../types';
+import { AuthSession, Product } from '../types';
 
 interface HostRoomModalProps {
   isOpen: boolean;

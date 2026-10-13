@@ -81,7 +81,7 @@ let fetchSpy: ReturnType<typeof vi.fn>;
 
 beforeEach(() => {
   fetchSpy = vi.fn();
-  globalThis.fetch = fetchSpy;
+  globalThis.fetch = fetchSpy as any;
 });
 
 afterEach(() => {
@@ -211,6 +211,20 @@ describe('fetchProductBySku', () => {
     expect(product!.image).toBeUndefined();
     expect(product!.description).toBe('');
   });
+
+  it('codifica caracteres especiales en el SKU para evitar inyección de parámetros (AC-001, AC-002)', async () => {
+    fetchSpy.mockResolvedValueOnce(mockResponse([]));
+    await fetchProductBySku('AB&status=draft', VALID_CONFIG);
+    const calledUrl1 = fetchSpy.mock.calls[0][0] as string;
+    expect(calledUrl1).toContain('sku=AB%26status%3Ddraft');
+    const statusMatches = calledUrl1.match(/status=/g);
+    expect(statusMatches).toHaveLength(1);
+
+    fetchSpy.mockResolvedValueOnce(mockResponse([]));
+    await fetchProductBySku('A B#1+2', VALID_CONFIG);
+    const calledUrl2 = fetchSpy.mock.calls[1][0] as string;
+    expect(calledUrl2).toContain('sku=A%20B%231%2B2');
+  });
 });
 
 // ─── 3. fetchProductsByName ───────────────────────────────────────────────────
@@ -254,38 +268,95 @@ describe('fetchProductsByName', () => {
 
 // ─── 4. fetchProductsByCategory ───────────────────────────────────────────────
 
-describe('fetchProductsByCategory', () => {
-  it('retorna productos mapeados de una categoría', async () => {
-    fetchSpy.mockResolvedValueOnce(mockResponse([MOCK_WOO_PRODUCT]));
+describe('fetchProductsByCategory (FIX-0006)', () => {
+  it('AC-001: devuelve los 120 productos si hay 2 páginas (pág 1 con 100, pág 2 con 20)', async () => {
+    const page1Products = Array.from({ length: 100 }, (_, i) => ({
+      ...MOCK_WOO_PRODUCT,
+      id: i + 1,
+      sku: `PROD-${i + 1}`,
+    }));
+    const page2Products = Array.from({ length: 20 }, (_, i) => ({
+      ...MOCK_WOO_PRODUCT,
+      id: 100 + i + 1,
+      sku: `PROD-${100 + i + 1}`,
+    }));
 
-    const result = await fetchProductsByCategory(1, VALID_CONFIG);
-    expect(result).toHaveLength(1);
-    expect(result[0].sku).toBe('CAM-001');
-  });
-
-  it('retorna array vacío si la API falla', async () => {
-    fetchSpy.mockResolvedValueOnce(mockResponse({}, 500));
-
-    const result = await fetchProductsByCategory(1, VALID_CONFIG);
-    expect(result).toEqual([]);
-  });
-
-  it('el endpoint incluye status=publish y el ID de categoría', async () => {
-    fetchSpy.mockResolvedValueOnce(mockResponse([]));
-
-    await fetchProductsByCategory(42, VALID_CONFIG);
-    const calledUrl = fetchSpy.mock.calls[0][0] as string;
-    expect(calledUrl).toContain('category=42');
-    expect(calledUrl).toContain('status=publish');
-  });
-
-  it('maneja respuesta con múltiples productos correctamente', async () => {
     fetchSpy.mockResolvedValueOnce(
-      mockResponse([MOCK_WOO_PRODUCT, MOCK_MINIMAL_PRODUCT])
+      mockResponse(page1Products, 200, { 'X-WP-TotalPages': '2' })
+    );
+    fetchSpy.mockResolvedValueOnce(
+      mockResponse(page2Products, 200, { 'X-WP-TotalPages': '2' })
     );
 
-    const result = await fetchProductsByCategory(1, VALID_CONFIG);
-    expect(result).toHaveLength(2);
+    const result = await fetchProductsByCategory(5, VALID_CONFIG);
+    expect(result).toHaveLength(120);
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
+  });
+
+  it('AC-002: devuelve 100 productos y fetch se invoca una sola vez si X-WP-TotalPages es 1', async () => {
+    const page1Products = Array.from({ length: 100 }, (_, i) => ({
+      ...MOCK_WOO_PRODUCT,
+      id: i + 1,
+    }));
+
+    fetchSpy.mockResolvedValueOnce(
+      mockResponse(page1Products, 200, { 'X-WP-TotalPages': '1' })
+    );
+
+    const result = await fetchProductsByCategory(5, VALID_CONFIG);
+    expect(result).toHaveLength(100);
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('AC-003: asume 1 página si falta el header X-WP-TotalPages', async () => {
+    fetchSpy.mockResolvedValueOnce(mockResponse([MOCK_WOO_PRODUCT]));
+
+    const result = await fetchProductsByCategory(5, VALID_CONFIG);
+    expect(result).toHaveLength(1);
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('AC-004: solicita URLs con page=1, page=2 y page=3, todas con category, status=publish y per_page=100', async () => {
+    fetchSpy.mockResolvedValueOnce(
+      mockResponse([MOCK_WOO_PRODUCT], 200, { 'X-WP-TotalPages': '3' })
+    );
+    fetchSpy.mockResolvedValueOnce(
+      mockResponse([MOCK_WOO_PRODUCT], 200, { 'X-WP-TotalPages': '3' })
+    );
+    fetchSpy.mockResolvedValueOnce(
+      mockResponse([MOCK_WOO_PRODUCT], 200, { 'X-WP-TotalPages': '3' })
+    );
+
+    await fetchProductsByCategory(42, VALID_CONFIG);
+
+    expect(fetchSpy).toHaveBeenCalledTimes(3);
+    const urls = fetchSpy.mock.calls.map(call => call[0] as string);
+    urls.forEach((url, idx) => {
+      expect(url).toContain('category=42');
+      expect(url).toContain('status=publish');
+      expect(url).toContain('per_page=100');
+      expect(url).toContain(`page=${idx + 1}`);
+    });
+  });
+
+  it('AC-005: rechaza la promesa si la página 2 responde con error 500 y no devuelve resultado parcial', async () => {
+    const page1Products = Array.from({ length: 100 }, (_, i) => ({
+      ...MOCK_WOO_PRODUCT,
+      id: i + 1,
+    }));
+
+    fetchSpy.mockResolvedValueOnce(
+      mockResponse(page1Products, 200, { 'X-WP-TotalPages': '2' })
+    );
+    fetchSpy.mockResolvedValueOnce(mockResponse({ message: 'Server Error' }, 500));
+
+    await expect(fetchProductsByCategory(5, VALID_CONFIG)).rejects.toThrow();
+  });
+
+  it('rechaza la promesa si la página 1 responde con error 500', async () => {
+    fetchSpy.mockResolvedValueOnce(mockResponse({ message: 'Internal Server Error' }, 500));
+
+    await expect(fetchProductsByCategory(1, VALID_CONFIG)).rejects.toThrow();
   });
 });
 

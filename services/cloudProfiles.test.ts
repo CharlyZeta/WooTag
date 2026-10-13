@@ -19,7 +19,7 @@ const mockOnSnapshot = vi.fn();
 const mockDoc = vi.fn((db: any, col: string, id: string) => ({ path: `${col}/${id}` }));
 
 vi.mock('firebase/firestore', () => ({
-  doc: (...args: any[]) => mockDoc(...args),
+  doc: (...args: any[]) => (mockDoc as any)(...args),
   getDoc: (...args: any[]) => mockGetDoc(...args),
   setDoc: (...args: any[]) => mockSetDoc(...args),
   onSnapshot: (...args: any[]) => mockOnSnapshot(...args),

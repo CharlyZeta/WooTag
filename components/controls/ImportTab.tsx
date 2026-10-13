@@ -149,15 +149,16 @@ export const ImportTab: React.FC<ImportTabProps> = ({
     const roots: TreeCategory[] = [];
 
     flat.forEach(cat => {
-      map[cat.id] = { ...cat, subcategories: [] };
+      map[cat.id] = { ...cat, parent: cat.parent ?? 0, subcategories: [] };
     });
 
     flat.forEach(cat => {
       const node = map[cat.id];
-      if (cat.parent === 0) {
+      const parentId = cat.parent ?? 0;
+      if (parentId === 0) {
         roots.push(node);
       } else {
-        const parentNode = map[cat.parent];
+        const parentNode = map[parentId];
         if (parentNode) {
           parentNode.subcategories.push(node);
         } else {
@@ -244,10 +245,10 @@ export const ImportTab: React.FC<ImportTabProps> = ({
   };
 
   const handleImportSelected = () => {
-    const selectedList = Object.values(selectedProducts);
+    const selectedList: Product[] = Object.values(selectedProducts);
     if (selectedList.length === 0) return;
 
-    const withUniqueIds = selectedList.map(p => ({
+    const withUniqueIds = selectedList.map((p: Product) => ({
       ...p,
       id: `${p.id}-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`
     }));
@@ -267,7 +268,7 @@ export const ImportTab: React.FC<ImportTabProps> = ({
       setXlsErrors(result.errors);
       setXlsWarnings(result.warnings);
       if (result.products.length > 0) {
-        const withIds = result.products.map(p => ({ ...p, id: `${p.id}-${Date.now()}-${Math.random()}` }));
+        const withIds = result.products.map((p: Product) => ({ ...p, id: `${p.id}-${Date.now()}-${Math.random()}` }));
         setProducts(prev => [...prev, ...withIds]);
         setXlsSuccess(result.products.length);
         logEvent('xls_upload', { f: file.name, n: result.products.length });

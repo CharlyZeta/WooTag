@@ -125,6 +125,7 @@ export interface WooCategory {
   name: string;
   slug: string;
   count: number;
+  parent?: number;
 }
 
 export const DEFAULT_CONFIG: TagConfig = {

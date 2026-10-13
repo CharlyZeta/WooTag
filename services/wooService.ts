@@ -95,20 +95,35 @@ const mapWooProduct = (wooProd: any): Product => ({
 
 export const fetchProductsByCategory = async (categoryId: number, config: WooConfig): Promise<Product[]> => {
   console.log(`[WooTag] Fetching category ${categoryId}...`);
-  const response = await makeWooRequest(`/wp-json/wc/v3/products?category=${categoryId}&per_page=100&status=publish`, config);
-  if (!response.ok) {
-    console.error(`[WooTag] Category fetch failed: ${response.status}`);
-    return [];
-  }
-  const data = await response.json();
-  console.log(`[WooTag] Found ${data.length} products in category.`);
-  return data.map(mapWooProduct);
+  const allProducts: Product[] = [];
+  let page = 1;
+  let totalPages = 1;
+
+  do {
+    const response = await makeWooRequest(
+      `/wp-json/wc/v3/products?category=${categoryId}&status=publish&per_page=100&page=${page}`,
+      config
+    );
+    if (!response.ok) {
+      console.error(`[WooTag] Category fetch failed on page ${page}: ${response.status}`);
+      throw new Error(`Error al obtener productos de la categoría ${categoryId} (página ${page}): ${response.status}`);
+    }
+    const data = await response.json();
+    if (Array.isArray(data)) {
+      allProducts.push(...data.map(mapWooProduct));
+    }
+    totalPages = parseInt(response.headers.get('X-WP-TotalPages') || '1', 10);
+    page++;
+  } while (page <= totalPages);
+
+  console.log(`[WooTag] Found ${allProducts.length} total products in category ${categoryId}.`);
+  return allProducts;
 };
 
 export const fetchProductBySku = async (sku: string, config: WooConfig): Promise<Product | null> => {
   console.log(`[WooTag] Searching SKU: ${sku}`);
-  // Bug 1 fix: add status=publish to avoid returning drafts
-  const response = await makeWooRequest(`/wp-json/wc/v3/products?sku=${sku}&status=publish`, config);
+  // Bug 1 fix: add status=publish to avoid returning drafts; FIX-0008: encode sku
+  const response = await makeWooRequest(`/wp-json/wc/v3/products?sku=${encodeURIComponent(sku)}&status=publish`, config);
   if (!response.ok) {
     console.error(`[WooTag] SKU fetch failed: ${response.status}`);
     return null;

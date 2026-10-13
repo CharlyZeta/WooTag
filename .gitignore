@@ -31,3 +31,6 @@ ENGINEERING_CONTEXT.md
 
 # Graphify
 graphify-out/
+
+# SDD-GL Glass Box logs
+.sdd/
