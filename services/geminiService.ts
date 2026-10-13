@@ -1,8 +1,20 @@
 
 import { GoogleGenAI } from "@google/genai";
 
+const getApiKey = (): string => {
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      const userKey = window.localStorage.getItem('gemini_api_key');
+      if (userKey) return userKey.trim();
+    }
+  } catch {
+    // Si localStorage está bloqueado o no disponible, continuar
+  }
+  return typeof process !== 'undefined' && process.env ? (process.env.API_KEY || '') : '';
+};
+
 const getClient = () => {
-  const apiKey = process.env.API_KEY;
+  const apiKey = getApiKey();
   if (!apiKey) {
     throw new Error("API Key not found in environment variables");
   }

@@ -1,5 +1,21 @@
 # Changelog - WooTag AI Generator
 
+## [2.3.6] - 2026-10-13
+### Security
+- **Contrato SDD-GL FIX-0004 (Exigencia estricta de HTTPS para WooCommerce)**:
+  - Implementada validación de protocolo HTTPS en `services/wooService.ts` (`makeWooRequest` y `validateConnection`).
+  - Se rechaza inmediatamente cualquier intento de conectar a tiendas remotas sobre `http://`, impidiendo que las credenciales (`consumerKey` y `consumerSecret`) viajen en texto plano por la red o por query string.
+  - Se permite el uso de `http://` exclusivamente en entornos de desarrollo local (`localhost` y `127.0.0.1`).
+  - Añadidas pruebas unitarias TDD (AC-001..AC-003) en `services/wooService.test.ts`.
+
+## [2.3.5] - 2026-10-13
+### Security
+- **Contrato SDD-GL FIX-0001 (Prevención de fuga de API Key de Gemini en el bundle)**:
+  - Eliminada la inyección de `GEMINI_API_KEY` / `API_KEY` en `vite.config.ts`, previniendo que la clave de entorno sea expuesta en el JavaScript cliente compilado.
+  - Añadido soporte BYOK (Bring-Your-Own-Key) para que usuarios puedan configurar su clave personal mediante `localStorage.getItem('gemini_api_key')`.
+  - Asegurado el fallback automático a la descripción original del producto en caso de ausencia de API Key o error del servicio de IA.
+  - Verificada la ausencia total de la clave en los artefactos de `dist/` tras el build de producción.
+
 ## [2.3.4] - 2026-10-13
 ### Fixed
 - **Contrato SDD-GL FIX-0006 (Paginación completa en `fetchProductsByCategory`)**:

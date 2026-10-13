@@ -88,6 +88,42 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
+// ─── HTTPS Enforcement (FIX-0004) ─────────────────────────────────────────────
+
+describe('HTTPS Enforcement (FIX-0004)', () => {
+  const HTTP_CONFIG: WooConfig = {
+    url: 'http://tienda.example.com',
+    consumerKey: 'ck_test123',
+    consumerSecret: 'cs_test456',
+  };
+
+  const LOCALHOST_CONFIG: WooConfig = {
+    url: 'http://localhost:8080',
+    consumerKey: 'ck_test123',
+    consumerSecret: 'cs_test456',
+  };
+
+  it('AC-001: validateConnection rechaza con error HTTPS si el esquema es http:// y no invoca fetch', async () => {
+    await expect(validateConnection(HTTP_CONFIG)).rejects.toThrow(/HTTPS/i);
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it('AC-002: fetchProductBySku, fetchProductsByName, fetchProductsByCategory y fetchCategories rechazan con error HTTPS y no invocan fetch', async () => {
+    await expect(fetchProductBySku('SKU1', HTTP_CONFIG)).rejects.toThrow(/HTTPS/i);
+    await expect(fetchProductsByName('Test', HTTP_CONFIG)).rejects.toThrow(/HTTPS/i);
+    await expect(fetchProductsByCategory(1, HTTP_CONFIG)).rejects.toThrow(/HTTPS/i);
+    await expect(fetchCategories(HTTP_CONFIG)).rejects.toThrow(/HTTPS/i);
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it('AC-003: validateConnection invoca fetch normalmente si el host es localhost sin importar http://', async () => {
+    fetchSpy.mockResolvedValueOnce(mockResponse([MOCK_WOO_PRODUCT]));
+    const user = await validateConnection(LOCALHOST_CONFIG);
+    expect(user).toBeDefined();
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+  });
+});
+
 // ─── 1. validateConnection ────────────────────────────────────────────────────
 
 describe('validateConnection', () => {

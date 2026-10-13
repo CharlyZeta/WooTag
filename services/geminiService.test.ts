@@ -43,7 +43,27 @@ import { optimizeDescription } from './geminiService';
 // En el entorno de test necesitamos asignarlo manualmente.
 const originalApiKey = process.env.API_KEY;
 
+let store: Record<string, string> = {};
+const mockLocalStorage = {
+  getItem: vi.fn((key: string) => store[key] || null),
+  setItem: vi.fn((key: string, value: string) => {
+    store[key] = value;
+  }),
+  removeItem: vi.fn((key: string) => {
+    delete store[key];
+  }),
+  clear: vi.fn(() => {
+    store = {};
+  }),
+};
+
 beforeEach(() => {
+  store = {};
+  Object.defineProperty(window, 'localStorage', {
+    value: mockLocalStorage,
+    writable: true,
+    configurable: true,
+  });
   process.env.API_KEY = 'test-api-key-123';
   mockGenerateContent.mockReset();
 });
@@ -103,12 +123,27 @@ describe('optimizeDescription — errores y fallbacks', () => {
     expect(result).toBe(original);
   });
 
-  it('nunca lanza excepciones al consumidor (siempre retorna string)', async () => {
-    mockGenerateContent.mockRejectedValueOnce(new Error('Error catastrófico'));
+  it('utiliza la API Key de localStorage (BYOK) si process.env.API_KEY está vacío', async () => {
+    process.env.API_KEY = '';
+    localStorage.setItem('gemini_api_key', 'user-custom-key');
+    mockGenerateContent.mockResolvedValueOnce({
+      text: 'Descripción generada con clave de usuario',
+    });
 
-    // No debería lanzar, debería retornar la descripción original
-    await expect(
-      optimizeDescription('Producto', 'Fallback seguro')
-    ).resolves.toBe('Fallback seguro');
+    try {
+      const result = await optimizeDescription('Producto BYOK', 'Desc');
+      expect(result).toBe('Descripción generada con clave de usuario');
+    } finally {
+      localStorage.removeItem('gemini_api_key');
+    }
+  });
+
+  it('AC-002: GIVEN la optimización con IA no disponible WHEN se pide optimizar THEN conserva la descripción original sin lanzar excepciones', async () => {
+    process.env.API_KEY = '';
+    localStorage.removeItem('gemini_api_key');
+
+    const desc = 'Descripción original intacta';
+    const result = await optimizeDescription('Zapatos', desc);
+    expect(result).toBe(desc);
   });
 });

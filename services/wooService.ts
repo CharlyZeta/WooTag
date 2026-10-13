@@ -14,7 +14,23 @@ const getAuthHeaders = (config: WooConfig) => {
   };
 };
 
+const validateHttpsUrl = (url: string): void => {
+  if (!url || typeof url !== 'string') return;
+  try {
+    const parsed = new URL(url.trim());
+    const isLocalhost = parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1';
+    if (parsed.protocol !== 'https:' && !isLocalhost) {
+      throw new Error("Se requiere una conexión segura (HTTPS) para conectar con WooCommerce.");
+    }
+  } catch (err: any) {
+    if (err.message && err.message.includes("HTTPS")) throw err;
+    throw new Error("URL de tienda inválida. Asegúrate de incluir el protocolo (ej: https://mitienda.com)");
+  }
+};
+
 const makeWooRequest = async (endpoint: string, config: WooConfig): Promise<Response> => {
+  validateHttpsUrl(config.url);
+
   let baseUrl = config.url.trim().replace(/\/$/, "");
   if (baseUrl.endsWith('/wp-json')) {
     baseUrl = baseUrl.substring(0, baseUrl.length - 8);
@@ -40,6 +56,7 @@ export const validateConnection = async (config: WooConfig): Promise<WpUser> => 
   if (!config.url || !config.consumerKey || !config.consumerSecret) {
     throw new Error("Por favor completa todos los campos.");
   }
+  validateHttpsUrl(config.url);
   try {
     // 1. Try to fetch a product first (Primary Check for WooCommerce API)
     // This is more reliable than wp/v2/users/me which is often blocked or restricted
