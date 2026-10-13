@@ -15,7 +15,7 @@ import { DesignTab } from './controls/DesignTab';
 import { HistoryTab } from './controls/HistoryTab';
 
 import {
-  Cloud, Printer, LogOut, Smartphone, Layers, PackagePlus, Settings, Palette, History
+  Cloud, Printer, LogOut, Smartphone, Layers, PackagePlus, Settings, Palette, History, Tag
 } from 'lucide-react';
 
 interface ControlsProps {
@@ -46,6 +46,8 @@ interface ControlsProps {
   activeSiteId: string | null;
   onForcePushWooSession: () => Promise<void>;
   deviceId: string;
+  pendingPriceChangesCount?: number;
+  onOpenPriceAudit?: () => void;
 }
 
 export const Controls: React.FC<ControlsProps> = ({
@@ -76,6 +78,8 @@ export const Controls: React.FC<ControlsProps> = ({
   activeSiteId,
   onForcePushWooSession,
   deviceId,
+  pendingPriceChangesCount = 0,
+  onOpenPriceAudit,
 }) => {
   const [activeTab, setActiveTab] = useState<'data' | 'import' | 'layout' | 'design' | 'history'>('data');
   const { currentUser } = useAuth();
@@ -158,6 +162,29 @@ export const Controls: React.FC<ControlsProps> = ({
                   )}
                 </div>
               </button>
+
+              {wooConfig && currentUser && onOpenPriceAudit && (
+                <button
+                  onClick={onOpenPriceAudit}
+                  className={`p-2 rounded-xl transition-all border-2 flex items-center gap-1.5 group relative ${
+                    pendingPriceChangesCount > 0
+                      ? 'bg-amber-50 border-amber-300 text-amber-700 animate-pulse hover:bg-amber-100 shadow-sm'
+                      : 'border-transparent text-slate-400 hover:text-amber-600 hover:border-amber-100'
+                  }`}
+                  title={
+                    pendingPriceChangesCount > 0
+                      ? `${pendingPriceChangesCount} cambios de precio o nuevos productos detectados`
+                      : 'Auditoría de precios: Todo al día'
+                  }
+                >
+                  <Tag className="w-5 h-5" />
+                  {pendingPriceChangesCount > 0 && (
+                    <span className="text-[10px] font-black bg-amber-500 text-white px-1.5 py-0.5 rounded-full leading-none shadow-sm">
+                      {pendingPriceChangesCount}
+                    </span>
+                  )}
+                </button>
+              )}
             </div>
 
             {user ? (
@@ -254,6 +281,8 @@ export const Controls: React.FC<ControlsProps> = ({
             onOpenJoinModal={() => setIsJoinModalOpen(true)}
             onOpenQrScanner={() => setIsQrScannerOpen(true)}
             deviceId={deviceId}
+            pendingPriceChangesCount={pendingPriceChangesCount}
+            onOpenPriceAudit={onOpenPriceAudit}
           />
         </div>
 

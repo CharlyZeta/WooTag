@@ -16,6 +16,7 @@ import {
   fetchProductsByName,
   fetchProductsByCategory,
   fetchCategories,
+  fetchAllCatalogProducts,
 } from './wooService';
 import type { WooConfig } from '../types';
 
@@ -515,5 +516,42 @@ describe('fetchCategories', () => {
 
     const result = await fetchCategories(VALID_CONFIG);
     expect(result).toEqual([]);
+  });
+});
+
+describe('fetchAllCatalogProducts (FEAT-0001)', () => {
+  it('lee y pagina productos publicados ignorando variables y productos sin precio', async () => {
+    const prod1 = { id: 10, sku: 'SKU-10', name: 'Prod 10', regular_price: '1500', sale_price: '', type: 'simple' };
+    const prodVar = { id: 11, sku: 'SKU-VAR', name: 'Prod Var', regular_price: '0', type: 'variable' };
+    const prod2 = { id: 12, sku: 'SKU-12', name: 'Prod 12', regular_price: '2500', sale_price: '2000', type: 'simple' };
+
+    fetchSpy.mockResolvedValueOnce(
+      mockResponse([prod1, prodVar], 200, { 'X-WP-TotalPages': '2' })
+    );
+    fetchSpy.mockResolvedValueOnce(
+      mockResponse([prod2], 200, { 'X-WP-TotalPages': '2' })
+    );
+
+    const onProgress = vi.fn();
+    const result = await fetchAllCatalogProducts(VALID_CONFIG, onProgress);
+
+    expect(result).toHaveLength(2);
+    expect(result[0].id).toBe(10);
+    expect(result[0].regularPrice).toBe(1500);
+    expect(result[0].salePrice).toBeNull();
+
+    expect(result[1].id).toBe(12);
+    expect(result[1].regularPrice).toBe(2500);
+    expect(result[1].salePrice).toBe(2000);
+
+    expect(onProgress).toHaveBeenCalledTimes(2);
+  });
+
+  it('lanza error si la petición HTTP falla en alguna página', async () => {
+    fetchSpy.mockResolvedValueOnce(mockResponse({}, 500));
+
+    await expect(fetchAllCatalogProducts(VALID_CONFIG)).rejects.toThrow(
+      'Error al leer el catálogo de productos (página 1): 500'
+    );
   });
 });

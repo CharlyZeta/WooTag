@@ -182,3 +182,30 @@ export const DEFAULT_WOO_CONFIG: WooConfig = {
   consumerKey: '',
   consumerSecret: ''
 };
+
+// FEAT-0001: Auditoría de cambios de precio y baseline en Firestore
+export type PricePendingType = 'PRICE_CHANGED' | 'NEW_PRODUCT';
+
+export interface PriceSnapshotEntry {
+  productId: number;
+  sku: string;
+  regularPrice: number;
+  salePrice: number | null;
+  name: string;
+  updatedAt: number;
+}
+
+export type PriceSnapshotMap = Record<number, PriceSnapshotEntry>;
+
+export interface PricePendingItem {
+  productId: number;
+  sku: string;
+  name: string;
+  image?: string;
+  oldRegularPrice?: number;
+  newRegularPrice: number;
+  oldSalePrice?: number | null;
+  newSalePrice?: number | null;
+  type: PricePendingType;
+  product: Product;
+}

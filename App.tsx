@@ -1,13 +1,16 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { APP_VERSION, DEFAULT_CONFIG, PrintRecord, Product, TagConfig, WooConfig, WooSite, AuthSession, WpUser, DesignProfile } from './types';
+import { APP_VERSION, DEFAULT_CONFIG, PrintRecord, Product, TagConfig, WooConfig, WooSite, AuthSession, WpUser, DesignProfile, PricePendingItem } from './types';
 import { TagSheet } from './components/TagSheet';
 import { Controls } from './components/Controls';
 import { ConnectionModal } from './components/ConnectionModal';
+import { PriceAuditModal } from './components/PriceAuditModal';
 import { optimizeDescription } from './services/geminiService';
 import { encrypt, decrypt } from './utils/security';
 import { useAuth } from './contexts/AuthContext';
 import { loadCloudProfile, updateCloudProfile, subscribeToCloudProfile, addProductToCloudProfile, UserCloudProfile } from './services/cloudProfiles';
 import { subscribeToRoom, closeRoom, syncRoomProducts, addProductToRoom } from './services/realtimeSession';
+import { loadSnapshot, saveSnapshot, compareCatalogWithSnapshot, updateProductsInSnapshot, dismissPendingItem } from './services/priceSnapshotService';
+import { fetchAllCatalogProducts } from './services/wooService';
 import { ShoppingBag, Bell, CheckCircle2, Smartphone, Loader2, X } from 'lucide-react';
 
 
@@ -45,6 +48,11 @@ export default function App() {
   const { currentUser } = useAuth();
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [isCloudProfileLoaded, setIsCloudProfileLoaded] = useState(false);
+
+  // FEAT-0001: Auditoría de cambios de precio y baseline en Firestore
+  const [pricePendings, setPricePendings] = useState<PricePendingItem[]>([]);
+  const [isPriceAuditModalOpen, setIsPriceAuditModalOpen] = useState(false);
+  const [isAuditingPrices, setIsAuditingPrices] = useState(false);
 
   const addToast = useCallback((message: string, type: 'info' | 'success' = 'info') => {
     const id = Math.random().toString(36).substring(2, 9);
@@ -126,6 +134,26 @@ export default function App() {
       // Actualizar el log y luego imprimir en el siguiente tick para que React
       // persista el estado en localStorage antes de que window.print() bloquee.
       setPrintLog(prev => [record, ...prev].slice(0, 200));
+
+      // FEAT-0001 (AC-005): Actualizar snapshot en Firestore con los precios actuales impresos
+      if (currentUser && activeSiteId) {
+        updateProductsInSnapshot(
+          currentUser.uid,
+          activeSiteId,
+          products.map(p => ({
+            id: p.id,
+            regularPrice: p.price,
+            salePrice: p.salePrice ?? null,
+            sku: p.sku,
+            name: p.name
+          }))
+        ).catch(err => console.error("Error al actualizar snapshot de precios tras impresión:", err));
+
+        // Remover de pendientes los que acaban de ser impresos
+        const printedIds = new Set(products.map(p => Number(p.id)));
+        setPricePendings(prev => prev.filter(item => !printedIds.has(item.productId)));
+      }
+
       setTimeout(() => window.print(), 0);
     } else {
       window.print();
@@ -423,6 +451,75 @@ export default function App() {
 
     return () => clearTimeout(timer);
   }, [wooSites, activeSiteId, session, currentUser, isCloudProfileLoaded]);
+
+  // FEAT-0001: Ejecución de la auditoría de precios contra el snapshot de Firestore
+  const runPriceAudit = useCallback(async () => {
+    if (!currentUser || !session?.config) return;
+    const currentSiteId = activeSiteId || 'default';
+    setIsAuditingPrices(true);
+    try {
+      const [snapshot, catalog] = await Promise.all([
+        loadSnapshot(currentUser.uid, currentSiteId),
+        fetchAllCatalogProducts(session.config)
+      ]);
+
+      const { pendings, newSnapshot, isInitialBaseline } = compareCatalogWithSnapshot(catalog, snapshot);
+
+      if (isInitialBaseline) {
+        await saveSnapshot(currentUser.uid, currentSiteId, newSnapshot);
+        setPricePendings([]);
+        addToast('Línea base de precios guardada en Firestore (0 pendientes)', 'info');
+      } else {
+        setPricePendings(pendings);
+        if (pendings.length > 0) {
+          addToast(`Se detectaron ${pendings.length} cambios de precio o nuevos productos`, 'info');
+        }
+      }
+    } catch (err: any) {
+      console.error('Error durante la auditoría de precios:', err);
+    } finally {
+      setIsAuditingPrices(false);
+    }
+  }, [currentUser, session, activeSiteId, addToast]);
+
+  // Auditoría automática al conectar tienda y cuenta
+  useEffect(() => {
+    if (currentUser && session?.config && activeSiteId) {
+      runPriceAudit();
+    }
+  }, [currentUser, activeSiteId, session?.config?.url]);
+
+  const handleDismissPendingItem = async (item: PricePendingItem) => {
+    if (!currentUser || !activeSiteId) return;
+    try {
+      await dismissPendingItem(currentUser.uid, activeSiteId, item);
+      setPricePendings(prev => prev.filter(i => i.productId !== item.productId));
+      addToast(`Producto ${item.sku} marcado como al día`, 'info');
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleDismissAllPendings = async () => {
+    if (!currentUser || !activeSiteId || pricePendings.length === 0) return;
+    try {
+      await updateProductsInSnapshot(
+        currentUser.uid,
+        activeSiteId,
+        pricePendings.map(i => ({
+          id: i.productId,
+          regularPrice: i.newRegularPrice,
+          salePrice: i.newSalePrice,
+          sku: i.sku,
+          name: i.name
+        }))
+      );
+      setPricePendings([]);
+      addToast('Todos los cambios marcados como al día', 'success');
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
   // Room subscription
   useEffect(() => {
@@ -727,8 +824,23 @@ export default function App() {
           activeSiteId={activeSiteId}
           onForcePushWooSession={handleForcePushWooSession}
           deviceId={MY_DEVICE_ID}
+          pendingPriceChangesCount={pricePendings.length}
+          onOpenPriceAudit={() => setIsPriceAuditModalOpen(true)}
         />
       </div>
+
+      <PriceAuditModal
+        isOpen={isPriceAuditModalOpen}
+        onClose={() => setIsPriceAuditModalOpen(false)}
+        pendingItems={pricePendings}
+        isLoading={isAuditingPrices}
+        onRefreshAudit={runPriceAudit}
+        onAddProductToSheet={handleAddProduct}
+        onAddAllToSheet={(prods) => prods.forEach(handleAddProduct)}
+        onDismissItem={handleDismissPendingItem}
+        onDismissAll={handleDismissAllPendings}
+        siteName={wooSites.find(s => s.id === activeSiteId)?.name}
+      />
 
       {/* Area de Previsualización: único contenedor de scroll */}
       <div

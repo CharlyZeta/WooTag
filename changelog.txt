@@ -1,5 +1,17 @@
 # Changelog - WooTag AI Generator
 
+## [2.4.0] - 2026-10-13
+### Added
+- **Contrato SDD-GL FEAT-0001 (Auditoría de cambios de precio y nuevos productos con baseline en Firestore)**:
+  - Creado servicio `services/priceSnapshotService.ts` para persistir snapshots de precios en `users/{uid}/snapshots/{siteId}` en Firestore.
+  - Implementado algoritmo de comparación inteligente que detecta productos con cambios de precio regular o de oferta (`PRICE_CHANGED`) y productos recién visibles o nuevos en el catálogo (`NEW_PRODUCT`).
+  - Implementada función `fetchAllCatalogProducts` en `services/wooService.ts` con paginación completa guiada por `X-WP-TotalPages` y exclusión de productos padre variables o sin precio determinable (`isPriceDeterminable`).
+  - Creado modal de gestión y revisión `components/PriceAuditModal.tsx` con filtros por tipo, cálculo visual de diferencias porcentuales de precio, y adición individual o masiva a la hoja de etiquetas.
+  - Integrado botón interactivo con badge pulsante en el Header de `Controls.tsx` y banner informativo destacado en `ImportTab.tsx`.
+  - En `handlePrint` de `App.tsx`, las etiquetas impresas actualizan automáticamente el snapshot en Firestore, saliendo de la lista de pendientes de forma definitiva.
+  - Opciones de descarte individual y masivo para marcar productos como revisados sin imprimir.
+  - Añadidas pruebas unitarias TDD en `services/priceSnapshotService.test.ts` (AC-001..AC-006) y `services/wooService.test.ts`.
+
 ## [2.3.9] - 2026-10-13
 ### Security & Maintenance
 - **Contrato SDD-GL FIX-0005 (Vulnerabilidades en dependencias y overrides seguras)**:

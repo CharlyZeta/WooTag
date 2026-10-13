@@ -194,3 +194,56 @@ export const fetchProductsByName = async (query: string, config: WooConfig): Pro
   }
   return [];
 };
+
+export interface CatalogProductSummary {
+  id: number;
+  sku: string;
+  name: string;
+  regularPrice: number;
+  salePrice: number | null;
+  product: Product;
+}
+
+export const fetchAllCatalogProducts = async (
+  config: WooConfig,
+  onProgress?: (loaded: number, totalPages: number) => void
+): Promise<CatalogProductSummary[]> => {
+  const allSummaries: CatalogProductSummary[] = [];
+  let page = 1;
+  let totalPages = 1;
+
+  do {
+    const response = await makeWooRequest(
+      `/wp-json/wc/v3/products?status=publish&per_page=100&page=${page}`,
+      config
+    );
+    if (!response.ok) {
+      throw new Error(`Error al leer el catálogo de productos (página ${page}): ${response.status}`);
+    }
+    const data = await response.json();
+    if (Array.isArray(data)) {
+      for (const item of data) {
+        if (isPriceDeterminable(item)) {
+          const mapped = mapWooProduct(item);
+          const regularPrice = parseFloat(item.regular_price || "0");
+          const salePrice = item.sale_price ? parseFloat(item.sale_price) : null;
+          allSummaries.push({
+            id: Number(item.id),
+            sku: item.sku || String(item.id),
+            name: item.name,
+            regularPrice,
+            salePrice,
+            product: mapped
+          });
+        }
+      }
+    }
+    totalPages = parseInt(response.headers.get('X-WP-TotalPages') || '1', 10);
+    if (onProgress) {
+      onProgress(allSummaries.length, totalPages);
+    }
+    page++;
+  } while (page <= totalPages);
+
+  return allSummaries;
+};

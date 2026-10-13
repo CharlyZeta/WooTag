@@ -5,7 +5,7 @@ import { downloadTemplate, parseXlsFile } from '../../utils/xlsImport';
 import { logEvent } from '../../utils/ipLogger';
 import {
   FileSpreadsheet, Download, Upload, AlertTriangle, AlertCircle, CheckCircle2,
-  ScanLine, Smartphone, Globe, Search, Eraser, ChevronRight, ChevronDown, BookOpen, Plus, Loader2, ListTree, RefreshCw
+  ScanLine, Smartphone, Globe, Search, Eraser, ChevronRight, ChevronDown, BookOpen, Plus, Loader2, ListTree, RefreshCw, Tag
 } from 'lucide-react';
 
 interface ImportTabProps {
@@ -22,6 +22,8 @@ interface ImportTabProps {
   onOpenJoinModal: () => void;
   onOpenQrScanner: () => void;
   deviceId: string;
+  pendingPriceChangesCount?: number;
+  onOpenPriceAudit?: () => void;
 }
 
 interface TreeCategory {
@@ -47,6 +49,8 @@ export const ImportTab: React.FC<ImportTabProps> = ({
   onOpenJoinModal,
   onOpenQrScanner,
   deviceId,
+  pendingPriceChangesCount = 0,
+  onOpenPriceAudit,
 }) => {
   // Tabs Internos de Importación
   const [activeSubTab, setActiveSubTab] = useState<'woo' | 'xls' | 'scan'>('woo');
@@ -435,6 +439,30 @@ export const ImportTab: React.FC<ImportTabProps> = ({
           </div>
         ) : (
           <div className="space-y-6 animate-in fade-in duration-300">
+            {/* Banner de Auditoría de Precios */}
+            {pendingPriceChangesCount > 0 && onOpenPriceAudit && (
+              <div
+                onClick={onOpenPriceAudit}
+                className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white p-3.5 rounded-2xl shadow-lg shadow-amber-200/50 cursor-pointer flex items-center justify-between transition-all transform active:scale-[0.99] group"
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="bg-white/20 p-2 rounded-xl backdrop-blur-sm">
+                    <Tag className="w-5 h-5" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-xs font-black leading-tight flex items-center gap-2">
+                      <span>{pendingPriceChangesCount} cambio{pendingPriceChangesCount !== 1 ? 's' : ''} de precio o nuevos</span>
+                      <span className="bg-white text-amber-800 text-[10px] font-black px-1.5 py-0.2 rounded-full">¡Reimprimir!</span>
+                    </div>
+                    <p className="text-[10px] text-amber-100 font-bold mt-0.5 truncate">
+                      Tocá aquí para revisar las diferencias y agregarlas a la hoja
+                    </p>
+                  </div>
+                </div>
+                <ChevronRight className="w-5 h-5 text-amber-200 group-hover:translate-x-0.5 transition-transform flex-shrink-0" />
+              </div>
+            )}
+
             {/* Buscador Global Consolidado */}
             <div className="space-y-2">
               <label className="text-[11px] font-black text-slate-600 uppercase tracking-[0.15em] flex items-center gap-2">
