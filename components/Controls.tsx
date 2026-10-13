@@ -121,7 +121,12 @@ export const Controls: React.FC<ControlsProps> = ({
               <Printer className="w-5 h-5" />
             </div>
             <div>
-              <h1 className="text-lg font-black text-slate-900 leading-none tracking-tight">WooTag</h1>
+              <div className="flex items-center gap-2">
+                <h1 className="text-lg font-black text-slate-900 leading-none tracking-tight">WooTag</h1>
+                <span className="text-[10px] font-mono font-bold text-indigo-600 bg-indigo-50 border border-indigo-200/60 px-1.5 py-0.5 rounded-md leading-none">
+                  v{APP_VERSION}
+                </span>
+              </div>
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Generador AI</span>
             </div>
           </div>
@@ -282,7 +287,7 @@ export const Controls: React.FC<ControlsProps> = ({
       {/* Footer: App Version */}
       <div className="border-t border-slate-100 px-5 py-3 flex items-center justify-between bg-white no-print">
         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">WooTag AI</span>
-        <span className="text-[10px] font-black text-slate-300 font-mono">v{APP_VERSION}</span>
+        <span className="text-[11px] font-bold text-slate-600 font-mono bg-slate-100 px-2 py-0.5 rounded border border-slate-200">v{APP_VERSION}</span>
       </div>
 
       {wooConfig && (

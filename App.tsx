@@ -109,6 +109,10 @@ export default function App() {
   });
 
   useEffect(() => {
+    document.title = `WooTag AI Generator v${APP_VERSION}`;
+  }, []);
+
+  useEffect(() => {
     localStorage.setItem(PRINT_LOG_KEY, JSON.stringify(printLog));
   }, [printLog]);
 
