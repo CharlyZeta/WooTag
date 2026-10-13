@@ -1,5 +1,12 @@
 # Changelog - WooTag AI Generator
 
+## [2.3.9] - 2026-10-13
+### Security & Maintenance
+- **Contrato SDD-GL FIX-0005 (Vulnerabilidades en dependencias y overrides seguras)**:
+  - Ejecutada actualización de dependencias transitivas mediante `npm audit fix`, saneando paquetes de desarrollo y dependencias transitivas.
+  - Añadido override en `package.json` para `@grpc/grpc-js: ^1.14.6`, eliminando vulnerabilidades críticas y altas reportadas en subdependencias de Firebase/Google.
+  - Documentada excepción controlada para `xlsx@0.18.5` en el contrato, manteniendo intacta la API e integridad de validaciones en `utils/xlsImport.ts`.
+
 ## [2.3.8] - 2026-10-13
 ### Security
 - **Contrato SDD-GL FIX-0003 (Cifrado cliente AES-GCM para credenciales en Firestore)**:
