@@ -48,6 +48,7 @@ interface ControlsProps {
   deviceId: string;
   pendingPriceChangesCount?: number;
   onOpenPriceAudit?: () => void;
+  onSwitchToMobileMode?: () => void;
 }
 
 export const Controls: React.FC<ControlsProps> = ({
@@ -80,6 +81,7 @@ export const Controls: React.FC<ControlsProps> = ({
   deviceId,
   pendingPriceChangesCount = 0,
   onOpenPriceAudit,
+  onSwitchToMobileMode,
 }) => {
   const [activeTab, setActiveTab] = useState<'data' | 'import' | 'layout' | 'design' | 'history'>('data');
   const { currentUser } = useAuth();
@@ -183,6 +185,16 @@ export const Controls: React.FC<ControlsProps> = ({
                       {pendingPriceChangesCount}
                     </span>
                   )}
+                </button>
+              )}
+
+              {onSwitchToMobileMode && (
+                <button
+                  onClick={onSwitchToMobileMode}
+                  className="p-2 rounded-xl transition-all border-2 border-transparent hover:border-indigo-100 text-slate-400 hover:text-indigo-600 flex items-center gap-1 group relative"
+                  title="Cambiar a Modo Operador Móvil / Góndola"
+                >
+                  <Smartphone className="w-5 h-5 transition-transform group-hover:scale-110" />
                 </button>
               )}
             </div>

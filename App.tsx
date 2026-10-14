@@ -4,6 +4,7 @@ import { TagSheet } from './components/TagSheet';
 import { Controls } from './components/Controls';
 import { ConnectionModal } from './components/ConnectionModal';
 import { PriceAuditModal } from './components/PriceAuditModal';
+import { MobileScannerView } from './components/MobileScannerView';
 import { optimizeDescription } from './services/geminiService';
 import { encrypt, decrypt } from './utils/security';
 import { useAuth } from './contexts/AuthContext';
@@ -115,6 +116,40 @@ export default function App() {
       return saved ? JSON.parse(saved) : [];
     } catch { return []; }
   });
+
+  // Modo Operador Móvil / Góndola (FEAT-0002)
+  const [isMobileMode, setIsMobileMode] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    const hash = window.location.hash.toLowerCase();
+    const search = new URLSearchParams(window.location.search);
+    return hash === '#/mobile' || hash === '#mobile' || search.get('mode') === 'mobile' || window.location.pathname === '/mobile';
+  });
+
+  useEffect(() => {
+    const handleUrlChange = () => {
+      const hash = window.location.hash.toLowerCase();
+      const search = new URLSearchParams(window.location.search);
+      setIsMobileMode(hash === '#/mobile' || hash === '#mobile' || search.get('mode') === 'mobile' || window.location.pathname === '/mobile');
+    };
+
+    window.addEventListener('hashchange', handleUrlChange);
+    window.addEventListener('popstate', handleUrlChange);
+    return () => {
+      window.removeEventListener('hashchange', handleUrlChange);
+      window.removeEventListener('popstate', handleUrlChange);
+    };
+  }, []);
+
+  const toggleMobileMode = (enable: boolean) => {
+    setIsMobileMode(enable);
+    if (enable) {
+      window.location.hash = '/mobile';
+    } else {
+      if (window.location.hash.includes('mobile')) {
+        history.pushState(null, '', window.location.pathname + window.location.search);
+      }
+    }
+  };
 
   useEffect(() => {
     document.title = `WooTag AI Generator v${APP_VERSION}`;
@@ -826,6 +861,7 @@ export default function App() {
           deviceId={MY_DEVICE_ID}
           pendingPriceChangesCount={pricePendings.length}
           onOpenPriceAudit={() => setIsPriceAuditModalOpen(true)}
+          onSwitchToMobileMode={() => toggleMobileMode(true)}
         />
       </div>
 
@@ -842,39 +878,59 @@ export default function App() {
         siteName={wooSites.find(s => s.id === activeSiteId)?.name}
       />
 
-      {/* Area de Previsualización: único contenedor de scroll */}
-      <div
-        ref={scrollContainerRef}
-        onScroll={handleScroll}
-        className="flex-1 overflow-auto p-4 md:p-8 flex justify-center print:p-0 print:overflow-visible print:block bg-gray-100"
-      >
-        <div className="w-full flex justify-center">
-          <div className="origin-top scale-[0.45] sm:scale-[0.58] md:scale-[0.72] lg:scale-[0.88] xl:scale-100 print:scale-100 print:transform-none print:origin-top-left transition-transform duration-300 min-w-[210mm]">
-            <TagSheet products={products} config={config} />
-          </div>
+      {isMobileMode ? (
+        <div className="w-full h-full overflow-y-auto z-10 bg-slate-900">
+          <MobileScannerView
+            products={products}
+            config={config}
+            wooConfig={session?.config || null}
+            siteName={wooSites.find(s => s.id === activeSiteId)?.name || (session?.config ? new URL(session.config.url).hostname : 'WooTag')}
+            isCloudConnected={Boolean(currentUser)}
+            pricePendings={pricePendings}
+            onAddProduct={handleAddProduct}
+            onRemoveProduct={(id) => wrappedSetProducts(prev => prev.filter(p => p.id !== id))}
+            onClearProducts={() => wrappedSetProducts([])}
+            onSwitchToDesktopView={() => toggleMobileMode(false)}
+            onPrint={handlePrint}
+          />
         </div>
-      </div>
-
-      {/* Floating Page Indicator */}
-      {totalPages > 1 && (
-        <div className="no-print absolute bottom-5 right-5 z-40 pointer-events-none print:hidden">
-          <div className="flex items-center gap-2 bg-slate-900/85 backdrop-blur-sm text-white px-4 py-2 rounded-full shadow-2xl border border-white/10">
-            <div className="flex gap-1 items-center">
-              {Array.from({ length: totalPages }).map((_, i) => (
-                <div
-                  key={i}
-                  className={`rounded-full transition-all duration-300 ${i + 1 === currentPage
-                    ? 'w-4 h-2 bg-indigo-400'
-                    : 'w-2 h-2 bg-white/30'
-                    }`}
-                />
-              ))}
+      ) : (
+        <>
+          {/* Area de Previsualización: único contenedor de scroll */}
+          <div
+            ref={scrollContainerRef}
+            onScroll={handleScroll}
+            className="flex-1 overflow-auto p-4 md:p-8 flex justify-center print:p-0 print:overflow-visible print:block bg-gray-100"
+          >
+            <div className="w-full flex justify-center">
+              <div className="origin-top scale-[0.45] sm:scale-[0.58] md:scale-[0.72] lg:scale-[0.88] xl:scale-100 print:scale-100 print:transform-none print:origin-top-left transition-transform duration-300 min-w-[210mm]">
+                <TagSheet products={products} config={config} />
+              </div>
             </div>
-            <span className="text-xs font-black tracking-wider text-white/90">
-              {currentPage} / {totalPages}
-            </span>
           </div>
-        </div>
+
+          {/* Floating Page Indicator */}
+          {totalPages > 1 && (
+            <div className="no-print absolute bottom-5 right-5 z-40 pointer-events-none print:hidden">
+              <div className="flex items-center gap-2 bg-slate-900/85 backdrop-blur-sm text-white px-4 py-2 rounded-full shadow-2xl border border-white/10">
+                <div className="flex gap-1 items-center">
+                  {Array.from({ length: totalPages }).map((_, i) => (
+                    <div
+                      key={i}
+                      className={`rounded-full transition-all duration-300 ${i + 1 === currentPage
+                        ? 'w-4 h-2 bg-indigo-400'
+                        : 'w-2 h-2 bg-white/30'
+                        }`}
+                    />
+                  ))}
+                </div>
+                <span className="text-xs font-black tracking-wider text-white/90">
+                  {currentPage} / {totalPages}
+                </span>
+              </div>
+            </div>
+          )}
+        </>
       )}
 
       <ToastContainer toasts={toasts} />

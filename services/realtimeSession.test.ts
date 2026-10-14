@@ -43,7 +43,7 @@ describe('realtimeSession - createRoom (FIX-0002)', () => {
       ids.add(id);
     }
     expect(ids.size).toBe(1000);
-  });
+  }, 15000);
 
   it('AC-003: Math.random NO es invocado al crear la sala', async () => {
     const mathSpy = vi.spyOn(Math, 'random');

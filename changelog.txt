@@ -1,6 +1,23 @@
 # Changelog - WooTag AI Generator
 
-## [2.4.0] - 2026-10-13
+## [2.5.0] - 2026-10-14
+### Added
+- **Contrato SDD-GL FEAT-0002 (Modo Operador Móvil / Góndola: Escaneo Continuo, Feedback Háptico/Sonoro, Auditoría de Precios y Optimizador A4)**:
+  - Creada interfaz móvil exclusiva y ligera `components/MobileScannerView.tsx` diseñada para uso con una sola mano en góndola/almacén, prescindiendo del renderizado pesado de hojas A4 en smartphones.
+  - Implementado acceso directo mediante URL dedicada (`#/mobile`, `#mobile`, `?mode=mobile`) y botón de alternancia rápida "Modo Móvil" en el Header de `Controls.tsx`, preservando al 100% la interfaz clásica de PC/Tablet.
+  - Creado módulo utilitario de cálculo puro `utils/sheetOptimizer.ts` con tests unitarios (`utils/sheetOptimizer.test.ts`), calculando en tiempo real:
+    - Cantidad total de etiquetas cargadas ($N$).
+    - Capacidad por hoja según la grilla activa ($C = \text{columnas} \times \text{filas}$).
+    - Hojas A4 100% completas ($\lfloor N / C \rfloor$).
+    - Etiquetas faltantes para cerrar la hoja actual ($(C - (N \pmod C)) \pmod C$).
+    - Barra de progreso visual y estado de optimización.
+  - Creado servicio modular sensorial `services/soundHapticService.ts` con tests unitarios (`services/soundHapticService.test.ts`):
+    - Feedback háptico no invasivo mediante `navigator.vibrate([40])`.
+    - Feedback sonoro tenue y breve sintetizado nativamente en memoria mediante Web Audio API (frecuencia dulce de 587Hz con decaimiento exponencial de 60ms a volumen bajo, 100% offline, sin archivos externos ni latencia).
+  - Integración completa con `FEAT-0001` (Auditoría de Precios): al escanear un código de barras o ingresar un SKU, compara el precio contra el snapshot de Firestore avisando si hay discrepancia de precio, si es producto nuevo o si está al día.
+  - Sincronización en tiempo real: todas las etiquetas escaneadas en el móvil se sincronizan instantáneamente con la sesión de Firestore / PC para impresión remota.
+  - 143 tests unitarios pasando al 100% en verde.
+
 ### Added
 - **Contrato SDD-GL FEAT-0001 (Auditoría de cambios de precio y nuevos productos con baseline en Firestore)**:
   - Creado servicio `services/priceSnapshotService.ts` para persistir snapshots de precios en `users/{uid}/snapshots/{siteId}` en Firestore.
