@@ -24,17 +24,22 @@ export const TagSheet: React.FC<TagSheetProps> = ({ products, config }) => {
       {pages.map((pageProducts, pageIndex) => (
         <div
           key={pageIndex}
-          className={`bg-white shadow-2xl mx-auto overflow-hidden relative print:shadow-none print:m-0 ${pageIndex < pages.length - 1 ? 'print:break-after-page' : ''}`}
+          className={`bg-white shadow-2xl mx-auto overflow-hidden relative print:shadow-none print:m-0 print:border-none sheet-page ${pageIndex < pages.length - 1 ? 'print:break-after-page' : ''}`}
           style={{
             width: '210mm',
-            height: '297mm',
+            height: '296mm',
+            maxHeight: '296mm',
             display: 'grid',
             gridTemplateColumns: `repeat(${config.layoutCols}, 1fr)`,
             gridTemplateRows: `repeat(${config.layoutRows}, 1fr)`,
             gap: `${config.gap}mm`,
             padding: '10mm',
             boxSizing: 'border-box',
-            pageBreakAfter: pageIndex < pages.length - 1 ? 'always' : 'avoid'
+            overflow: 'hidden',
+            pageBreakInside: 'avoid',
+            breakInside: 'avoid',
+            pageBreakAfter: pageIndex < pages.length - 1 ? 'always' : 'avoid',
+            breakAfter: pageIndex < pages.length - 1 ? 'page' : 'auto',
           }}
         >
           {pageProducts.map((product) => (

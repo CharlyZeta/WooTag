@@ -1,6 +1,16 @@
 # Changelog - WooTag AI Generator
 
-## [2.5.0] - 2026-10-14
+## [2.5.1] - 2026-10-14
+### Fixed
+- **Contrato SDD-GL FIX-0010 (Eliminación de hojas espurias con fondo sucio y hoja blanca final en impresión física A4)**:
+  - Corregida la altura de cada hoja en `components/TagSheet.tsx` a `296mm` con `max-height: 296mm`, `box-sizing: border-box` y `overflow: hidden`, absorbiendo desbordes subpíxeles de renderizado (1122.52px) y márgenes físicos de arrastre de impresoras.
+  - Añadido `page-break-inside: avoid` y `break-inside: avoid` en cada página para impedir que el motor de impresión fragmente una hoja.
+  - Unificadas las reglas de salto de página (`break-after: page;` / `pageBreakAfter: 'always'`), asegurando que solo se apliquen en páginas intermedias y que la última hoja tenga `break-after: auto`, previniendo la generación de hojas en blanco al final.
+  - Añadido `print:bg-white` y `print:m-0` en los contenedores de scroll y previsualización de `App.tsx`, eliminando la impresión del fondo gris `#f3f4f6` de la pantalla ("fondo sucio").
+  - Ocultado `ToastContainer` en impresión mediante las clases `no-print print:hidden`, evitando que nodos DOM flotantes empujen hojas vacías al final.
+  - Reforzadas las reglas `@media print` en `index.html` para `html, body, #root` y la clase `.sheet-page`.
+  - Añadidas pruebas unitarias en `components/TagSheet.test.tsx` (146 tests pasando al 100% en verde).
+
 ### Added
 - **Contrato SDD-GL FEAT-0002 (Modo Operador Móvil / Góndola: Escaneo Continuo, Feedback Háptico/Sonoro, Auditoría de Precios y Optimizador A4)**:
   - Creada interfaz móvil exclusiva y ligera `components/MobileScannerView.tsx` diseñada para uso con una sola mano en góndola/almacén, prescindiendo del renderizado pesado de hojas A4 en smartphones.

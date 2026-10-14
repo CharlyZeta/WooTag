@@ -32,16 +32,29 @@
       body {
         width: 210mm;
         height: auto !important;
+        margin: 0 !important;
+        padding: 0 !important;
         background-color: white !important;
+        background: white !important;
         overflow: visible !important;
       }
 
       #root {
         overflow: visible !important;
+        background-color: white !important;
+        background: white !important;
       }
 
-      .no-print {
+      .no-print, [class*="no-print"] {
         display: none !important;
+      }
+
+      .sheet-page {
+        box-sizing: border-box !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+        margin: 0 !important;
+        box-shadow: none !important;
       }
 
       .print-container {
@@ -51,7 +64,6 @@
         padding: 0 !important;
         position: static !important;
         transform: none !important;
-        /* Eliminar escala en impresión */
         overflow: visible !important;
       }
 

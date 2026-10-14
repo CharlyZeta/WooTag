@@ -900,10 +900,10 @@ export default function App() {
           <div
             ref={scrollContainerRef}
             onScroll={handleScroll}
-            className="flex-1 overflow-auto p-4 md:p-8 flex justify-center print:p-0 print:overflow-visible print:block bg-gray-100"
+            className="flex-1 overflow-auto p-4 md:p-8 flex justify-center print:p-0 print:m-0 print:overflow-visible print:block bg-gray-100 print:bg-white"
           >
-            <div className="w-full flex justify-center">
-              <div className="origin-top scale-[0.45] sm:scale-[0.58] md:scale-[0.72] lg:scale-[0.88] xl:scale-100 print:scale-100 print:transform-none print:origin-top-left transition-transform duration-300 min-w-[210mm]">
+            <div className="w-full flex justify-center print:block print:w-auto">
+              <div className="origin-top scale-[0.45] sm:scale-[0.58] md:scale-[0.72] lg:scale-[0.88] xl:scale-100 print:scale-100 print:transform-none print:origin-top-left transition-transform duration-300 min-w-[210mm] print:min-w-0 print:w-auto">
                 <TagSheet products={products} config={config} />
               </div>
             </div>
@@ -940,7 +940,7 @@ export default function App() {
 }
 
 const ToastContainer = ({ toasts }: { toasts: Toast[] }) => (
-  <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-[200] flex flex-col gap-2 pointer-events-none">
+  <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-[200] flex flex-col gap-2 pointer-events-none no-print print:hidden">
     {toasts.map(t => (
       <div 
         key={t.id} 
