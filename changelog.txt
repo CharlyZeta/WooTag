@@ -1,6 +1,15 @@
 # Changelog - WooTag AI Generator
 
-## [2.5.1] - 2026-10-14
+## [2.5.2] - 2026-10-14
+### Fixed
+- **Contrato SDD-GL FIX-0010 (Simetría de márgenes y eliminación de hoja en blanco intermedia por límite de rodillo de impresora)**:
+  - Reducida la altura total de la hoja en impresión a `282mm` (con `max-height: 282mm` y `box-sizing: border-box`), proporcionando un margen de seguridad de 15mm para absorber el límite físico de arrastre del rodillo inferior de impresoras chorro de tinta y láser (12mm a 15mm).
+  - Aplicado padding simétrico `8mm 10mm` (8mm superior/inferior, 10mm laterales) asegurando que el margen inferior sea exactamente igual al superior.
+  - Implementado `minmax(0, 1fr)` en `gridTemplateRows` y `gridTemplateColumns` de `TagSheet.tsx`, impidiendo que el contenido de las etiquetas estire las filas verticalmente por encima del espacio disponible.
+  - Añadido `min-h-0 min-w-0 overflow-hidden` en cada celda de etiqueta para garantizar contención estricta.
+  - Reforzada regla `.sheet-page` en `index.html` con `height: 282mm !important` y padding `8mm 10mm !important` bajo `@media print`.
+  - 146 tests pasando al 100% en verde.
+
 ### Fixed
 - **Contrato SDD-GL FIX-0010 (Eliminación de hojas espurias con fondo sucio y hoja blanca final en impresión física A4)**:
   - Corregida la altura de cada hoja en `components/TagSheet.tsx` a `296mm` con `max-height: 296mm`, `box-sizing: border-box` y `overflow: hidden`, absorbiendo desbordes subpíxeles de renderizado (1122.52px) y márgenes físicos de arrastre de impresoras.

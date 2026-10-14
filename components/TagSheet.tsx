@@ -27,13 +27,13 @@ export const TagSheet: React.FC<TagSheetProps> = ({ products, config }) => {
           className={`bg-white shadow-2xl mx-auto overflow-hidden relative print:shadow-none print:m-0 print:border-none sheet-page ${pageIndex < pages.length - 1 ? 'print:break-after-page' : ''}`}
           style={{
             width: '210mm',
-            height: '296mm',
-            maxHeight: '296mm',
+            height: '282mm',
+            maxHeight: '282mm',
             display: 'grid',
-            gridTemplateColumns: `repeat(${config.layoutCols}, 1fr)`,
-            gridTemplateRows: `repeat(${config.layoutRows}, 1fr)`,
+            gridTemplateColumns: `repeat(${config.layoutCols}, minmax(0, 1fr))`,
+            gridTemplateRows: `repeat(${config.layoutRows}, minmax(0, 1fr))`,
             gap: `${config.gap}mm`,
-            padding: '10mm',
+            padding: '8mm 10mm',
             boxSizing: 'border-box',
             overflow: 'hidden',
             pageBreakInside: 'avoid',
@@ -43,7 +43,7 @@ export const TagSheet: React.FC<TagSheetProps> = ({ products, config }) => {
           }}
         >
           {pageProducts.map((product) => (
-            <div key={product.id} className="w-full h-full overflow-hidden">
+            <div key={product.id} className="w-full h-full min-h-0 min-w-0 overflow-hidden">
               <Tag product={product} config={config} />
             </div>
           ))}
@@ -52,7 +52,7 @@ export const TagSheet: React.FC<TagSheetProps> = ({ products, config }) => {
           {Array.from({ length: Math.max(0, itemsPerPage - pageProducts.length) }).map((_, i) => (
             <div
               key={`empty-${pageIndex}-${i}`}
-              className="border border-dashed border-gray-100 flex items-center justify-center text-gray-200 text-xs print:border-gray-50"
+              className="border border-dashed border-gray-100 flex items-center justify-center text-gray-200 text-xs print:border-gray-50 min-h-0 min-w-0 overflow-hidden"
             >
               {products.length === 0 ? 'Espacio para Etiqueta' : ''}
             </div>

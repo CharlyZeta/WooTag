@@ -31,9 +31,10 @@ describe('TagSheet Component (FIX-0010: Print safety & page breaks)', () => {
 
     const firstSheet = sheetDivs[0] as HTMLElement;
     expect(firstSheet.style.width).toBe('210mm');
-    // La altura segura no debe superar los 296mm para absorber márgenes de impresora
+    // La altura segura no debe superar los 285mm para absorber márgenes de impresora
     const heightNum = parseFloat(firstSheet.style.height);
-    expect(heightNum).toBeLessThanOrEqual(296);
+    expect(heightNum).toBeLessThanOrEqual(285);
+    expect(firstSheet.style.gridTemplateRows).toContain('minmax(0, 1fr)');
     expect(firstSheet.style.boxSizing).toBe('border-box');
     expect(firstSheet.style.overflow).toBe('hidden');
   });
