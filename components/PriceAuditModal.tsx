@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { PricePendingItem, Product } from '../types';
+import { formatAuditAge } from '../services/priceSnapshotService';
 import {
   Tag,
   TrendingUp,
@@ -25,6 +26,8 @@ interface PriceAuditModalProps {
   onDismissItem: (item: PricePendingItem) => void;
   onDismissAll: () => void;
   siteName?: string;
+  /** FIX-0014: marca de la última auditoría exitosa (ms epoch) para mostrar frescura. */
+  lastAuditAt?: number | null;
 }
 
 export const PriceAuditModal: React.FC<PriceAuditModalProps> = ({
@@ -37,7 +40,8 @@ export const PriceAuditModal: React.FC<PriceAuditModalProps> = ({
   onAddAllToSheet,
   onDismissItem,
   onDismissAll,
-  siteName
+  siteName,
+  lastAuditAt
 }) => {
   const [filter, setFilter] = useState<'all' | 'changed' | 'new'>('all');
   const [addedIds, setAddedIds] = useState<Record<number, boolean>>({});
@@ -52,6 +56,8 @@ export const PriceAuditModal: React.FC<PriceAuditModalProps> = ({
 
   const changedCount = pendingItems.filter(i => i.type === 'PRICE_CHANGED').length;
   const newCount = pendingItems.filter(i => i.type === 'NEW_PRODUCT').length;
+  // FIX-0014 AC-005: marca de frescura válida para mostrar la antigüedad de la auditoría.
+  const hasAuditMark = typeof lastAuditAt === 'number' && Number.isFinite(lastAuditAt);
 
   const handleAdd = (item: PricePendingItem) => {
     onAddProductToSheet(item.product);
@@ -151,6 +157,26 @@ export const PriceAuditModal: React.FC<PriceAuditModalProps> = ({
               Descartar todos
             </button>
           )}
+        </div>
+
+        {/* Estado de frescura de la auditoría (FIX-0014 AC-005) */}
+        <div className="px-5 py-2 bg-white border-b border-slate-100 flex items-center gap-1.5 text-[11px] font-bold">
+          {hasAuditMark ? (
+            <>
+              <Check className="w-3.5 h-3.5 text-emerald-600 stroke-[3] flex-shrink-0" />
+              <span className="text-emerald-700 truncate">
+                Auditoría al día · {formatAuditAge(lastAuditAt)}
+              </span>
+            </>
+          ) : (
+            <>
+              <AlertCircle className="w-3.5 h-3.5 text-amber-600 flex-shrink-0" />
+              <span className="text-amber-700 truncate">Auditoría pendiente</span>
+            </>
+          )}
+          <span className="ml-auto text-slate-400 font-semibold truncate hidden sm:inline">
+            {isLoading ? 'Escaneando catálogo…' : 'Forzá el escaneo con el botón de actualizar'}
+          </span>
         </div>
 
         {/* Content list */}

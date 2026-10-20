@@ -1,5 +1,16 @@
 # Changelog - WooTag AI Generator
 
+## [2.5.6] - 2026-10-20
+### Fixed
+- **Contrato SDD-GL FIX-0014 (la auditoría de precios descargaba el catálogo completo en cada arranque)**:
+  - `services/priceSnapshotService.ts`: nuevo `PRICE_AUDIT_TTL_MS` (15 min), `PriceSnapshotState`, `loadSnapshotState` (expone `entries`, `updatedAt` y `lastAuditAt`), `markAuditRun` (persiste sólo `lastAuditAt` con `merge`, sin reescribir `entries`), la decisión pura `shouldRunPriceAudit` y `formatAuditAge`. `loadSnapshot` ahora delega y conserva su contrato.
+  - `App.tsx`: `runPriceAudit(force = false)` consulta la frescura antes de descargar; si el snapshot está dentro del TTL no emite ningún request al catálogo ni escritura. El botón de actualizar del modal fuerza la descarga (`force = true`) y al terminar persiste la marca. El efecto automático ahora depende de `runPriceAudit` (se elimina el closure con valores viejos).
+  - `components/PriceAuditModal.tsx`: fila de estado de frescura — "Auditoría al día · hace X min" o "Auditoría pendiente", con el control para forzar el escaneo.
+  - Efecto medible: N recargas dentro de la ventana de 15 minutos ejecutan **una sola** descarga completa del catálogo (antes: una por carga).
+### Added
+- `services/priceAuditScheduling.test.ts` (24 tests: TTL, límites, `force`, `loadSnapshotState`, `markAuditRun` sin `entries`, simulación de 5 arranques) y `components/PriceAuditModal.test.tsx` (3 tests RTL de la fila de frescura y del refresco forzado).
+- Suite completa en **201 tests / 17 archivos** y typecheck limpio.
+
 ## [2.5.5] - 2026-10-20
 ### Fixed
 - **Contrato SDD-GL FIX-0013 (escrituras de configuración y perfiles en Firestore sin debounce)**:

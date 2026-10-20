@@ -9,7 +9,8 @@ import { optimizeDescription } from './services/geminiService';
 import { encrypt, decrypt } from './utils/security';
 import { useAuth } from './contexts/AuthContext';
 import { loadCloudProfile, updateCloudProfile, subscribeToCloudProfile, addProductToCloudProfile, UserCloudProfile } from './services/cloudProfiles';
-import { loadSnapshot, saveSnapshot, compareCatalogWithSnapshot, updateProductsInSnapshot, dismissPendingItem, collectPrintedSourceIds } from './services/priceSnapshotService';
+import { loadSnapshotState, markAuditRun, shouldRunPriceAudit, saveSnapshot, compareCatalogWithSnapshot, updateProductsInSnapshot, dismissPendingItem, collectPrintedSourceIds } from './services/priceSnapshotService';
+import type { PriceSnapshotState } from './services/priceSnapshotService';
 import { createCloudWriteBatcher, attachVisibilityFlush } from './utils/cloudWriteBatcher';
 import { fetchAllCatalogProducts } from './services/wooService';
 import { ShoppingBag, Bell, CheckCircle2, Smartphone, Loader2, X } from 'lucide-react';
@@ -72,6 +73,8 @@ export default function App() {
   const [pricePendings, setPricePendings] = useState<PricePendingItem[]>([]);
   const [isPriceAuditModalOpen, setIsPriceAuditModalOpen] = useState(false);
   const [isAuditingPrices, setIsAuditingPrices] = useState(false);
+  // FIX-0014: marca de última auditoría (frescura visible en el modal, BR-005 / AC-005)
+  const [priceAuditAt, setPriceAuditAt] = useState<number | null>(null);
 
   const addToast = useCallback((message: string, type: 'info' | 'success' = 'info') => {
     const id = Math.random().toString(36).substring(2, 9);
@@ -503,18 +506,31 @@ export default function App() {
     return () => clearTimeout(timer);
   }, [wooSites, activeSiteId, session, currentUser, isCloudProfileLoaded]);
 
-  // FEAT-0001: Ejecución de la auditoría de precios contra el snapshot de Firestore
-  const runPriceAudit = useCallback(async () => {
+  // FEAT-0001 / FIX-0014: Ejecución de la auditoría de precios contra el snapshot de Firestore.
+  // `force = true` (botón del modal) saltea el TTL y siempre descarga el catálogo completo.
+  const runPriceAudit = useCallback(async (force = false) => {
     if (!currentUser || !session?.config) return;
     const currentSiteId = activeSiteId || 'default';
+
+    // BR-001 / BR-002: el estado del snapshot decide si corresponde auditar.
+    let state: PriceSnapshotState;
+    try {
+      state = await loadSnapshotState(currentUser.uid, currentSiteId);
+    } catch (e) {
+      console.error(e);
+      return;
+    }
+
+    setPriceAuditAt(state.lastAuditAt);
+
+    // BR-005: si la auditoría está fresca no se emite ningún request ni escritura.
+    if (!shouldRunPriceAudit({ force, lastAuditAt: state.lastAuditAt })) return;
+
     setIsAuditingPrices(true);
     try {
-      const [snapshot, catalog] = await Promise.all([
-        loadSnapshot(currentUser.uid, currentSiteId),
-        fetchAllCatalogProducts(session.config)
-      ]);
+      const catalog = await fetchAllCatalogProducts(session.config);
 
-      const { pendings, newSnapshot, isInitialBaseline } = compareCatalogWithSnapshot(catalog, snapshot);
+      const { pendings, newSnapshot, isInitialBaseline } = compareCatalogWithSnapshot(catalog, state.entries);
 
       if (isInitialBaseline) {
         await saveSnapshot(currentUser.uid, currentSiteId, newSnapshot);
@@ -526,19 +542,24 @@ export default function App() {
           addToast(`Se detectaron ${pendings.length} cambios de precio o nuevos productos`, 'info');
         }
       }
-    } catch (err: any) {
+
+      // BR-004: se persiste la marca sin reescribir las entradas (los pendientes no se pierden).
+      await markAuditRun(currentUser.uid, currentSiteId);
+      setPriceAuditAt(Date.now());
+    } catch (err) {
       console.error('Error durante la auditoría de precios:', err);
     } finally {
       setIsAuditingPrices(false);
     }
   }, [currentUser, session, activeSiteId, addToast]);
 
-  // Auditoría automática al conectar tienda y cuenta
+  // Auditoría automática al conectar tienda y cuenta.
+  // BR-006: depende de `runPriceAudit`; la frescura (TTL) evita re-descargas innecesarias.
   useEffect(() => {
     if (currentUser && session?.config && activeSiteId) {
-      runPriceAudit();
+      runPriceAudit(false);
     }
-  }, [currentUser, activeSiteId, session?.config?.url]);
+  }, [currentUser, activeSiteId, session?.config?.url, runPriceAudit]);
 
   const handleDismissPendingItem = async (item: PricePendingItem) => {
     if (!currentUser || !activeSiteId) return;
@@ -841,7 +862,8 @@ export default function App() {
         onClose={() => setIsPriceAuditModalOpen(false)}
         pendingItems={pricePendings}
         isLoading={isAuditingPrices}
-        onRefreshAudit={runPriceAudit}
+        onRefreshAudit={() => runPriceAudit(true)}
+        lastAuditAt={priceAuditAt}
         onAddProductToSheet={handleAddProduct}
         onAddAllToSheet={(prods) => prods.forEach(handleAddProduct)}
         onDismissItem={handleDismissPendingItem}

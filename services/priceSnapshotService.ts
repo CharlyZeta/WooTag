@@ -11,17 +11,86 @@ export const getSnapshotDocRef = (uid: string, siteId: string) => {
   return doc(db, 'users', uid, 'snapshots', siteId);
 };
 
+/** Ventana de frescura de la auditoría de precios (FIX-0014). */
+export const PRICE_AUDIT_TTL_MS = 15 * 60 * 1000;
+
+/** Estado completo del documento de snapshot, incluida la marca de última auditoría. */
+export interface PriceSnapshotState {
+  entries: PriceSnapshotMap | null;
+  updatedAt: number | null;
+  lastAuditAt: number | null;
+}
+
+/** Estado vacío reutilizable cuando faltan ids o el documento no existe. */
+const EMPTY_SNAPSHOT_STATE: PriceSnapshotState = {
+  entries: null,
+  updatedAt: null,
+  lastAuditAt: null
+};
+
+/**
+ * Carga el estado del snapshot de precios almacenado en Firestore.
+ * Retorna un estado vacío si faltan ids o no existe documento previo.
+ * BR-001 / BR-002 (FIX-0014): expone `updatedAt` y `lastAuditAt` para decidir frescura.
+ */
+export const loadSnapshotState = async (uid: string, siteId: string): Promise<PriceSnapshotState> => {
+  if (!uid || !siteId) return { ...EMPTY_SNAPSHOT_STATE };
+  const snapRef = getSnapshotDocRef(uid, siteId);
+  const snap = await getDoc(snapRef);
+  if (!snap.exists()) return { ...EMPTY_SNAPSHOT_STATE };
+  const data = snap.data();
+  // BR-001: sólo marcas numéricas finitas cuentan como frescura válida.
+  const rawUpdatedAt: unknown = data?.updatedAt;
+  const rawLastAuditAt: unknown = data?.lastAuditAt;
+  return {
+    entries: (data?.entries as PriceSnapshotMap) || null,
+    updatedAt: typeof rawUpdatedAt === 'number' && Number.isFinite(rawUpdatedAt) ? rawUpdatedAt : null,
+    lastAuditAt: typeof rawLastAuditAt === 'number' && Number.isFinite(rawLastAuditAt) ? rawLastAuditAt : null
+  };
+};
+
 /**
  * Carga el snapshot de precios almacenado en Firestore.
  * Retorna null si no existe ningún documento previo.
  */
 export const loadSnapshot = async (uid: string, siteId: string): Promise<PriceSnapshotMap | null> => {
-  if (!uid || !siteId) return null;
-  const snapRef = getSnapshotDocRef(uid, siteId);
-  const snap = await getDoc(snapRef);
-  if (!snap.exists()) return null;
-  const data = snap.data();
-  return (data?.entries as PriceSnapshotMap) || null;
+  return (await loadSnapshotState(uid, siteId)).entries;
+};
+
+/**
+ * Marca la última auditoría sin reescribir las entradas del snapshot (BR-004).
+ * Usa `setDoc` con merge: no falla si el documento todavía no existe.
+ */
+export const markAuditRun = async (uid: string, siteId: string): Promise<void> => {
+  if (!uid || !siteId) return;
+  await setDoc(getSnapshotDocRef(uid, siteId), { lastAuditAt: Date.now() }, { merge: true });
+};
+
+/** BR-002: decisión pura de "¿corresponde auditar?" (testeable sin montar App). */
+export const shouldRunPriceAudit = (params: {
+  force?: boolean;
+  lastAuditAt: number | null | undefined;
+  now?: number;
+  ttlMs?: number;
+}): boolean => {
+  const { force = false, lastAuditAt, now = Date.now(), ttlMs = PRICE_AUDIT_TTL_MS } = params;
+  // BR-003 / AC-002: el botón del modal siempre fuerza la descarga completa.
+  if (force) return true;
+  // AC-003: sin marca válida siempre corresponde auditar.
+  if (typeof lastAuditAt !== 'number' || !Number.isFinite(lastAuditAt)) return true;
+  return now - lastAuditAt >= ttlMs;
+};
+
+/** Texto de antigüedad para el modal (AC-005). */
+export const formatAuditAge = (lastAuditAt: number, now: number = Date.now()): string => {
+  const elapsedMs = Math.max(0, now - lastAuditAt);
+  const totalSeconds = Math.floor(elapsedMs / 1000);
+  if (totalSeconds < 60) return 'recién';
+  const totalMinutes = Math.floor(totalSeconds / 60);
+  if (totalMinutes < 60) return `hace ${Math.max(1, totalMinutes)} min`;
+  const totalHours = Math.floor(totalMinutes / 60);
+  if (totalHours < 24) return `hace ${totalHours} h`;
+  return `hace ${Math.floor(totalHours / 24)} d`;
 };
 
 /**
