@@ -35,7 +35,7 @@ Desarrollado con la asistencia de **Antigravity** (Google DeepMind).
 
 - **Autenticación**: Login, registro y recuperación de contraseña con Firebase Authentication.
 - **Sincronización Bidireccional**: Los perfiles de diseño, la configuración de etiqueta, los productos seleccionados y las credenciales de WooCommerce se sincronizan automáticamente en tiempo real (Firestore).
-- **Multi-dispositivo**: Al iniciar sesión en tu teléfono, tus credenciales del PC se restauran instantáneamente de forma segura, permitiendo usar el escáner móvil de inmediato sin volver a ingresar claves. Todo producto escaneado aparece mágicamente en tu computadora principal.
+- **Multi-dispositivo**: Al iniciar sesión en tu teléfono, tus credenciales del PC se restauran instantáneamente, permitiendo usar el escáner móvil de inmediato sin volver a ingresar claves. Todo producto escaneado aparece mágicamente en tu computadora principal.
 - Opcional — la app es completamente funcional sin cuenta.
 
 ### 📱 Modo Móvil (requiere cuenta)
@@ -239,11 +239,36 @@ App.tsx                        ← Estado global: sesión, config, perfiles, his
 
 | Aspecto | Implementación |
 |---------|----------------|
-| Credenciales WooCommerce | Ofuscadas con base64 + salt en `localStorage`. Protección contra inspección casual. |
+| Credenciales WooCommerce | Cifradas con AES-GCM en Firestore usando el `uid` como clave → **ofuscación en reposo**, no confidencialidad: quien pueda leer el documento puede descifrarlas. El control real son las reglas de Firestore versionadas en `firestore.rules`. En `localStorage` se ofuscan con base64 + salt (sólo evita la inspección casual). |
 | Sesión WooCommerce | Expiración automática a las 24h. |
 | API Key Gemini | Solo en `.env` (gitignoreado). Nunca en código. |
 | Firebase Auth | Manejo de sesión delegado al SDK de Firebase. No se almacenan contraseñas. |
 | Importación XLS | Solo `.xlsx`/`.xls`, sin macros VBA, sanitización de celdas y URLs de imagen. |
+
+### 🔐 Reglas de Firestore
+
+El control real de acceso a los datos son las **reglas de Firestore**, versionadas en el repositorio (`firestore.rules` + `firebase.json`). Antes vivían sólo en la consola del proyecto: no se podían auditar ni revisar en un PR.
+
+**Qué permiten:**
+
+- Cada usuario autenticado puede leer y escribir **únicamente** su propio documento `users/{suUid}` y sus subcolecciones (por ejemplo `users/{suUid}/snapshots/{siteId}`, los snapshots de precios).
+- Todo lo demás queda **denegado por defecto**, incluida la colección `rooms` (retirada en FIX-0012). Cualquier colección nueva debe habilitarse explícitamente en las reglas.
+
+**Despliegue (manual, desde tu máquina):**
+
+```bash
+npx firebase-tools deploy --only firestore:rules --project <TU_PROJECT_ID>
+```
+
+> No hace falta instalar nada en el proyecto: `npx` baja `firebase-tools` de forma temporal. **No** commitees el id del proyecto, credenciales ni `.env`: el project id se pasa en la línea de comandos y la autenticación la resuelve tu sesión local de Firebase.
+
+**Checklist de verificación (con dos cuentas, A y B):**
+
+1. Con la cuenta **A**, la app sincroniza y persiste con normalidad (perfil, sitios, productos y snapshots de precios).
+2. Con la cuenta **A**, intentar leer `users/{uidDeB}` desde la consola o el SDK de Firestore es **denegado** (`permission-denied`).
+3. Con la cuenta **A**, listar la colección `users` es **denegado**.
+4. **Sin sesión** (deslogueado), cualquier lectura o escritura en Firestore es **denegada**.
+5. `rooms/{id}` ya no se usa: cualquier lectura o escritura sobre esa ruta es **denegada**.
 
 ---
 

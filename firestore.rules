@@ -1,0 +1,26 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Perfil del usuario (config, perfiles, sitios, productos) y sus subcolecciones
+    // (snapshots de precios): sólo el dueño autenticado. FIX-0017.
+    match /users/{userId} {
+      allow read, write: if isOwner(userId);
+
+      match /{document=**} {
+        allow read, write: if isOwner(userId);
+      }
+    }
+
+    // Todo lo demás queda denegado por defecto (incluye la colección `rooms`,
+    // retirada en FIX-0012). Cualquier colección nueva debe habilitarse explícitamente.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+  }
+}

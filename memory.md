@@ -24,11 +24,12 @@
 ### 1. Orquestación Global (`App.tsx`)
 - **Fortalezas**:
   - Excelente separación y modularización del estado global de la aplicación (cola de productos, configuración visual `TagConfig`, perfiles de diseño guardados e historial de impresión).
-  - Manejo eficiente de rehidratación de sesión con credenciales WooCommerce de forma cifrada/ofuscada en `localStorage`.
+  - Manejo eficiente de rehidratación de sesión con credenciales WooCommerce de forma ofuscada en `localStorage`.
   - Excelente uso de referencias (`useRef`) y de un indicador flotante de páginas A4 que actualiza el estado de manera reactiva mediante el scroll del contenedor.
 - **Mejoras y Fixes en v2.2.7 ✅**:
   - **Migración de Perfiles Heredados a Multisitio (Retrocompatibilidad)**: Corregida la rama de fallback en `App.tsx` para cuentas con perfiles antiguos en la base de datos (que tenían `wooSession` pero carecían de `wooSites` y `activeSiteId`), transformándola automáticamente al formato multisitio y guardándola de forma consistente tanto localmente en `localStorage` como en Firestore.
   - **Diagnóstico de Expiración de Firestore Rules**: Identificación de la expiración de las reglas de prueba de Firestore (límite del 25 de abril de 2026) que bloqueaba toda sincronización de datos con un error de permisos denegados. Se redactó y proporcionó al usuario una regla de producción segura y segmentada.
+  - **Reglas de Firestore versionadas (FIX-0017)**: las reglas de seguridad ya viven en el repo (`firestore.rules` + `firebase.json`); cada usuario sólo accede a `users/{suUid}` y sus subcolecciones y todo lo demás queda denegado por defecto. Un `allow` permisivo o la expiración de reglas de prueba ya no pueden pasar desapercibidos en un PR.
 
 - **Mejoras y Fixes en v2.2.6 ✅**:
   - **Compuerta de Sincronización Reactiva (`isCloudProfileLoaded`)**: Introducción del estado `isCloudProfileLoaded` en `App.tsx` para bloquear escrituras y suscripciones automáticas en Firebase hasta que los datos iniciales de la nube se hayan descargado por completo, previniendo la pérdida de credenciales y configuraciones en móviles.
@@ -76,13 +77,15 @@ Firebase Login (PC o móvil)
     → Extrae WooConfig desde WooSite  // FIX: ya no pasa WooSite donde se esperaba WooConfig
     → handleConnect(wooConfig, ..., remember=true, siteId)
     → setSession()                    // Estado React actualizado ✅
-    → localStorage cifrado            // Persistencia local ✅ (FIX: remember=true)
+    → localStorage ofuscado           // Persistencia local ✅ (FIX: remember=true)
     → Firestore activeSiteId          // Persistencia cloud ✅
 ```
 
 ### 6. Utilidades y Seguridad (`utils/`)
 - **`security.ts`**:
   - Ofuscación base64 rápida con un Salt estático para evitar la inspección visual casual en las DevTools del navegador. Cumple bien su propósito, pero se destaca en la documentación que no es un cifrado criptográfico estricto.
+- **`crypto.ts`** (FIX-0017):
+  - Ofuscación en reposo con WebCrypto (AES-GCM 256 bits, HKDF-SHA256) para las credenciales guardadas en Firestore. La clave se deriva del `uid` del path, así que cualquiera que pueda leer el documento puede descifrarlo: **no aporta confidencialidad**. El control real de acceso son las reglas de Firestore (`firestore.rules`).
 - **`xlsImport.ts`**:
   - Diseño altamente seguro contra inyecciones de macros o fórmulas maliciosas. Lee únicamente valores ya calculados de celdas con SheetJS (`cellFormula: false`, `cellHTML: false`, `bookVBA: false`), restringe a formatos puros de datos (`.xls`/`.xlsx`), limita el tamaño a 5 MB y el número de filas a 500.
 
@@ -91,4 +94,4 @@ Firebase Login (PC o móvil)
 ## 🚀 Próximos Pasos Recomendados
 1. **Dividir `Controls.tsx`** en submódulos por pestaña para reducir la complejidad cognitiva del archivo.
 2. **Verificar la suite de pruebas** ejecutando `npm test` para asegurar que el cambio de importaciones no rompa nada en el bundle de Vite.
-3. **Considerar cifrado real** de las credenciales WooCommerce en Firestore (actualmente se guardan en texto plano en el documento del usuario).
+3. ✅ **FIX-0017: el cifrado es ofuscación en reposo y el control real son `firestore.rules` (versionadas, deploy manual documentado)**.

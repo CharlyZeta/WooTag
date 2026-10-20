@@ -1,8 +1,13 @@
 /**
  * utils/crypto.ts
- * 
- * Cifrado criptográfico cliente con WebCrypto (AES-GCM 256 bits y derivación HKDF-SHA256).
- * Protege credenciales sensibles (consumerKey, consumerSecret) antes de enviarlas a Firestore.
+ *
+ * Ofuscación en reposo con WebCrypto (AES-GCM 256 bits, derivación HKDF-SHA256).
+ *
+ * LÍMITE IMPORTANTE (FIX-0017): la clave se deriva de un secreto que viaja en el
+ * path del documento (`uid`), así que cualquiera que pueda leer el documento puede
+ * descifrarlo. Esto NO aporta confidencialidad: es ofuscación para que los secretos
+ * no queden legibles de un vistazo en la consola de Firebase. El control real de
+ * acceso son las reglas de Firestore (`firestore.rules`).
  */
 
 const HKDF_INFO = new TextEncoder().encode('wootag-firestore-credentials-v1');
@@ -41,7 +46,9 @@ const fromHex = (hex: string): Uint8Array => {
 };
 
 /**
- * Cifra un texto plano utilizando AES-GCM con una clave derivada del secreto proporcionado.
+ * Ofusca un texto plano con AES-GCM usando una clave derivada del secreto proporcionado
+ * (típicamente el `uid`). No aporta confidencialidad frente a quien puede leer el
+ * documento: sirve para que el secreto no quede legible a simple vista (FIX-0017).
  * Formato del resultado: `enc:v1:<salt-hex>:<iv-hex>:<ciphertext-hex>`
  */
 export async function encryptSecret(plainText: string, secretKey: string): Promise<string> {
@@ -64,8 +71,10 @@ export async function encryptSecret(plainText: string, secretKey: string): Promi
 }
 
 /**
- * Descifra un texto en formato `enc:v1:...` utilizando la clave derivada.
- * Si el texto no está cifrado (legacy), lo retorna tal cual.
+ * Revierte la ofuscación de un texto en formato `enc:v1:...` utilizando la clave derivada.
+ * Si el texto no está ofuscado (legacy), lo retorna tal cual.
+ * El resultado no demuestra autorización: la protección real la imponen las reglas de
+ * Firestore, no esta función (FIX-0017).
  */
 export async function decryptSecret(cipherText: string, secretKey: string): Promise<string> {
   if (!cipherText || typeof cipherText !== 'string' || !cipherText.startsWith('enc:v1:')) {

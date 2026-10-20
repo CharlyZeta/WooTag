@@ -1,5 +1,18 @@
 # Changelog - WooTag AI Generator
 
+## [2.5.8] - 2026-10-20
+### Security
+- **Contrato SDD-GL FIX-0017 (reglas de Firestore versionadas y modelo de amenaza honesto)**:
+  - Nuevo `firestore.rules`: cada usuario autenticado accede **sólo** a `users/{suUid}` y a sus subcolecciones (`snapshots` de precios); todo el resto queda denegado por defecto, incluida la colección `rooms` retirada en FIX-0012. Cero `allow … if true`.
+  - Nuevo `firebase.json` para desplegar las reglas con `firebase deploy --only firestore:rules`.
+  - `README.md`: la tabla de seguridad ahora dice la verdad — AES-GCM con clave derivada del `uid` es **ofuscación en reposo**, no confidencialidad; el control real son las reglas. Se agrega la sección con el comando de despliegue y un checklist de verificación con dos cuentas.
+  - `utils/crypto.ts`: cabecera y JSDoc honestos sobre el límite del `uid`. Sin cambios de comportamiento ni del formato `enc:v1:…`, por lo que **no requiere migración** de los datos existentes.
+  - `ENGINEERING_CONTEXT.md` y `memory.md` actualizados al mismo modelo.
+### Added
+- `tests/firestoreRules.test.ts` (17 tests): análisis estático de las reglas (guardas de dueño, matcher recursivo, deny por defecto, ausencia de `if true`, llaves balanceadas), honestidad documental y no-migración. El tester validó la guarda con pruebas de mutación (cambiar `==` por `!=`, `if true`, quitar el matcher recursivo: todas fallan como corresponde).
+- Suite completa en **225 tests / 19 archivos** y typecheck limpio.
+- Limitación documentada: la denegación efectiva en runtime necesita el emulador de Firestore (no instalado); se valida con el checklist manual de dos cuentas del README.
+
 ## [2.5.7] - 2026-10-20
 ### Security
 - **Contrato SDD-GL FIX-0016 (credenciales de WooCommerce en la query string)**:
