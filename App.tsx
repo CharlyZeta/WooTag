@@ -10,7 +10,7 @@ import { encrypt, decrypt } from './utils/security';
 import { useAuth } from './contexts/AuthContext';
 import { loadCloudProfile, updateCloudProfile, subscribeToCloudProfile, addProductToCloudProfile, UserCloudProfile } from './services/cloudProfiles';
 import { subscribeToRoom, closeRoom, syncRoomProducts, addProductToRoom } from './services/realtimeSession';
-import { loadSnapshot, saveSnapshot, compareCatalogWithSnapshot, updateProductsInSnapshot, dismissPendingItem } from './services/priceSnapshotService';
+import { loadSnapshot, saveSnapshot, compareCatalogWithSnapshot, updateProductsInSnapshot, dismissPendingItem, collectPrintedSourceIds } from './services/priceSnapshotService';
 import { fetchAllCatalogProducts } from './services/wooService';
 import { ShoppingBag, Bell, CheckCircle2, Smartphone, Loader2, X } from 'lucide-react';
 
@@ -170,13 +170,18 @@ export default function App() {
       // persista el estado en localStorage antes de que window.print() bloquee.
       setPrintLog(prev => [record, ...prev].slice(0, 200));
 
+      // FEAT-0001 (AC-005) / FIX-0011 (BR-005): solo los productos con ID real de
+      // WooCommerce cuentan como "impresos"; el ID de instancia nunca se convierte a número.
+      const printedSourceIds = collectPrintedSourceIds(products);
+
       // FEAT-0001 (AC-005): Actualizar snapshot en Firestore con los precios actuales impresos
-      if (currentUser && activeSiteId) {
+      if (currentUser && activeSiteId && printedSourceIds.size > 0) {
         updateProductsInSnapshot(
           currentUser.uid,
           activeSiteId,
           products.map(p => ({
             id: p.id,
+            sourceId: p.sourceId,
             regularPrice: p.price,
             salePrice: p.salePrice ?? null,
             sku: p.sku,
@@ -185,8 +190,7 @@ export default function App() {
         ).catch(err => console.error("Error al actualizar snapshot de precios tras impresión:", err));
 
         // Remover de pendientes los que acaban de ser impresos
-        const printedIds = new Set(products.map(p => Number(p.id)));
-        setPricePendings(prev => prev.filter(item => !printedIds.has(item.productId)));
+        setPricePendings(prev => prev.filter(item => !printedSourceIds.has(item.productId)));
       }
 
       setTimeout(() => window.print(), 0);

@@ -1,5 +1,14 @@
 # Changelog - WooTag AI Generator
 
+## [2.5.3] - 2026-10-20
+### Fixed
+- **Contrato SDD-GL FIX-0011 (el snapshot de precios no se actualizaba al imprimir)**:
+  - `Product.sourceId` conserva el ID numérico real de WooCommerce, poblado en `mapWooProduct` y separado del ID de instancia (`"123-1729000000000-abc"`) que React usa como clave.
+  - `updateProductsInSnapshot` resuelve el ID con `sourceId ?? id` y ya no intenta convertir el ID de instancia: descarta los IDs no numéricos sin escribir claves `NaN`, deja rastro con un único `console.warn` y devuelve `{ updated, skipped }`. Si no hay entradas actualizadas no se escribe en Firestore.
+  - `App.handlePrint` usa el nuevo helper puro `collectPrintedSourceIds` para limpiar los pendientes de la auditoría y evita tocar la nube cuando la hoja no tiene productos de WooCommerce (por ejemplo, sólo planilla XLS).
+  - Corregida la prueba de FEAT-0001 AC-005, que validaba el servicio con un `id: 50` numérico que ningún camino de alta produce (por eso la suite estaba en verde con el bug vivo en producción). Se agregaron las pruebas `FIX-0011-AC-001..006` y `FIX-0011-BR-001/002`.
+  - 154 tests pasando al 100% (13 archivos), typecheck limpio y build de producción verificado.
+
 ## [2.5.2] - 2026-10-14
 ### Fixed
 - **Contrato SDD-GL FIX-0010 (Simetría de márgenes y eliminación de hoja en blanco intermedia por límite de rodillo de impresora)**:

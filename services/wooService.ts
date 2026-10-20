@@ -115,7 +115,8 @@ const mapWooProduct = (wooProd: any): Product => ({
   description: cleanHtml(wooProd.short_description || wooProd.description || "").slice(0, 150),
   image: wooProd.images && wooProd.images.length > 0 ? wooProd.images[0].src : undefined,
   stockQuantity: wooProd.stock_quantity,
-  manageStock: wooProd.manage_stock
+  manageStock: wooProd.manage_stock,
+  sourceId: Number(wooProd.id)
 });
 
 export const fetchProductsByCategory = async (categoryId: number, config: WooConfig): Promise<Product[]> => {

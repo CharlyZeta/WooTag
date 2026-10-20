@@ -28,6 +28,8 @@ export interface Product {
   image?: string;
   stockQuantity?: number | null;
   manageStock?: boolean;
+  /** ID numérico del producto en WooCommerce. Presente solo en productos importados de la tienda. */
+  sourceId?: number;
 }
 
 export interface DesignProfile {

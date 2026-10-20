@@ -555,3 +555,26 @@ describe('fetchAllCatalogProducts (FEAT-0001)', () => {
     );
   });
 });
+
+// ─── sourceId de WooCommerce (FIX-0011) ───────────────────────────────────────
+
+describe('sourceId de WooCommerce (FIX-0011)', () => {
+  it('FIX-0011-BR-001: fetchProductBySku conserva el ID numérico de WooCommerce en sourceId (601) y mantiene el id de instancia como string', async () => {
+    const wooProduct = {
+      ...MOCK_WOO_PRODUCT,
+      id: 601,
+      sku: 'SRC-601',
+      regular_price: '9990',
+      sale_price: '',
+    };
+    fetchSpy.mockResolvedValueOnce(mockResponse([wooProduct]));
+
+    const product = await fetchProductBySku('SRC-601', VALID_CONFIG);
+
+    expect(product).not.toBeNull();
+    expect(product!.sourceId).toBe(601);
+    expect(typeof product!.sourceId).toBe('number');
+    expect(product!.id).toBe('601');
+    expect(typeof product!.id).toBe('string');
+  });
+});

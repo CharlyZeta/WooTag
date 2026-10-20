@@ -141,32 +141,62 @@ export const updateProductsInSnapshot = async (
   siteId: string,
   products: Array<{
     id: number | string;
+    /** ID numérico real de WooCommerce; si falta se intenta con `id`. */
+    sourceId?: number;
     regularPrice: number;
     salePrice?: number | null;
     sku?: string;
     name?: string;
   }>
-): Promise<void> => {
-  if (!uid || !siteId || products.length === 0) return;
+): Promise<{ updated: number; skipped: number }> => {
+  if (!uid || !siteId || products.length === 0) return { updated: 0, skipped: 0 };
 
   const currentSnapshot = (await loadSnapshot(uid, siteId)) || {};
   const now = Date.now();
+  let updated = 0;
+  let skipped = 0;
 
   for (const p of products) {
-    const numId = Number(p.id);
-    if (!isNaN(numId)) {
-      currentSnapshot[numId] = {
-        productId: numId,
-        sku: p.sku || currentSnapshot[numId]?.sku || String(p.id),
-        name: p.name || currentSnapshot[numId]?.name || '',
-        regularPrice: p.regularPrice,
-        salePrice: p.salePrice ?? null,
-        updatedAt: now
-      };
+    // BR-001 / BR-005: el ID de instancia (string con sufijo) no es un ID de WooCommerce.
+    const numId = Number(p.sourceId ?? p.id);
+    // BR-002: se descarta sin escribir claves NaN.
+    if (!Number.isFinite(numId)) {
+      skipped++;
+      continue;
     }
+    currentSnapshot[numId] = {
+      productId: numId,
+      sku: p.sku || currentSnapshot[numId]?.sku || String(p.id),
+      name: p.name || currentSnapshot[numId]?.name || '',
+      regularPrice: p.regularPrice,
+      salePrice: p.salePrice ?? null,
+      updatedAt: now
+    };
+    updated++;
   }
 
+  // BR-002: rastro observable del descarte, sin lanzar excepción.
+  if (skipped > 0) {
+    console.warn(`[WooTag] Snapshot de precios: ${skipped} producto(s) omitido(s) por no tener ID numérico de WooCommerce.`);
+  }
+
+  // Sin entradas actualizadas no hace falta escribir en Firestore.
+  if (updated === 0) return { updated, skipped };
+
   await saveSnapshot(uid, siteId, currentSnapshot);
+  return { updated, skipped };
+};
+
+/**
+ * Conjunto de IDs numéricos de WooCommerce presentes en la lista a imprimir.
+ * BR-005: la limpieza de pendientes usa solo IDs reales, nunca Number(instanceId).
+ */
+export const collectPrintedSourceIds = (products: Product[]): Set<number> => {
+  const ids = new Set<number>();
+  for (const p of products) {
+    if (typeof p.sourceId === 'number' && Number.isFinite(p.sourceId)) ids.add(p.sourceId);
+  }
+  return ids;
 };
 
 /**
