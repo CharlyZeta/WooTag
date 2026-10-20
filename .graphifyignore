@@ -1,0 +1,25 @@
+# Corpus del grafo de WooTag — solo código y documentación del producto.
+# Las skills de .agents/ son instrucciones de terceros (Vercel, SDD-GL): no son código
+# de la app y dominaban el grafo (1.379 archivos, ~2.470 nodos de ruido).
+# Excluirlas deja un grafo de ~250 nodos centrado en el producto.
+
+# Skills / reglas de agentes (no son código de la app)
+.agents/
+
+# Dependencias y artefactos de build
+node_modules/
+dist/
+coverage/
+graphify-out/
+
+# Sesiones y logs locales
+.sdd/
+
+# Documentación de proceso y bitácoras: se leen directo, no aportan aristas al código.
+# contracts/ y protocol/ son el flujo SDD-GL; changelog.txt es histórico (47 KB).
+contracts/
+protocol/
+changelog.txt
+
+# Capturas de README (nodos binarios sin valor de navegación)
+screenshots/
