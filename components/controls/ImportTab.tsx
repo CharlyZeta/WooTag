@@ -11,15 +11,10 @@ import {
 interface ImportTabProps {
   wooConfig: WooConfig | null;
   currentUser: any;
-  isMobile: boolean;
-  activeRoomId: string | null;
-  roomRole: 'host' | 'guest' | null;
   products: Product[];
   setProducts: React.Dispatch<React.SetStateAction<Product[]>>;
   onAddUniqueProduct: (p: Product) => void;
   onOpenConnection: () => void;
-  onOpenHostModal: () => void;
-  onOpenJoinModal: () => void;
   onOpenQrScanner: () => void;
   deviceId: string;
   pendingPriceChangesCount?: number;
@@ -37,16 +32,10 @@ interface TreeCategory {
 
 export const ImportTab: React.FC<ImportTabProps> = ({
   wooConfig,
-  currentUser,
-  isMobile,
-  activeRoomId,
-  roomRole,
   products,
   setProducts,
   onAddUniqueProduct,
   onOpenConnection,
-  onOpenHostModal,
-  onOpenJoinModal,
   onOpenQrScanner,
   deviceId,
   pendingPriceChangesCount = 0,
@@ -767,41 +756,6 @@ export const ImportTab: React.FC<ImportTabProps> = ({
               <p className="text-[10px] text-slate-400 font-bold text-center">
                 Escaneá los QR de tus etiquetas para reimprimir con precios de la tienda
               </p>
-            </div>
-          )}
-
-          {/* Companion Mode: Host QR */}
-          {!isMobile && !currentUser && !activeRoomId && (
-            <div className="space-y-3 pt-6 border-t-2 border-slate-100">
-              <label className="text-[11px] font-black text-slate-600 uppercase tracking-[0.15em] flex items-center gap-2">
-                <Smartphone className="w-4 h-4 text-emerald-500" /> VINCULAR CELULAR INVITADO
-              </label>
-              <button
-                onClick={onOpenHostModal}
-                className="w-full flex items-center justify-center gap-3 py-3.5 bg-emerald-50 text-emerald-700 border-2 border-emerald-200 rounded-xl font-black text-sm hover:bg-emerald-100 transition-all active:scale-[0.98]"
-              >
-                <Smartphone className="w-5 h-5" />
-                Generar QR de PC
-              </button>
-              <p className="text-[10px] text-slate-400 font-bold text-center">
-                Usá esta opción para que un celular externo escanee sin iniciar sesión.
-              </p>
-            </div>
-          )}
-
-          {/* Companion Mode: Join Scanner */}
-          {isMobile && !currentUser && !wooConfig && (
-            <div className="space-y-3 pt-6 border-t-2 border-slate-100">
-              <label className="text-[11px] font-black text-slate-600 uppercase tracking-[0.15em] flex items-center gap-2">
-                <Smartphone className="w-4 h-4 text-emerald-500" /> UNIRSE A PC
-              </label>
-              <button
-                onClick={onOpenJoinModal}
-                className="w-full flex items-center justify-center gap-3 py-3.5 bg-emerald-50 text-emerald-700 border-2 border-emerald-200 rounded-xl font-black text-sm hover:bg-emerald-100 transition-all active:scale-[0.98]"
-              >
-                <Smartphone className="w-5 h-5" />
-                Escanear QR de PC
-              </button>
             </div>
           )}
         </div>

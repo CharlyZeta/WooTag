@@ -9,7 +9,6 @@ import { optimizeDescription } from './services/geminiService';
 import { encrypt, decrypt } from './utils/security';
 import { useAuth } from './contexts/AuthContext';
 import { loadCloudProfile, updateCloudProfile, subscribeToCloudProfile, addProductToCloudProfile, UserCloudProfile } from './services/cloudProfiles';
-import { subscribeToRoom, closeRoom, syncRoomProducts, addProductToRoom } from './services/realtimeSession';
 import { loadSnapshot, saveSnapshot, compareCatalogWithSnapshot, updateProductsInSnapshot, dismissPendingItem, collectPrintedSourceIds } from './services/priceSnapshotService';
 import { fetchAllCatalogProducts } from './services/wooService';
 import { ShoppingBag, Bell, CheckCircle2, Smartphone, Loader2, X } from 'lucide-react';
@@ -88,12 +87,6 @@ export default function App() {
   productsRef.current = products;
 
   const [optimizingId, setOptimizingId] = useState<string | null>(null);
-  
-  // Room Matching State
-  const [activeRoomId, setActiveRoomId] = useState<string | null>(null);
-  const activeRoomIdRef = useRef<string | null>(null);
-  activeRoomIdRef.current = activeRoomId;
-  const [roomRole, setRoomRole] = useState<'host' | 'guest' | null>(null);
 
   // Flag anti-loop: cuando actualizamos products DESDE Firestore, evitamos
   // escribir de vuelta en Firestore en ese mismo ciclo de React.
@@ -560,25 +553,6 @@ export default function App() {
     }
   };
 
-  // Room subscription
-  useEffect(() => {
-    if (!activeRoomId) return;
-    const unsubscribe = subscribeToRoom(activeRoomId, (room) => {
-      if (room) {
-        if (room.products.length > productsRef.current.length) {
-           addToast("Etiqueta recibida vía sala", 'success');
-        }
-        setProducts(room.products);
-      } else {
-        // La sala se cerró u host desconectó
-        setActiveRoomId(null);
-        setRoomRole(null);
-        addToast("Sincronización de sala finalizada", 'info');
-      }
-    });
-    return () => unsubscribe();
-  }, [activeRoomId, addToast]);
-
   // Persist State
   useEffect(() => {
     localStorage.setItem(CONFIG_KEY, JSON.stringify(config));
@@ -599,8 +573,7 @@ export default function App() {
   // Sync productos a la nube con debounce
   useEffect(() => {
     // 1. Si no hay usuario o no se ha cargado el perfil de la nube, no hay sync.
-    // 2. Si somos GUEST en una sala manual (fallback), NO sobrescribimos la nube (el Host lo hará).
-    if (!currentUser || !isCloudProfileLoaded || (activeRoomId && roomRole === 'guest')) return;
+    if (!currentUser || !isCloudProfileLoaded) return;
     
     // Si el update vino de la nube, salteamos la escritura de vuelta (Anti-loop)
     if (skipNextCloudWrite.current) {
@@ -615,7 +588,7 @@ export default function App() {
       }).catch(console.error);
     }, 1000); // Reducido a 1s para mayor agilidad
     return () => clearTimeout(timer);
-  }, [products, currentUser, activeRoomId, roomRole, isCloudProfileLoaded]);
+  }, [products, currentUser, isCloudProfileLoaded]);
 
   // Auth Handlers
   const handleConnect = (wooConfig: WooConfig, user: WpUser, remember: boolean, siteId?: string) => {
@@ -668,11 +641,6 @@ export default function App() {
   };
 
   const handleDisconnect = () => {
-    if (activeRoomIdRef.current) {
-      closeRoom(activeRoomIdRef.current).catch(console.error);
-      setActiveRoomId(null);
-      setRoomRole(null);
-    }
     setSession(null);
     localStorage.removeItem(SESSION_KEY);
     wrappedSetProducts([]);
@@ -734,17 +702,7 @@ export default function App() {
   };
 
   const wrappedSetProducts: React.Dispatch<React.SetStateAction<Product[]>> = useCallback((val) => {
-    setProducts((prev) => {
-      const updated = typeof val === 'function' ? val(prev) : val;
-      
-      // Sincronizar con la sala si hay una activa
-      if (activeRoomIdRef.current) {
-        syncRoomProducts(activeRoomIdRef.current, updated).catch(err => {
-          console.error("Error syncing room products:", err);
-        });
-      }
-      return updated;
-    });
+    setProducts(val);
   }, []);
 
   const handleAddProduct = useCallback((p: Product) => {
@@ -763,16 +721,9 @@ export default function App() {
       });
     }
 
-    // 2. Sincronización con la sala manual (Fallback para invitados)
-    if (activeRoomIdRef.current) {
-      if (roomRole === 'guest') {
-        addProductToRoom(activeRoomIdRef.current, uniqueProduct).catch(console.error);
-      }
-    }
-    
-    // 3. Actualización local inmediata (Feedback visual instantáneo en el móvil)
+    // 2. Actualización local inmediata (Feedback visual instantáneo en el móvil)
     setProducts(prev => [...prev, uniqueProduct]);
-  }, [currentUser, roomRole]);
+  }, [currentUser]);
 
   const handleSaveProfile = (name: string) => {
     const newProfile: DesignProfile = {
@@ -848,17 +799,6 @@ export default function App() {
           onPrint={handlePrint}
           printLog={printLog}
           onClearPrintLog={() => setPrintLog([])}
-          activeRoomId={activeRoomId}
-          roomRole={roomRole}
-          onRoomCreated={(id) => {
-            setActiveRoomId(id);
-            setRoomRole('host');
-          }}
-          onRoomJoined={(id: string, newSession: AuthSession) => {
-            setActiveRoomId(id);
-            setSession(newSession); // Se hereda la sesión de Woo desde el host
-            setRoomRole('guest');
-          }}
           wooSites={wooSites}
           activeSiteId={activeSiteId}
           onForcePushWooSession={handleForcePushWooSession}

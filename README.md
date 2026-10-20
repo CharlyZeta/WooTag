@@ -38,11 +38,11 @@ Desarrollado con la asistencia de **Antigravity** (Google DeepMind).
 - **Multi-dispositivo**: Al iniciar sesión en tu teléfono, tus credenciales del PC se restauran instantáneamente de forma segura, permitiendo usar el escáner móvil de inmediato sin volver a ingresar claves. Todo producto escaneado aparece mágicamente en tu computadora principal.
 - Opcional — la app es completamente funcional sin cuenta.
 
-### 📱 Modo Companion (Emparejamiento por QR)
+### 📱 Modo Móvil (requiere cuenta)
 
-- **Vincular celular**: El PC genera un QR de sesión única. El celular lo escanea y entra como "Companion".
-- **Sincronización en tiempo real**: Todo producto escaneado en el celular aparece instantáneamente en el PC via Firebase Realtime (Firestore).
-- Las credenciales de WooCommerce se transfieren a la sesión de manera segura y temporal.
+- **Misma cuenta en PC y celular**: iniciá sesión con la misma cuenta cloud en el celular para heredar la configuración y las credenciales de WooCommerce.
+- **Sincronización por perfil**: todo producto escaneado en el celular aparece en el PC por sincronización del perfil en Firestore (`users/{uid}`).
+- **Acceso directo**: abrí `#/mobile` para entrar al modo operador móvil / góndola.
 
 ### 🔌 Integración WooCommerce
 
@@ -216,8 +216,6 @@ App.tsx                        ← Estado global: sesión, config, perfiles, his
 │   ├── ConnectionModal.tsx    ← Modal de conexión a WooCommerce
 │   ├── CloudLoginModal.tsx    ← Modal de autenticación Firebase (login/registro)
 │   ├── Controls.tsx           ← Panel lateral con 5 tabs
-│   ├── HostRoomModal.tsx      ← Modal para crear sala QR (modo Companion)
-│   ├── MobileJoinScanner.tsx  ← Escáner QR para unirse a sala desde celular
 │   ├── QrScannerModal.tsx     ← Escáner QR de productos
 │   ├── TagSheet.tsx           ← Hoja A4 paginada
 │   └── Tag.tsx                ← Etiqueta individual con QR y formateo de precios
@@ -226,7 +224,6 @@ App.tsx                        ← Estado global: sesión, config, perfiles, his
 ├── services/
 │   ├── firebase.ts            ← Inicialización de Firebase (Auth + Firestore)
 │   ├── cloudProfiles.ts       ← CRUD de perfiles en Firestore (load/update/subscribe)
-│   ├── realtimeSession.ts     ← Sala colaborativa en tiempo real (modo Companion)
 │   ├── wooService.ts          ← API REST WooCommerce (SKU, nombre, categorías, paginación)
 │   └── geminiService.ts       ← Optimización de descripciones con Gemini AI
 ├── utils/

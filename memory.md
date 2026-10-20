@@ -2,7 +2,7 @@
 
 ## 📌 Contexto General del Proyecto
 - **Nombre**: WooTag AI Generator (versión 2.2.7)
-- **Propósito**: Generar e imprimir etiquetas de precio profesionales A4 conectando con WooCommerce o cargando plantillas Excel (XLS/XLSX). Permite optimización de descripciones usando Google Gemini AI (`gemini-2.0-flash`) y sincronización en tiempo real vía Firebase (Firestore y Auth) entre PC y dispositivos móviles (modo Companion QR o identidad compartida).
+- **Propósito**: Generar e imprimir etiquetas de precio profesionales A4 conectando con WooCommerce o cargando plantillas Excel (XLS/XLSX). Permite optimización de descripciones usando Google Gemini AI (`gemini-2.0-flash`) y sincronización en tiempo real vía Firebase (Firestore y Auth) entre PC y dispositivos móviles con la misma cuenta cloud.
 - **Stack Tecnológico**: React 19, TypeScript, Vite, Firebase, SheetJS (XLSX), Lucide React, Tailwind CSS (vía CDN en `index.html`).
 
 ---
@@ -62,9 +62,10 @@
 - **`wooService.ts`**:
   - Implementa un handshake inteligente que busca productos primero para verificar la API en lugar de acceder a `/wp-json/wp/v2/users/me` (que suele fallar con errores 401 en configuraciones estándar de WordPress/WooCommerce).
   - Paginación automática segura para categorías usando el header `X-WP-TotalPages`.
-- **`realtimeSession.ts` & `cloudProfiles.ts`**:
+- **`cloudProfiles.ts`**:
   - Uso de sincronización atómica con `arrayUnion` de Firestore para evitar que múltiples dispositivos móviles en una misma cuenta sobrescriban datos concurrentemente.
   - `subscribeToCloudProfile` activo mientras haya `currentUser`, sincronizando productos y `wooSites` en tiempo real entre dispositivos.
+  - Emparejamiento por QR entre dispositivos retirado en 2.5.4 (FIX-0012); la sincronización PC↔móvil usa la cuenta cloud (`users/{uid}`).
 - **`geminiService.ts`**:
   - Implementa fallback robusto de red y control de cuotas para que la app continúe funcionando de forma transparente si falla la optimización de descripciones con IA.
 

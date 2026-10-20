@@ -1,11 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { APP_VERSION, PrintRecord, TagConfig, Product, WooConfig, WpUser, DesignProfile, WooSite, AuthSession } from '../types';
+import React, { useState } from 'react';
+import { APP_VERSION, PrintRecord, TagConfig, Product, WooConfig, WpUser, DesignProfile, WooSite } from '../types';
 import { QrScannerModal } from './QrScannerModal';
 import { CloudLoginModal } from './CloudLoginModal';
 import { useAuth } from '../contexts/AuthContext';
-import { HostRoomModal } from './HostRoomModal';
-import { MobileJoinScanner } from './MobileJoinScanner';
-import { addProductToRoom } from '../services/realtimeSession';
 
 // Subcomponents
 import { DataTab } from './controls/DataTab';
@@ -38,10 +35,6 @@ interface ControlsProps {
   onPrint: () => void;
   printLog: PrintRecord[];
   onClearPrintLog: () => void;
-  activeRoomId: string | null;
-  roomRole: 'host' | 'guest' | null;
-  onRoomCreated: (id: string) => void;
-  onRoomJoined: (id: string, wooConfig: AuthSession) => void;
   wooSites: WooSite[];
   activeSiteId: string | null;
   onForcePushWooSession: () => Promise<void>;
@@ -71,10 +64,6 @@ export const Controls: React.FC<ControlsProps> = ({
   onPrint,
   printLog,
   onClearPrintLog,
-  activeRoomId,
-  roomRole,
-  onRoomCreated,
-  onRoomJoined,
   wooSites,
   activeSiteId,
   onForcePushWooSession,
@@ -86,17 +75,7 @@ export const Controls: React.FC<ControlsProps> = ({
   const [activeTab, setActiveTab] = useState<'data' | 'import' | 'layout' | 'design' | 'history'>('data');
   const { currentUser } = useAuth();
   const [isCloudModalOpen, setIsCloudModalOpen] = useState(false);
-  const [isHostModalOpen, setIsHostModalOpen] = useState(false);
-  const [isJoinModalOpen, setIsJoinModalOpen] = useState(false);
   const [isQrScannerOpen, setIsQrScannerOpen] = useState(false);
-
-  // Mobile detection: hide PC features on mobile viewports
-  const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
-  useEffect(() => {
-    const onResize = () => setIsMobile(window.innerWidth < 768);
-    window.addEventListener('resize', onResize);
-    return () => window.removeEventListener('resize', onResize);
-  }, []);
 
   const addUniqueProduct = (p: Product) => {
     const isDuplicate = products.some(existing => existing.sku === p.sku);
@@ -106,9 +85,7 @@ export const Controls: React.FC<ControlsProps> = ({
       }
     }
 
-    if (activeRoomId && roomRole === 'guest') {
-      addProductToRoom(activeRoomId, p).catch(console.error);
-    } else if (currentUser && !activeRoomId) {
+    if (currentUser) {
       onAddProduct(p);
     } else {
       const uniqueProduct = { ...p, id: `${p.id}-${Date.now()}-${Math.random()}` };
@@ -140,18 +117,6 @@ export const Controls: React.FC<ControlsProps> = ({
           {/* User Profile / Status */}
           <div className="flex items-center gap-2">
             <div className="flex gap-2 mr-2 border-r-2 border-slate-100 pr-2">
-              {!isMobile && !currentUser && (
-                <button
-                  onClick={() => setIsHostModalOpen(true)}
-                  disabled={activeRoomId !== null && isHostModalOpen === false}
-                  className={`p-2 rounded-xl transition-all border-2 border-transparent hover:border-indigo-100 group relative ${activeRoomId ? 'bg-emerald-50 text-emerald-600' : 'text-slate-400'}`}
-                  title={activeRoomId ? `Sala ${activeRoomId} activa` : "Generar QR para invitado externo"}
-                >
-                  <Smartphone className={`w-5 h-5 transition-transform group-hover:-translate-y-0.5 ${activeRoomId ? 'text-emerald-500' : 'group-hover:text-indigo-500'}`} />
-                  {activeRoomId && <div className="absolute top-0 right-0 w-2 h-2 bg-emerald-500 border border-white rounded-full translate-x-1 -translate-y-1" />}
-                </button>
-              )}
-
               <button
                 onClick={() => setIsCloudModalOpen(true)}
                 className="p-2 rounded-xl transition-all border-2 border-transparent hover:border-indigo-100 flex items-center gap-2 group relative"
@@ -282,15 +247,10 @@ export const Controls: React.FC<ControlsProps> = ({
           <ImportTab
             wooConfig={wooConfig}
             currentUser={currentUser}
-            isMobile={isMobile}
-            activeRoomId={activeRoomId}
-            roomRole={roomRole}
             products={products}
             setProducts={setProducts}
             onAddUniqueProduct={addUniqueProduct}
             onOpenConnection={onOpenConnection}
-            onOpenHostModal={() => setIsHostModalOpen(true)}
-            onOpenJoinModal={() => setIsJoinModalOpen(true)}
             onOpenQrScanner={() => setIsQrScannerOpen(true)}
             deviceId={deviceId}
             pendingPriceChangesCount={pendingPriceChangesCount}
@@ -348,26 +308,6 @@ export const Controls: React.FC<ControlsProps> = ({
         onForcePushWooSession={onForcePushWooSession}
         productsCount={products.length}
         deviceId={deviceId}
-      />
-
-      {wooConfig && currentUser && (
-        <HostRoomModal
-          isOpen={isHostModalOpen}
-          onClose={() => setIsHostModalOpen(false)}
-          hostUid={currentUser.uid}
-          wooSession={{ config: wooConfig, user: user as any, expiresAt: Date.now() }}
-          initialProducts={products}
-          onRoomCreated={onRoomCreated}
-        />
-      )}
-
-      <MobileJoinScanner
-        isOpen={isJoinModalOpen}
-        onClose={() => setIsJoinModalOpen(false)}
-        onRoomJoined={(id, auth) => {
-          setIsJoinModalOpen(false);
-          onRoomJoined(id, auth);
-        }}
       />
     </div>
   );

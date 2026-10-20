@@ -1,5 +1,17 @@
 # Changelog - WooTag AI Generator
 
+## [2.5.4] - 2026-10-20
+### Removed
+- **Contrato SDD-GL FIX-0012 (emparejamiento por QR de invitados retirado)**:
+  - Eliminados `components/HostRoomModal.tsx`, `components/MobileJoinScanner.tsx` y `services/realtimeSession.ts` junto con su suite: eran código muerto (el botón "Generar QR de PC" se mostraba sin cuenta pero el modal solo se montaba con cuenta) y mantenían una colección `rooms` con credenciales cifradas cuya clave viajaba en el path, sin reglas de Firestore.
+  - `App`, `Controls` e `ImportTab` ya no manejan estado de sala (`activeRoomId`, `roomRole`, suscripción a la sala, `syncRoomProducts`, `addProductToRoom`, `closeRoom`), ni muestran botones/modales de emparejamiento. `addUniqueProduct` queda con dos caminos: cuenta cloud o alta local.
+  - El modo móvil `#/mobile` se conserva y ahora requiere iniciar sesión con la misma cuenta: la sincronización PC ↔ móvil pasa exclusivamente por el perfil cloud (`users/{uid}`). `QrScannerModal` (escaneo de productos) no se toca.
+  - README, ENGINEERING_CONTEXT y memory actualizados; `FEAT-0002` se mantiene como registro histórico sin modificaciones.
+  - 664 líneas eliminadas en total.
+### Added
+- Guards de regresión: `tests/noCompanionFlow.test.ts` (escanea código y documentación vigente y falla si vuelve cualquier símbolo del flujo) y `components/ImportTab.noCompanion.test.tsx` (RTL: ninguna sub-pestaña ofrece emparejamiento).
+- Suite completa en **159 tests / 14 archivos** y typecheck limpio.
+
 ## [2.5.3] - 2026-10-20
 ### Fixed
 - **Contrato SDD-GL FIX-0011 (el snapshot de precios no se actualizaba al imprimir)**:
