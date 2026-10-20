@@ -2,7 +2,8 @@
  * wooService.test.ts — Tests para la capa de conexión WooCommerce
  *
  * Cubre:
- * 1. validateConnection: validación de parámetros, respuestas exitosas/fallidas, fallback auth
+ * 1. validateConnection: validación de parámetros, respuestas exitosas/fallidas,
+ *    401/403 sin fallback por query string (FIX-0016)
  * 2. fetchProductBySku: búsqueda por SKU, mapeo de datos, manejo de errores
  * 3. fetchProductsByName: búsqueda por nombre, query mínimo, codificación de caracteres
  * 4. fetchProductsByCategory: importación por categoría, manejo de errores
@@ -10,6 +11,8 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
+import { dirname, join, relative, resolve } from 'node:path';
 import {
   validateConnection,
   fetchProductBySku,
@@ -17,6 +20,7 @@ import {
   fetchProductsByCategory,
   fetchCategories,
   fetchAllCatalogProducts,
+  WOO_AUTH_ERROR_MESSAGE,
 } from './wooService';
 import type { WooConfig } from '../types';
 
@@ -227,33 +231,6 @@ describe('validateConnection', () => {
     expect(user.roles).toContain('shop_manager');
   });
 
-  it('ejecuta fallback a query params cuando el primer intento retorna 401', async () => {
-    // Primer fetch: 401 (auth header rechazado)
-    fetchSpy.mockResolvedValueOnce(mockResponse({}, 401));
-    // Segundo fetch (fallback con query params): también falla
-    fetchSpy.mockResolvedValueOnce(mockResponse({}, 401));
-
-    await expect(validateConnection(VALID_CONFIG)).rejects.toThrow(
-      /credenciales inválidas|acceso denegado/i
-    );
-    // Debe haber hecho 2 llamadas: auth header + query params
-    expect(fetchSpy).toHaveBeenCalledTimes(2);
-    const fallbackUrl = fetchSpy.mock.calls[1][0] as string;
-    expect(fallbackUrl).toContain('consumer_key=');
-    expect(fallbackUrl).toContain('consumer_secret=');
-  });
-
-  it('conexión exitosa vía fallback query params cuando auth header da 401', async () => {
-    // Primer fetch: 401
-    fetchSpy.mockResolvedValueOnce(mockResponse({}, 401));
-    // Segundo fetch (fallback): 200
-    fetchSpy.mockResolvedValueOnce(mockResponse([MOCK_WOO_PRODUCT]));
-
-    const user = await validateConnection(VALID_CONFIG);
-    expect(user.name).toBe('Gestor Tienda');
-    expect(fetchSpy).toHaveBeenCalledTimes(2);
-  });
-
   it('lanza error de red cuando fetch falla completamente', async () => {
     fetchSpy.mockRejectedValueOnce(new TypeError('Failed to fetch'));
 
@@ -267,6 +244,113 @@ describe('validateConnection', () => {
     const calledUrl = fetchSpy.mock.calls[0][0] as string;
     expect(calledUrl).toContain('https://mitienda.com/wp-json/wc/v3/products');
     expect(calledUrl).not.toContain('/wp-json/wp-json/');
+  });
+});
+
+// ─── 1.b 401/403 sin fallback por query string (FIX-0016) ────────────────────
+//
+// El fallback inseguro que reintentaba con `?consumer_key=...&consumer_secret=...`
+// se eliminó: cada petición se hace UNA sola vez con `Authorization: Basic` y el
+// 401/403 se informa con el mensaje único exportado. Los dos tests legacy que
+// afirmaban ese fallback se reescribieron a los criterios AC-001/AC-002/AC-004.
+
+describe('Autenticación 401/403 sin reintento inseguro (FIX-0016)', () => {
+  /** URLs efectivamente solicitadas, en orden. */
+  const requestedUrls = (): string[] => fetchSpy.mock.calls.map((call) => String(call[0]));
+
+  /** Headers de la petición i-ésima. */
+  const requestedHeaders = (index: number): Record<string, string> => {
+    const init = fetchSpy.mock.calls[index][1] as RequestInit | undefined;
+    return (init?.headers ?? {}) as Record<string, string>;
+  };
+
+  /** Ejecuta validateConnection y devuelve el error del rechazo (o `null` si resolvió). */
+  const rejectionOf = (config: WooConfig): Promise<unknown> =>
+    validateConnection(config).then(
+      () => null,
+      (error: unknown) => error
+    );
+
+  it('FIX-0016-AC-001: un 401 al header Basic produce una sola petición, sin consumer_key/consumer_secret en la URL y con Authorization: Basic', async () => {
+    fetchSpy.mockResolvedValueOnce(mockResponse({}, 401));
+
+    await expect(validateConnection(VALID_CONFIG)).rejects.toThrow();
+
+    // Una sola petición: no hay reintento con otra forma de autenticación (BR-003).
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+
+    const urls = requestedUrls();
+    expect(urls).toHaveLength(1);
+    // Ninguna URL pedida lleva credenciales (BR-001). Se revisan TODAS las llamadas.
+    for (let i = 0; i < urls.length; i += 1) {
+      expect(urls[i]).not.toContain('consumer_key');
+      expect(urls[i]).not.toContain('consumer_secret');
+    }
+
+    // La autenticación viaja en el header.
+    const headers = requestedHeaders(0);
+    const authHeader = headers['Authorization'] ?? headers['authorization'];
+    expect(authHeader).toBeDefined();
+    expect(authHeader).toMatch(/^Basic\s+\S+/);
+  });
+
+  it('FIX-0016-AC-002: el rechazo por 401 lanza exactamente WOO_AUTH_ERROR_MESSAGE y explica Authorization, mod_security/WAF y que no se envían credenciales por URL', async () => {
+    fetchSpy.mockResolvedValueOnce(mockResponse({}, 401));
+
+    const rejection = await rejectionOf(VALID_CONFIG);
+    expect(rejection).toBeInstanceOf(Error);
+
+    const message = (rejection as Error).message;
+
+    // Mensaje único exportado, usado sin reinterpretación (BR-005).
+    expect(message).toBe(WOO_AUTH_ERROR_MESSAGE);
+    // ... accionable: nombra el header, el hosting/WAF y la garantía de privacidad.
+    expect(message).toContain('Authorization');
+    expect(message).toMatch(/mod_security|WAF/i);
+    expect(message).toMatch(/no env[íi]a\w* credenciales por la URL/i);
+
+    // Y sin segunda petición (BR-003).
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('FIX-0016-AC-004: un 500 no usa el mensaje de autenticación: conserva su mensaje propio y menciona el 500', async () => {
+    fetchSpy.mockResolvedValueOnce(mockResponse({}, 500));
+
+    const rejection = await rejectionOf(VALID_CONFIG);
+    expect(rejection).toBeInstanceOf(Error);
+
+    const message = (rejection as Error).message;
+
+    // No se disfraza un fallo del servidor como credenciales inválidas (BR-006).
+    expect(message).not.toBe(WOO_AUTH_ERROR_MESSAGE);
+    expect(message).not.toMatch(/mod_security/i);
+    expect(message).toContain('500');
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('FIX-0016-AC-004: un fallo de red se propaga como el mismo error, no como mensaje de autenticación', async () => {
+    const networkError = new TypeError('Failed to fetch');
+    fetchSpy.mockRejectedValueOnce(networkError);
+
+    const rejection = await rejectionOf(VALID_CONFIG);
+
+    // Se propaga la MISMA instancia, no un error nuevo con el mensaje de auth.
+    expect(rejection).toBe(networkError);
+    expect((rejection as Error).message).not.toBe(WOO_AUTH_ERROR_MESSAGE);
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('FIX-0016-AC-004: un 403 se comporta igual que un 401 (mensaje único, una sola petición, sin credenciales en la URL)', async () => {
+    fetchSpy.mockResolvedValueOnce(mockResponse({}, 403));
+
+    const rejection = await rejectionOf(VALID_CONFIG);
+    expect((rejection as Error).message).toBe(WOO_AUTH_ERROR_MESSAGE);
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+
+    requestedUrls().forEach((url) => {
+      expect(url).not.toContain('consumer_key');
+      expect(url).not.toContain('consumer_secret');
+    });
   });
 });
 
@@ -576,5 +660,100 @@ describe('sourceId de WooCommerce (FIX-0011)', () => {
     expect(typeof product!.sourceId).toBe('number');
     expect(product!.id).toBe('601');
     expect(typeof product!.id).toBe('string');
+  });
+});
+
+// ─── AC-003: la suite no afirma credenciales en la URL (FIX-0016) ────────────
+//
+// Guarda a nivel de fuente: FIX-0004 dejó dos tests que AFIRMABAN el fallback
+// con credenciales en la query string (`consumer_key=`), de modo que el
+// comportamiento inseguro quedaba "cubierto". Esta guarda recorre TODOS los
+// tests del proyecto (services/, components/, utils/, tests/) y falla si
+// reaparece una aserción positiva de credenciales en la URL o el nombre de un
+// test legacy del fallback.
+
+/** Sube desde `start` hasta la raíz del repo (marcadores: package.json + App.tsx). */
+function findRepoRoot(start: string): string {
+  let current = resolve(start);
+  for (let depth = 0; depth < 6; depth += 1) {
+    if (existsSync(join(current, 'package.json')) && existsSync(join(current, 'App.tsx'))) {
+      return current;
+    }
+    const parent = dirname(current);
+    if (parent === current) break;
+    current = parent;
+  }
+  throw new Error(`No se pudo localizar la raíz del repositorio desde ${start}`);
+}
+
+const REPO_ROOT = findRepoRoot(process.cwd());
+
+/** Normaliza a rutas relativas POSIX para que los fallos sean legibles. */
+const relPath = (absPath: string): string => relative(REPO_ROOT, absPath).replace(/\\/g, '/');
+
+/** Recorre `dir` acumulando archivos de test (*.test.ts / *.test.tsx). */
+function walkTestFiles(dir: string, out: string[]): void {
+  if (!existsSync(dir)) return;
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const full = join(dir, entry.name);
+    if (entry.isDirectory()) {
+      walkTestFiles(full, out);
+    } else if (entry.isFile() && /\.test\.tsx?$/.test(entry.name)) {
+      out.push(full);
+    }
+  }
+}
+
+/** Corpus de AC-003: todos los `.test.ts(x)` de services/, components/, utils/ y tests/. */
+function collectTestSuiteFiles(): { path: string; content: string }[] {
+  const absolutePaths: string[] = [];
+  for (const dir of ['services', 'components', 'utils', 'tests']) {
+    walkTestFiles(join(REPO_ROOT, dir), absolutePaths);
+  }
+  return absolutePaths
+    .sort()
+    .map((absPath) => ({ path: relPath(absPath), content: readFileSync(absPath, 'utf-8') }));
+}
+
+describe('La suite no afirma credenciales en la URL (FIX-0016 AC-003)', () => {
+  const suiteFiles = collectTestSuiteFiles();
+
+  it('FIX-0016-AC-003: ningún test afirma que la URL lleve consumer_key/consumer_secret (sólo aserciones negativas)', () => {
+    // Scaneo no vacuo: si el corpus se rompe, el test debe fallar, no pasar en silencio.
+    expect(suiteFiles.length).toBeGreaterThanOrEqual(10);
+    expect(suiteFiles.map((file) => file.path)).toContain('services/wooService.test.ts');
+    expect(suiteFiles.map((file) => file.path)).toContain('components/ConnectionModal.test.tsx');
+
+    const positiveUrlCredentialAssertion = /toContain\(\s*['"`]consumer_(?:key|secret)/;
+    const negatedUrlCredentialAssertion = /not\.\s*toContain\(\s*['"`]consumer_(?:key|secret)/;
+
+    const violations: string[] = [];
+    for (const file of suiteFiles) {
+      file.content.split(/\r?\n/).forEach((line, index) => {
+        if (positiveUrlCredentialAssertion.test(line) && !negatedUrlCredentialAssertion.test(line)) {
+          violations.push(`${file.path}:${index + 1} → ${line.trim()}`);
+        }
+      });
+    }
+
+    expect(violations).toEqual([]);
+  });
+
+  it('FIX-0016-AC-003: los tests legacy del fallback por query string ya no existen en la suite', () => {
+    const legacyNameFragments = [
+      ['fallback a query', 'params'].join(' '),
+      ['fallback query', 'params'].join(' '),
+    ];
+
+    const found: string[] = [];
+    for (const file of suiteFiles) {
+      for (const fragment of legacyNameFragments) {
+        if (file.content.includes(fragment)) {
+          found.push(`${file.path} todavía menciona "${fragment}"`);
+        }
+      }
+    }
+
+    expect(found).toEqual([]);
   });
 });

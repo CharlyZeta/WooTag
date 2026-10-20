@@ -1,6 +1,13 @@
 
 import { Product, WooConfig, WpUser, WooCategory } from '../types';
 
+/**
+ * FIX-0016: mensaje único para 401/403. La app NUNCA reenvía credenciales por URL:
+ * si el servidor rechaza el header, se informa la causa y se corta.
+ */
+export const WOO_AUTH_ERROR_MESSAGE =
+  'Tu tienda rechazó la autenticación (401/403). Verificá la Consumer Key y el Consumer Secret y que el hosting o su WAF (por ejemplo mod_security) permita el header Authorization: Basic. Por seguridad, WooTag no envía credenciales por la URL.';
+
 const cleanHtml = (html: string): string => {
   const doc = new DOMParser().parseFromString(html, 'text/html');
   return doc.body.textContent || "";
@@ -38,18 +45,12 @@ const makeWooRequest = async (endpoint: string, config: WooConfig): Promise<Resp
 
   const url = `${baseUrl}${endpoint}`;
 
-  let response = await fetch(url, {
+  // FIX-0016: un solo intento con Authorization: Basic. Nunca se reintenta con
+  // credenciales en la query string; el 401/403 se reporta en validateConnection.
+  return fetch(url, {
     method: 'GET',
     headers: getAuthHeaders(config)
   });
-
-  if (response.status === 401 || response.status === 403) {
-    const separator = url.includes('?') ? '&' : '?';
-    const fallbackUrl = `${url}${separator}consumer_key=${config.consumerKey}&consumer_secret=${config.consumerSecret}`;
-    response = await fetch(fallbackUrl, { method: 'GET' });
-  }
-
-  return response;
 };
 
 export const validateConnection = async (config: WooConfig): Promise<WpUser> => {
@@ -69,8 +70,13 @@ export const validateConnection = async (config: WooConfig): Promise<WpUser> => 
       return { id: 0, name: 'Gestor Tienda', slug: 'shop_manager', roles: ['shop_manager'] };
     }
 
-    // If we're here, product fetch failed.
-    throw new Error("Credenciales inválidas o acceso denegado a Productos.");
+    // FIX-0016: si el producto no se pudo leer, distinguimos el rechazo de
+    // autenticación (401/403) de un fallo del servidor. No hay reintento inseguro.
+    if (productResponse.status === 401 || productResponse.status === 403) {
+      throw new Error(WOO_AUTH_ERROR_MESSAGE);
+    }
+
+    throw new Error(`No se pudo validar la conexión con la tienda (HTTP ${productResponse.status}). Revisá la URL del sitio y el estado del servidor.`);
   } catch (error: any) {
     console.error("Connection error:", error);
     throw error;

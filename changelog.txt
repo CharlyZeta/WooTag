@@ -1,5 +1,16 @@
 # Changelog - WooTag AI Generator
 
+## [2.5.7] - 2026-10-20
+### Security
+- **Contrato SDD-GL FIX-0016 (credenciales de WooCommerce en la query string)**:
+  - Eliminado el reintento con `?consumer_key=…&consumer_secret=…` cuando el header `Authorization: Basic` devolvía 401/403. Ahora hay **una sola** petición por request: los secretos nunca aparecen en URLs, ni en logs del servidor, proxies, CDN o historial de red.
+  - Nuevo `WOO_AUTH_ERROR_MESSAGE` exportado y único: explica que el servidor rechazó la autenticación por header, que la causa puede ser el hosting o su WAF (`mod_security`) y que por seguridad WooTag no envía credenciales por URL. `ConnectionModal` lo muestra tal cual.
+  - Los 401/403 se distinguen de un 500 o un fallo de red: un problema del servidor ya no se reporta como "credenciales inválidas".
+  - Las tiendas que sólo aceptan credenciales por query string quedan declaradas no soportadas (se descarta el proxy server-side por ser la app client-only).
+### Changed
+- `services/wooService.test.ts`: eliminados los dos tests que afirmaban el fallback inseguro y reemplazados por `FIX-0016-AC-001..005`; nuevo `components/ConnectionModal.test.tsx` (2 tests RTL).
+- Suite completa en **208 tests / 18 archivos** y typecheck limpio.
+
 ## [2.5.6] - 2026-10-20
 ### Fixed
 - **Contrato SDD-GL FIX-0014 (la auditoría de precios descargaba el catálogo completo en cada arranque)**:
