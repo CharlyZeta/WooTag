@@ -1,5 +1,16 @@
 # Changelog - WooTag AI Generator
 
+## [2.5.5] - 2026-10-20
+### Fixed
+- **Contrato SDD-GL FIX-0013 (escrituras de configuración y perfiles en Firestore sin debounce)**:
+  - Nuevo módulo puro `utils/cloudWriteBatcher.ts`: agrupa `tagConfig` y `designProfiles` en un único `setDoc` por ventana de 1 s (merge de patches, reinicio del debounce, `flush`, `dispose`, `hasPending`) y `attachVisibilityFlush` para volcar lo pendiente cuando la pestaña pasa a segundo plano.
+  - `App.tsx`: `localStorage` sigue persistiendo **inmediatamente** en cada cambio; las escrituras a la nube se agendan en el batcher con guard de `currentUser` + `isCloudProfileLoaded`; el último cambio se envía al ocultar la pestaña o al desmontar.
+  - Efecto medible: 20 cambios de slider en 2 s pasan de ~20 escrituras a 1; si configuración y perfiles cambian en la misma ventana viajan en un solo `setDoc`.
+  - `services/cloudProfiles.ts` no cambia: el formato del documento en Firestore queda intacto.
+### Added
+- `utils/cloudWriteBatcher.test.ts` (15 tests con fake timers): debounce reiniciable, merge de campos, flush inmediato, descarte por `dispose`, robustez ante `onFlush` que lanza o rechaza, y verificación del cableado en `App`.
+- Suite completa en **174 tests / 15 archivos** y typecheck limpio.
+
 ## [2.5.4] - 2026-10-20
 ### Removed
 - **Contrato SDD-GL FIX-0012 (emparejamiento por QR de invitados retirado)**:

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { APP_VERSION, DEFAULT_CONFIG, PrintRecord, Product, TagConfig, WooConfig, WooSite, AuthSession, WpUser, DesignProfile, PricePendingItem } from './types';
 import { TagSheet } from './components/TagSheet';
 import { Controls } from './components/Controls';
@@ -10,6 +10,7 @@ import { encrypt, decrypt } from './utils/security';
 import { useAuth } from './contexts/AuthContext';
 import { loadCloudProfile, updateCloudProfile, subscribeToCloudProfile, addProductToCloudProfile, UserCloudProfile } from './services/cloudProfiles';
 import { loadSnapshot, saveSnapshot, compareCatalogWithSnapshot, updateProductsInSnapshot, dismissPendingItem, collectPrintedSourceIds } from './services/priceSnapshotService';
+import { createCloudWriteBatcher, attachVisibilityFlush } from './utils/cloudWriteBatcher';
 import { fetchAllCatalogProducts } from './services/wooService';
 import { ShoppingBag, Bell, CheckCircle2, Smartphone, Loader2, X } from 'lucide-react';
 
@@ -48,6 +49,24 @@ export default function App() {
   const { currentUser } = useAuth();
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [isCloudProfileLoaded, setIsCloudProfileLoaded] = useState(false);
+
+  // FIX-0013: referencias estables para que el batcher lea siempre el usuario y el
+  // estado de carga actuales sin necesidad de recrearse en cada render.
+  const currentUserRef = useRef(currentUser);
+  currentUserRef.current = currentUser;
+  const cloudLoadedRef = useRef(isCloudProfileLoaded);
+  cloudLoadedRef.current = isCloudProfileLoaded;
+
+  // FIX-0013 (BR-001, BR-005): un único escritor con debounce de 1 s agrupa
+  // `tagConfig` y `designProfiles` en el mismo `setDoc` por ventana.
+  const cloudSyncBatcher = useMemo(() => createCloudWriteBatcher<{ tagConfig?: TagConfig; designProfiles?: DesignProfile[] }>({
+    delayMs: 1000,
+    onFlush: (patch) => {
+      // BR-004: sin usuario o con el perfil cloud sin cargar no se escribe nada.
+      if (!currentUserRef.current || !cloudLoadedRef.current) return;
+      return updateCloudProfile(currentUserRef.current.uid, patch).catch(console.error);
+    }
+  }), []);
 
   // FEAT-0001: Auditoría de cambios de precio y baseline en Firestore
   const [pricePendings, setPricePendings] = useState<PricePendingItem[]>([]);
@@ -553,22 +572,30 @@ export default function App() {
     }
   };
 
-  // Persist State
+  // Persist State: localStorage inmediato (BR-002) y escritura a la nube agrupada (BR-001).
   useEffect(() => {
     localStorage.setItem(CONFIG_KEY, JSON.stringify(config));
-    if (currentUser) {
-      if (!isCloudProfileLoaded) return;
-      updateCloudProfile(currentUser.uid, { tagConfig: config });
+    if (currentUser && isCloudProfileLoaded) {
+      cloudSyncBatcher.schedule({ tagConfig: config });
     }
-  }, [config, currentUser, isCloudProfileLoaded]);
+  }, [config, currentUser, isCloudProfileLoaded, cloudSyncBatcher]);
 
   useEffect(() => {
     localStorage.setItem(PROFILES_KEY, JSON.stringify(profiles));
-    if (currentUser) {
-      if (!isCloudProfileLoaded) return;
-      updateCloudProfile(currentUser.uid, { designProfiles: profiles });
+    if (currentUser && isCloudProfileLoaded) {
+      cloudSyncBatcher.schedule({ designProfiles: profiles });
     }
-  }, [profiles, currentUser, isCloudProfileLoaded]);
+  }, [profiles, currentUser, isCloudProfileLoaded, cloudSyncBatcher]);
+
+  // FIX-0013 (BR-003): el último cambio nunca se pierde; se envía lo pendiente al
+  // pasar la pestaña a segundo plano o al desmontar el componente.
+  useEffect(() => {
+    const detach = attachVisibilityFlush(cloudSyncBatcher);
+    return () => {
+      detach();
+      cloudSyncBatcher.flush();
+    };
+  }, [cloudSyncBatcher]);
 
   // Sync productos a la nube con debounce
   useEffect(() => {
