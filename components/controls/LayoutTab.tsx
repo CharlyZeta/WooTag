@@ -1,6 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { TagConfig } from '../../types';
-import { Layout, Eye, Calculator, MessageSquare } from 'lucide-react';
+import { Layout, Eye, Calculator, MessageSquare, Sparkles, KeyRound } from 'lucide-react';
+import { AiKeyModal } from '../AiKeyModal';
+import { getAiKey, hasAiKey, maskAiKey } from '../../utils/aiKeyStorage';
 
 interface LayoutTabProps {
   config: TagConfig;
@@ -8,6 +10,10 @@ interface LayoutTabProps {
 }
 
 export const LayoutTab: React.FC<LayoutTabProps> = ({ config, setConfig }) => {
+  // FIX-0018: estado de la configuración BYOK de Gemini (la clave vive en localStorage)
+  const [aiEnabled, setAiEnabled] = useState<boolean>(() => hasAiKey());
+  const [isAiModalOpen, setIsAiModalOpen] = useState(false);
+
   const updateConfig = (key: keyof TagConfig, value: any) => {
     setConfig(prev => ({ ...prev, [key]: value }));
   };
@@ -172,6 +178,46 @@ export const LayoutTab: React.FC<LayoutTabProps> = ({ config, setConfig }) => {
           )}
         </div>
       </div>
+      {/* OPTIMIZACIÓN CON IA (GEMINI) — FIX-0018 */}
+      <div className="space-y-4 pt-6 border-t-2 border-slate-100">
+        <label className="text-[11px] font-black text-slate-600 uppercase tracking-[0.15em] flex items-center gap-2">
+          <Sparkles className="w-4 h-4 text-indigo-500" /> OPTIMIZACIÓN CON IA (GEMINI)
+        </label>
+        <div className="bg-slate-50 p-4 rounded-2xl border-2 border-slate-200 shadow-inner space-y-3">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className={`p-2 rounded-xl flex-shrink-0 ${aiEnabled ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-200 text-slate-500'}`}>
+                <Sparkles className="w-4 h-4" />
+              </div>
+              <div className="min-w-0">
+                <p className={`text-sm font-black leading-tight ${aiEnabled ? 'text-emerald-700' : 'text-slate-500'}`}>
+                  {aiEnabled ? 'IA habilitada' : 'IA deshabilitada'}
+                </p>
+                {aiEnabled && (
+                  <p className="text-[10px] font-mono font-bold text-slate-400 truncate flex items-center gap-1">
+                    <KeyRound className="w-3 h-3 flex-shrink-0" /> {maskAiKey(getAiKey())}
+                  </p>
+                )}
+              </div>
+            </div>
+            <button
+              onClick={() => setIsAiModalOpen(true)}
+              className="flex-shrink-0 py-2.5 px-3.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border-2 border-indigo-100 hover:border-indigo-200 rounded-xl font-black text-xs transition-all active:scale-[0.98]"
+            >
+              Configurar IA
+            </button>
+          </div>
+          <p className="text-[10px] text-slate-400 leading-normal">
+            Sin clave, el botón ✨ conserva la descripción original.
+          </p>
+        </div>
+      </div>
+
+      <AiKeyModal
+        isOpen={isAiModalOpen}
+        onClose={() => setIsAiModalOpen(false)}
+        onKeyChanged={() => setAiEnabled(hasAiKey())}
+      />
     </div>
   );
 };

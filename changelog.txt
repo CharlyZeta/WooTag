@@ -1,5 +1,17 @@
 # Changelog - WooTag AI Generator
 
+## [2.5.9] - 2026-10-20
+### Added
+- **Contrato SDD-GL FIX-0018 (la optimización con IA no se podía configurar)**:
+  - **Ajustes → "Optimización con IA (Gemini)"**: estado "IA habilitada/deshabilitada", indicio enmascarado de la clave (`AIza…7f3c`) y botón "Configurar IA".
+  - Nuevo modal `components/AiKeyModal.tsx`: campo `type="password"`, botón **"Probar API Key"** (consulta genérica contra `gemini-2.0-flash` que exige una respuesta aceptable), **"Guardar clave"** habilitado sólo después de una prueba exitosa en la sesión y **"Eliminar clave"**. Incluye ayuda y link a Google AI Studio.
+  - Nuevo `utils/aiKeyStorage.ts`: almacenamiento de la clave por dispositivo en `localStorage`, sin SDK, con `maskAiKey` y todo acceso en `try/catch`.
+  - `optimizeDescription` ahora devuelve `{ ok, description, error }` en lugar de un `string` silencioso: sin clave avisa que la IA no está configurada y conserva la descripción original (sigue sin lanzar excepciones, FIX-0001 AC-002). `App` muestra el aviso en vez de loguear a consola.
+  - La clave nunca se sincroniza a Firestore ni viaja en el bundle (`vite.config.ts` sigue definiendo las variables como vacías).
+### Changed
+- `services/geminiService.test.ts` adaptado al resultado tipado (misma intención, sin debilitar aserciones) + 8 tests de `testGeminiApiKey`; nuevos `components/AiKeyModal.test.tsx` (5) y `components/controls/LayoutTab.test.tsx` (4).
+- Suite completa en **249 tests / 21 archivos** y typecheck limpio.
+
 ## [2.5.8] - 2026-10-20
 ### Security
 - **Contrato SDD-GL FIX-0017 (reglas de Firestore versionadas y modelo de amenaza honesto)**:

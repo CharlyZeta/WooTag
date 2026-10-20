@@ -738,12 +738,19 @@ export default function App() {
 
     setOptimizingId(productId);
     try {
-      const optimizedDesc = await optimizeDescription(product.name, product.description);
-      wrappedSetProducts(prev => prev.map(p =>
-        p.id === productId ? { ...p, description: optimizedDesc } : p
-      ));
+      const result = await optimizeDescription(product.name, product.description);
+      if (result.ok) {
+        wrappedSetProducts(prev => prev.map(p =>
+          p.id === productId ? { ...p, description: result.description } : p
+        ));
+        addToast('Descripción optimizada con IA', 'success');
+      } else {
+        addToast(result.error ?? 'No se pudo optimizar con IA.', 'info');
+      }
     } catch (error) {
+      // Defensivo: optimizeDescription no lanza (BR-003), pero nunca dejamos la UI muda
       console.error("Failed to optimize", error);
+      addToast('No se pudo optimizar con IA.', 'info');
     } finally {
       setOptimizingId(null);
     }
