@@ -27,6 +27,17 @@
   Header set Cache-Control "public, max-age=31536000, immutable"
 </FilesMatch>
 
+# ── 2b. El service worker NUNCA se cachea ────────────────────
+# La regla anterior aplica a todo `.js`, incluido sw.js. Si el navegador se
+# quedara con un service worker viejo cacheado un año, los clientes no verían
+# los deploys nuevos. Esta sección va DESPUÉS a propósito: la última directiva
+# gana en Apache.
+<Files "sw.js">
+  Header set Cache-Control "no-cache, no-store, must-revalidate"
+  Header set Pragma "no-cache"
+  Header set Expires "0"
+</Files>
+
 # ── 3. Soporte de SPA (React Router / rutas frontend) ────────
 # Si en el futuro se agregan rutas del lado del cliente, el servidor
 # debe redirigir todas las rutas desconocidas a index.html.

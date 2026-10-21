@@ -1,5 +1,17 @@
 # Changelog - WooTag AI Generator
 
+## [2.5.19] - 2026-10-20
+### Fixed
+- **Contrato SDD-GL FIX-0028 (service worker cacheado como inmutable durante un año)**:
+  - `public/.htaccess`: nueva regla para **`sw.js`** con `no-cache, no-store, must-revalidate`, ubicada después de la regla `immutable` que aplica a todo `.js` (en Apache gana la última). Un cliente ya no puede quedarse con un service worker viejo hasta un año.
+  - `public/sw.js`: queda explícito que **no cachea nada** (sin Cache API ni `respondWith`) y se agrega `activate` con `clients.claim()`; se documenta que si algún día se agrega precache hay que versionarlo.
+  - `index.html`: el registro usa `updateViaCache: 'none'` y llama a `registration.update()` en cada carga, así un deploy nuevo llega sin intervención.
+### Notes
+- Decisión: se mantiene la app **instalable** (útil en el celular del local) pero **sin soporte offline**, y el README lo dice explícitamente. El precache real queda en el roadmap como contrato aparte.
+### Added
+- `tests/serviceWorker.test.ts` (4 tests): orden y contenido de las reglas de caché, ausencia de Cache API, revalidación forzada del SW y documentación sin promesas de offline.
+- Suite completa en **293 tests / 31 archivos**.
+
 ## [2.5.18] - 2026-10-20
 ### Changed
 - **Contrato SDD-GL FIX-0025 (la primera pantalla descargaba `xlsx` y el escáner)**:
