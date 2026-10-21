@@ -8,8 +8,8 @@ Desarrollado con la asistencia de **Antigravity** (Google DeepMind).
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.0-3178C6?style=flat-square&logo=typescript)
 ![Vite](https://img.shields.io/badge/Vite-6.0-646CFF?style=flat-square&logo=vite)
 ![Firebase](https://img.shields.io/badge/Firebase-12-FFCA28?style=flat-square&logo=firebase)
-![Version](https://img.shields.io/badge/versión-2.5.15-indigo?style=flat-square)
-![Tests](https://img.shields.io/badge/tests-279%20passing-brightgreen?style=flat-square)
+![Version](https://img.shields.io/badge/versión-2.5.16-indigo?style=flat-square)
+![Tests](https://img.shields.io/badge/tests-282%20passing-brightgreen?style=flat-square)
 
 ---
 
@@ -175,7 +175,7 @@ VITE_FIREBASE_MEASUREMENTID="G-..."
 La aplicación cuenta con una robusta suite de pruebas unitarias y de integración que garantizan la estabilidad del sistema ante cada cambio.
 
 ```bash
-npm test               # Ejecuta los 279 tests una vez
+npm test               # Ejecuta los 282 tests una vez
 npm run test:watch     # Modo watch para desarrollo
 npm run test:coverage  # Genera reporte de cobertura en /coverage
 npm run typecheck      # Chequeo de tipos (tsc --noEmit)
@@ -187,7 +187,7 @@ npm run typecheck      # Chequeo de tipos (tsc --noEmit)
 - **Componentes**: [React Testing Library](https://testing-library.com/docs/react-testing-library/intro/) para pruebas de comportamiento de usuario.
 - **Guards de regresión**: `tests/` incluye verificaciones estáticas del propio repositorio (que no vuelvan el flujo de QR retirado, la telemetría de IP, los logs con datos de producto ni reglas de Firestore inseguras).
 
-### Cobertura de la Suite (279 tests passing, 27 archivos)
+### Cobertura de la Suite (282 tests passing, 28 archivos)
 
 | Grupo | Tests | Qué cubre |
 |-------|-------|-----------|
@@ -195,7 +195,7 @@ npm run typecheck      # Chequeo de tipos (tsc --noEmit)
 | Sincronización y nube | 54 | `cloudProfiles` (9), `priceSnapshotService` (13), auditoría con TTL (24), `AuthContext` (8): perfiles, snapshots, frescura y login. |
 | IA | 31 | `geminiService` (22): resultado tipado, prueba de clave y clasificación de errores. `AiKeyModal` (5) y `LayoutTab` (4): configurar, probar, guardar y eliminar la key. |
 | UI e impresión | 15 | `TagSheet` (3), `MobileScannerView` (4), `PriceAuditModal` (3), `ConnectionModal` (2) e `ImportTab` sin vinculación de dispositivos (3). |
-| Guards de regresión | 39 | `firestoreRules` (17), `docsSync` (6), `noDevicePairing` (7), `noIpLogger` (5), `noDebugLogs` (4). |
+| Guards de regresión | 42 | `firestoreRules` (17), `docsSync` (6), `noDevicePairing` (7), `noIpLogger` (5), `noDebugLogs` (4), `typesConfig` (3). |
 | Utilidades | 57 | `security` (10), `crypto` (5), `cloudWriteBatcher` (15), `pageGeometry` (5), `productDuplicates` (5), `sessionTtl` (5), `sheetOptimizer` (6), `soundHapticService` (6). |
 
 ---
@@ -311,7 +311,7 @@ El estado operativo del código (mapa de módulos, invariantes y contratos abier
 - [ ] Backfill de `sourceId` para listas guardadas antes de 2.5.3 (hoy esos productos no actualizan el snapshot de precios).
 - [ ] Columna `quantity` en la planilla XLS para imprimir N etiquetas del mismo producto.
 - [ ] Soporte multi-hoja para importar distintos grupos de productos.
-- [ ] Tipos estrictos (`strict` + `@types/react`) y lint en CI (FIX-0021 / FIX-0022).
+- [ ] Lint en CI (FIX-0022).
 - [ ] Code-splitting de `xlsx` y del escáner para aligerar la carga inicial (FIX-0025).
 - [ ] Tailwind compilado en el build (hoy CDN) y fuentes self-hosteadas (FIX-0024).
 - [ ] Accesibilidad: `aria-label` en los botones de icono de los modales.

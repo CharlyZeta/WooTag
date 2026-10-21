@@ -1,5 +1,15 @@
 # Changelog - WooTag AI Generator
 
+## [2.5.16] - 2026-10-20
+### Changed
+- **Contrato SDD-GL FIX-0021 (el JSX no estaba tipado y `strict` estaba apagado)**:
+  - Se agregaron `@types/react` y `@types/react-dom` (`^19.3.0`) como devDependencies: sin ellos, `JSX.IntrinsicElements` no existía y **todas las props de los componentes eran `any`**.
+  - `tsconfig.json` ahora tiene `"strict": true`. Con los tipos instalados, `tsc --noEmit --strict` pasa de **1.615 errores a 0** (1.319 eran TS7026 por la ausencia de tipos de React; el resto, `any` implícitos en callbacks de JSX y declaraciones faltantes).
+  - Verificado con una sonda temporal: una prop inexistente en `<Tag />` ahora rompe el typecheck (TS2322), es decir, las props de todos los componentes quedan verificadas en CI.
+### Added
+- `tests/typesConfig.test.ts` (3 tests): guard de que los tipos de React sigan en `devDependencies` (línea 19) y de que `strict`/`jsx` no se desactiven.
+- Suite completa en **282 tests / 28 archivos** y typecheck limpio con `strict`.
+
 ## [2.5.15] - 2026-10-20
 ### Changed
 - **Contrato SDD-GL FIX-0027 (documentación desactualizada)**:
