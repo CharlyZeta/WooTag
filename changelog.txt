@@ -1,5 +1,15 @@
 # Changelog - WooTag AI Generator
 
+## [2.5.12] - 2026-10-20
+### Fixed
+- **Contrato SDD-GL FIX-0015 (el indicador de páginas mostraba la página equivocada)**:
+  - Nuevo `utils/pageGeometry.ts` como única fuente de verdad de la geometría de la hoja: `SHEET_HEIGHT_MM = 282`, `MM_TO_PX`, `PAGE_SLOT_HEIGHT` y `getPageFromScrollTop()`.
+  - `App.tsx` ya no calcula la ranura con 297 mm (A4 nominal): usa el helper compartido, así el badge cambia de página en el borde real de cada hoja (antes quedaba en la anterior ~57 px por hoja, error que se acumulaba en documentos largos).
+  - `components/TagSheet.tsx` toma alto y ancho del mismo módulo; `index.html` documenta que su literal de `@media print` debe coincidir con `SHEET_HEIGHT_MM`.
+### Added
+- `utils/pageGeometry.test.ts` (5 tests): geometría derivada de 282 mm, transiciones con 2 y 4 páginas, clamps y guarda de que no vuelvan los literales divergentes.
+- Suite completa en **263 tests / 24 archivos** y typecheck limpio.
+
 ## [2.5.11] - 2026-10-20
 ### Fixed
 - **Contrato SDD-GL FIX-0023 (logs de producción con payloads de producto)**:

@@ -12,6 +12,7 @@ import { loadCloudProfile, updateCloudProfile, subscribeToCloudProfile, addProdu
 import { loadSnapshotState, markAuditRun, shouldRunPriceAudit, saveSnapshot, compareCatalogWithSnapshot, updateProductsInSnapshot, dismissPendingItem, collectPrintedSourceIds } from './services/priceSnapshotService';
 import type { PriceSnapshotState } from './services/priceSnapshotService';
 import { createCloudWriteBatcher, attachVisibilityFlush } from './utils/cloudWriteBatcher';
+import { getPageFromScrollTop } from './utils/pageGeometry';
 import { fetchAllCatalogProducts } from './services/wooService';
 import { ShoppingBag, Bell, CheckCircle2, Smartphone, Loader2, X } from 'lucide-react';
 
@@ -214,26 +215,18 @@ export default function App() {
     }
   };
 
-  // Page indicator
+  // Page indicator (FIX-0015: geometría compartida con TagSheet)
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const totalPages = products.length === 0
     ? 1
     : Math.ceil(products.length / (config.layoutRows * config.layoutCols));
 
-  // A4 page slot height: 297mm @ ~3.7795px/mm + gap-8 (32px between pages)
-  const PAGE_SLOT_HEIGHT = 297 * 3.7795 + 32;
-
   const handleScroll = useCallback(() => {
     const el = scrollContainerRef.current;
     if (!el) return;
-    // scrollTop 0 = page 1; each page slot ≈ 1154px in layout
-    const page = Math.min(
-      totalPages,
-      Math.max(1, Math.floor(el.scrollTop / PAGE_SLOT_HEIGHT) + 1)
-    );
-    setCurrentPage(page);
-  }, [totalPages, PAGE_SLOT_HEIGHT]);
+    setCurrentPage(getPageFromScrollTop(el.scrollTop, totalPages));
+  }, [totalPages]);
 
   // Load Session (Decrypted)
   useEffect(() => {

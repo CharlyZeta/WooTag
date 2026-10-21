@@ -1,6 +1,7 @@
 import React from 'react';
 import { Product, TagConfig } from '../types';
 import { Tag } from './Tag';
+import { SHEET_HEIGHT_MM, SHEET_WIDTH_MM } from '../utils/pageGeometry';
 
 interface TagSheetProps {
   products: Product[];
@@ -26,9 +27,9 @@ export const TagSheet: React.FC<TagSheetProps> = ({ products, config }) => {
           key={pageIndex}
           className={`bg-white shadow-2xl mx-auto overflow-hidden relative print:shadow-none print:m-0 print:border-none sheet-page ${pageIndex < pages.length - 1 ? 'print:break-after-page' : ''}`}
           style={{
-            width: '210mm',
-            height: '282mm',
-            maxHeight: '282mm',
+            width: `${SHEET_WIDTH_MM}mm`,
+            height: `${SHEET_HEIGHT_MM}mm`,
+            maxHeight: `${SHEET_HEIGHT_MM}mm`,
             display: 'grid',
             gridTemplateColumns: `repeat(${config.layoutCols}, minmax(0, 1fr))`,
             gridTemplateRows: `repeat(${config.layoutRows}, minmax(0, 1fr))`,
