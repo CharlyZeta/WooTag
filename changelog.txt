@@ -1,5 +1,15 @@
 # Changelog - WooTag AI Generator
 
+## [2.5.11] - 2026-10-20
+### Fixed
+- **Contrato SDD-GL FIX-0023 (logs de producción con payloads de producto)**:
+  - Eliminados los `console.log` de depuración de `services/wooService.ts`, incluido el que volcaba el **producto completo** devuelto por la API al buscar por SKU (`[WooTag] SKU Search Result:`).
+  - Los avisos por productos omitidos (precio no determinable o variable) pasaron de imprimir **SKU y nombre** por producto a un **conteo agregado**, sin datos del catálogo.
+  - Se conservan los `console.error` accionables (status HTTP) y las advertencias sin datos.
+### Added
+- `tests/noDebugLogs.test.ts` (4 tests): cero `console.log` en el código de la app, cero `console.warn/info/debug` con payload o datos de producto, y guarda explícita de que la búsqueda por SKU no imprime el resultado de la API.
+- Suite completa en **258 tests / 23 archivos** y typecheck limpio.
+
 ## [2.5.10] - 2026-10-20
 ### Removed
 - **Contrato SDD-GL FIX-0019 (telemetría de IP a un tercero)**:

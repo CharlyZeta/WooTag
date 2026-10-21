@@ -126,8 +126,8 @@ const mapWooProduct = (wooProd: any): Product => ({
 });
 
 export const fetchProductsByCategory = async (categoryId: number, config: WooConfig): Promise<Product[]> => {
-  console.log(`[WooTag] Fetching category ${categoryId}...`);
   const allProducts: Product[] = [];
+  let skipped = 0;
   let page = 1;
   let totalPages = 1;
 
@@ -146,7 +146,7 @@ export const fetchProductsByCategory = async (categoryId: number, config: WooCon
         if (isPriceDeterminable(item)) {
           allProducts.push(mapWooProduct(item));
         } else {
-          console.warn(`[WooTag] Omitiendo producto ${item.sku || item.id} ("${item.name}") por precio no determinable o variable.`);
+          skipped++;
         }
       }
     }
@@ -154,20 +154,21 @@ export const fetchProductsByCategory = async (categoryId: number, config: WooCon
     page++;
   } while (page <= totalPages);
 
-  console.log(`[WooTag] Found ${allProducts.length} total products in category ${categoryId}.`);
+  // FIX-0023: sólo conteo agregado, nunca SKU/nombre (no se filtran datos del catálogo).
+  if (skipped > 0) {
+    console.warn(`[WooTag] Se omitieron ${skipped} producto(s) de la categoría por precio no determinable o variable.`);
+  }
   return allProducts;
 };
 
 export const fetchProductBySku = async (sku: string, config: WooConfig): Promise<Product | null> => {
-  console.log(`[WooTag] Searching SKU: ${sku}`);
-  // Bug 1 fix: add status=publish to avoid returning drafts; FIX-0008: encode sku
+  // FIX-0008: sku codificado · Bug 1 fix: status=publish para no traer borradores
   const response = await makeWooRequest(`/wp-json/wc/v3/products?sku=${encodeURIComponent(sku)}&status=publish`, config);
   if (!response.ok) {
     console.error(`[WooTag] SKU fetch failed: ${response.status}`);
     return null;
   }
   const data = await response.json();
-  console.log(`[WooTag] SKU Search Result:`, data);
   if (Array.isArray(data) && data.length > 0) {
     const rawProd = data[0];
     if (!isPriceDeterminable(rawProd)) {
@@ -175,7 +176,6 @@ export const fetchProductBySku = async (sku: string, config: WooConfig): Promise
     }
     return mapWooProduct(rawProd);
   }
-  console.warn(`[WooTag] SKU not found (empty array)`);
   return null;
 };
 
@@ -189,15 +189,21 @@ export const fetchProductsByName = async (query: string, config: WooConfig): Pro
   if (!response.ok) return [];
   const data = await response.json();
   if (Array.isArray(data)) {
-    return data
+    let skipped = 0;
+    const products = data
       .filter(item => {
         if (!isPriceDeterminable(item)) {
-          console.warn(`[WooTag] Omitiendo producto ${item.sku || item.id} ("${item.name}") por precio no determinable o variable.`);
+          skipped++;
           return false;
         }
         return true;
       })
       .map(mapWooProduct);
+    // FIX-0023: conteo agregado, sin datos del producto.
+    if (skipped > 0) {
+      console.warn(`[WooTag] Se omitieron ${skipped} resultado(s) de la búsqueda por precio no determinable o variable.`);
+    }
+    return products;
   }
   return [];
 };
