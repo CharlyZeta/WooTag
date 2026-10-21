@@ -1,5 +1,15 @@
 # Changelog - WooTag AI Generator
 
+## [2.5.20] - 2026-10-20
+### Added
+- **Contrato SDD-GL FIX-0026 (la etiqueta impresa no tenía tests)**:
+  - `components/Tag.test.tsx` (8 tests): formateo **es-AR** con símbolo/separador/decimales, oferta (regular tachado + precio de oferta), **precio especial** con porcentaje, render del QR con el SKU y campos ocultos. Es el corazón del entregable y no tenía ni una aserción.
+  - `utils/aiKeyStorage.test.ts` (5 tests): guardar/leer/limpiar la API key, rechazo de claves vacías, `maskAiKey` que nunca expone la clave completa y comportamiento cuando `localStorage` falla.
+### Notes
+- Los umbrales se fijan **por módulo crítico** (`Tag`, `aiKeyStorage`), no como gate global: `App`/`Controls` siguen sin tests de UI y un umbral global bloquearía el deploy.
+- `services/firebase.ts` queda excluido de la cobertura con justificación: sólo inicializa el SDK con variables de entorno y se valida en el smoke test de producción.
+- Suite completa en **306 tests / 33 archivos**.
+
 ## [2.5.19] - 2026-10-20
 ### Fixed
 - **Contrato SDD-GL FIX-0028 (service worker cacheado como inmutable durante un año)**:
