@@ -1,5 +1,16 @@
 # Changelog - WooTag AI Generator
 
+## [2.5.10] - 2026-10-20
+### Removed
+- **Contrato SDD-GL FIX-0019 (telemetría de IP a un tercero)**:
+  - Eliminado `utils/ipLogger.ts`: resolvía la IP pública del usuario contra `api.ipify.org` y la persistía en `localStorage['wootag_sl']` al importar una planilla y al fallar tres veces la conexión, sin aviso, propósito documentado ni forma de desactivarlo.
+  - Quitadas las dos llamadas (`ImportTab` al subir XLS y `ConnectionModal` al agotar reintentos) y el contador de fallos que sólo existía para ese registro.
+  - La app ya sólo habla con tu WooCommerce, con Firebase (si hay cuenta) y con Gemini (si configurás la key).
+### Added
+- `tests/noIpLogger.test.ts` (5 tests): el módulo no existe, nadie lo importa, no quedan referencias a `ipify` ni a `wootag_sl`, y ningún `fetch` de la app apunta a un host no declarado.
+- README: tabla de Seguridad con la fila de privacidad/telemetría y la de API key de Gemini corregida (ya no dice "solo en `.env`").
+- Suite completa en **258 tests / 23 archivos** y typecheck limpio.
+
 ## [2.5.9] - 2026-10-20
 ### Added
 - **Contrato SDD-GL FIX-0018 (la optimización con IA no se podía configurar)**:

@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Product, WooConfig, WooCategory } from '../../types';
 import { fetchProductBySku, fetchCategories, fetchProductsByCategory, fetchProductsByName } from '../../services/wooService';
 import { downloadTemplate, parseXlsFile } from '../../utils/xlsImport';
-import { logEvent } from '../../utils/ipLogger';
 import {
   FileSpreadsheet, Download, Upload, AlertTriangle, AlertCircle, CheckCircle2,
   ScanLine, Smartphone, Globe, Search, Eraser, ChevronRight, ChevronDown, BookOpen, Plus, Loader2, ListTree, RefreshCw, Tag
@@ -264,7 +263,6 @@ export const ImportTab: React.FC<ImportTabProps> = ({
         const withIds = result.products.map((p: Product) => ({ ...p, id: `${p.id}-${Date.now()}-${Math.random()}` }));
         setProducts(prev => [...prev, ...withIds]);
         setXlsSuccess(result.products.length);
-        logEvent('xls_upload', { f: file.name, n: result.products.length });
       }
     } catch (e) {
       setXlsErrors(['Ocurrió un error inesperado al procesar el archivo.']);

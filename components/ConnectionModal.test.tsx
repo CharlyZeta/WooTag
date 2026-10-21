@@ -7,8 +7,7 @@
  *
  * Estrategia: render real del componente con `../services/wooService` mockeado
  * (se conserva la constante real `WOO_AUTH_ERROR_MESSAGE` vía `importOriginal`,
- * para que la aserción sea contra el texto exportado y no contra una copia) y
- * `../utils/ipLogger` mockeado (evita el fetch a api.ipify.org).
+ * para que la aserción sea contra el texto exportado y no contra una copia).
  *
  * Ruta cubierta: la del formulario (sin tiendas guardadas → view 'form'),
  * completar los campos requeridos y enviar.
@@ -20,9 +19,8 @@ import { ConnectionModal } from './ConnectionModal';
 import { WOO_AUTH_ERROR_MESSAGE } from '../services/wooService';
 import type { WooConfig, WooSite } from '../types';
 
-const { validateConnectionMock, logEventMock } = vi.hoisted(() => ({
+const { validateConnectionMock } = vi.hoisted(() => ({
   validateConnectionMock: vi.fn(),
-  logEventMock: vi.fn(),
 }));
 
 // Se mockea sólo `validateConnection`; la constante del mensaje sigue siendo la
@@ -34,11 +32,6 @@ vi.mock('../services/wooService', async (importOriginal) => {
     validateConnection: validateConnectionMock,
   };
 });
-
-vi.mock('../utils/ipLogger', () => ({
-  logEvent: logEventMock,
-  getSecurityLog: vi.fn(() => []),
-}));
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -83,7 +76,6 @@ async function fillAndSubmit() {
 describe('ConnectionModal — mensaje de autenticación (FIX-0016 AC-005)', () => {
   beforeEach(() => {
     validateConnectionMock.mockReset();
-    logEventMock.mockReset();
   });
 
   afterEach(() => {

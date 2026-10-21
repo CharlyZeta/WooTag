@@ -1,8 +1,7 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { WooConfig, WpUser, WooSite } from '../types';
 import { validateConnection } from '../services/wooService';
-import { logEvent } from '../utils/ipLogger';
 import { ShoppingBag, Key, Lock, Globe, AlertCircle, ArrowRight, X, Trash2, Plus, CheckCircle2, Layout } from 'lucide-react';
 
 interface ConnectionModalProps {
@@ -26,7 +25,6 @@ export const ConnectionModal: React.FC<ConnectionModalProps> = ({
     const [remember, setRemember] = useState(true);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const failCount = useRef(0);
 
     // Switch view automatically based on data
     useEffect(() => {
@@ -42,7 +40,6 @@ export const ConnectionModal: React.FC<ConnectionModalProps> = ({
     useEffect(() => {
         if (!isOpen) {
             setError(null);
-            failCount.current = 0;
             setUrl('');
             setKey('');
             setSecret('');
@@ -64,15 +61,10 @@ export const ConnectionModal: React.FC<ConnectionModalProps> = ({
 
         try {
             const user = await validateConnection(config);
-            failCount.current = 0;
             onConnect(config, user, remember);
             onClose();
         } catch (err: any) {
-            failCount.current++;
             setError(err.message || "Error al conectar. Verifica tus datos.");
-            if (failCount.current >= 3) {
-                logEvent('auth_fail_limit', { u: config.url, n: failCount.current });
-            }
         } finally {
             setLoading(false);
         }

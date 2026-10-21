@@ -241,7 +241,8 @@ App.tsx                        ← Estado global: sesión, config, perfiles, his
 |---------|----------------|
 | Credenciales WooCommerce | Cifradas con AES-GCM en Firestore usando el `uid` como clave → **ofuscación en reposo**, no confidencialidad: quien pueda leer el documento puede descifrarlas. El control real son las reglas de Firestore versionadas en `firestore.rules`. En `localStorage` se ofuscan con base64 + salt (sólo evita la inspección casual). |
 | Sesión WooCommerce | Expiración automática a las 24h. |
-| API Key Gemini | Solo en `.env` (gitignoreado). Nunca en código. |
+| API Key Gemini | Se configura desde **Ajustes → Optimización con IA** y se guarda sólo en el navegador (`localStorage`). No se sincroniza a Firestore ni viaja en el bundle. |
+| Privacidad / telemetría | No se registra la IP del usuario ni se contacta telemetría de terceros. La app sólo habla con tu WooCommerce, con Firebase (si usás cuenta) y con Gemini (si configurás tu API key). |
 | Firebase Auth | Manejo de sesión delegado al SDK de Firebase. No se almacenan contraseñas. |
 | Importación XLS | Solo `.xlsx`/`.xls`, sin macros VBA, sanitización de celdas y URLs de imagen. |
 
