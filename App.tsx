@@ -13,6 +13,7 @@ import { loadSnapshotState, markAuditRun, shouldRunPriceAudit, saveSnapshot, com
 import type { PriceSnapshotState } from './services/priceSnapshotService';
 import { createCloudWriteBatcher, attachVisibilityFlush } from './utils/cloudWriteBatcher';
 import { getPageFromScrollTop } from './utils/pageGeometry';
+import { msUntilExpiry } from './utils/sessionTtl';
 import { fetchAllCatalogProducts } from './services/wooService';
 import { ShoppingBag, Bell, CheckCircle2, Smartphone, Loader2, X } from 'lucide-react';
 
@@ -84,6 +85,26 @@ export default function App() {
       setToasts(prev => prev.filter(t => t.id !== id));
     }, 4000);
   }, []);
+
+  // FIX-0029: la sesión de 24 h vence en vivo, no sólo al recargar.
+  // Cierra la sesión cuando llega `expiresAt` (aviso incluido) y limpia el
+  // almacenamiento; los productos cargados se conservan.
+  const expireSession = useCallback(() => {
+    setSession(null);
+    localStorage.removeItem(SESSION_KEY);
+    addToast('La sesión de WooCommerce expiró (24 h). Volvé a conectar la tienda.', 'info');
+  }, [addToast]);
+
+  useEffect(() => {
+    if (!session) return;
+    const delay = msUntilExpiry(session.expiresAt);
+    if (delay === 0) {
+      expireSession();
+      return;
+    }
+    const timer = setTimeout(expireSession, delay);
+    return () => clearTimeout(timer);
+  }, [session, expireSession]);
 
   // Tag Config
   const [config, setConfig] = useState<TagConfig>(() => {

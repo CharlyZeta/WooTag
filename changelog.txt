@@ -1,5 +1,15 @@
 # Changelog - WooTag AI Generator
 
+## [2.5.14] - 2026-10-20
+### Fixed
+- **Contrato SDD-GL FIX-0029 (la sesión de 24 h sólo vencía al recargar)**:
+  - Nuevo `utils/sessionTtl.ts` (`msUntilExpiry`, `isSessionExpired`, tope de `setTimeout`): calcula el tiempo restante y trata un `expiresAt` inválido como vencido.
+  - `App` programa el cierre al `expiresAt` (y cierra de inmediato si al montar ya venció): limpia la sesión de `localStorage`, pasa a "desconectado" y avisa "La sesión de WooCommerce expiró (24 h). Volvé a conectar la tienda.". Los productos cargados se conservan.
+  - Se mantiene la expiración estricta de 24 h desde la conexión (sin sliding expiration).
+### Added
+- `utils/sessionTtl.test.ts` (5 tests): vigente/vencida/ inválida, tope de delay y guarda de que `App` programa el vencimiento.
+- Suite completa en **273 tests / 26 archivos** y typecheck limpio.
+
 ## [2.5.13] - 2026-10-20
 ### Fixed
 - **Contrato SDD-GL FIX-0020 (deduplicación inconsistente entre métodos de importación)**:
