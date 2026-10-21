@@ -1,5 +1,15 @@
 # Changelog - WooTag AI Generator
 
+## [2.5.13] - 2026-10-20
+### Fixed
+- **Contrato SDD-GL FIX-0020 (deduplicación inconsistente entre métodos de importación)**:
+  - El árbol de categorías y la planilla XLS ya no escriben directo en la lista: pasan por `addUniqueProducts` en `Controls`, el mismo punto de alta que la búsqueda por SKU/nombre.
+  - Una sola confirmación por lote ("N de M producto(s) ya están en la lista. ¿Agregar igual?"), en lugar de un diálogo por producto; el alta individual conserva su aviso por SKU.
+  - Cada producto del lote entra por el mismo camino (nube con cuenta, o local como invitado), así deja de haber altas silenciosas.
+### Added
+- `utils/productDuplicates.ts` (helpers puros: `countDuplicates`, `findDuplicateSkus`, `buildDuplicateNotice`) y `utils/productDuplicates.test.ts` (5 tests).
+- Suite completa en **268 tests / 25 archivos** y typecheck limpio.
+
 ## [2.5.12] - 2026-10-20
 ### Fixed
 - **Contrato SDD-GL FIX-0015 (el indicador de páginas mostraba la página equivocada)**:

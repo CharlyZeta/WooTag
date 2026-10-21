@@ -3,6 +3,7 @@ import { APP_VERSION, PrintRecord, TagConfig, Product, WooConfig, WpUser, Design
 import { QrScannerModal } from './QrScannerModal';
 import { CloudLoginModal } from './CloudLoginModal';
 import { useAuth } from '../contexts/AuthContext';
+import { buildDuplicateNotice } from '../utils/productDuplicates';
 
 // Subcomponents
 import { DataTab } from './controls/DataTab';
@@ -77,8 +78,8 @@ export const Controls: React.FC<ControlsProps> = ({
   const [isCloudModalOpen, setIsCloudModalOpen] = useState(false);
   const [isQrScannerOpen, setIsQrScannerOpen] = useState(false);
 
-  const addUniqueProduct = (p: Product) => {
-    const isDuplicate = products.some(existing => existing.sku === p.sku);
+  const addUniqueProduct = (p: Product, skipDuplicateCheck = false) => {
+    const isDuplicate = !skipDuplicateCheck && products.some(existing => existing.sku === p.sku);
     if (isDuplicate) {
       if (!confirm(`El producto con SKU ${p.sku} ya está en la lista. ¿Deseas agregar otra etiqueta igual?`)) {
         return;
@@ -91,6 +92,18 @@ export const Controls: React.FC<ControlsProps> = ({
       const uniqueProduct = { ...p, id: `${p.id}-${Date.now()}-${Math.random()}` };
       setProducts(prev => [...prev, uniqueProduct]);
     }
+  };
+
+  /**
+   * FIX-0020: alta por lote (árbol de categorías y planilla XLS) con la misma
+   * política que el alta individual: una sola confirmación por lote y cada
+   * producto pasa por el mismo camino (nube o local).
+   */
+  const addUniqueProducts = (list: Product[]) => {
+    if (list.length === 0) return;
+    const notice = buildDuplicateNotice(list, products);
+    if (notice && !confirm(notice)) return;
+    list.forEach(p => addUniqueProduct(p, true));
   };
 
   return (
@@ -250,6 +263,7 @@ export const Controls: React.FC<ControlsProps> = ({
             products={products}
             setProducts={setProducts}
             onAddUniqueProduct={addUniqueProduct}
+            onAddUniqueProducts={addUniqueProducts}
             onOpenConnection={onOpenConnection}
             onOpenQrScanner={() => setIsQrScannerOpen(true)}
             deviceId={deviceId}

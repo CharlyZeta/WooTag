@@ -13,6 +13,8 @@ interface ImportTabProps {
   products: Product[];
   setProducts: React.Dispatch<React.SetStateAction<Product[]>>;
   onAddUniqueProduct: (p: Product) => void;
+  /** FIX-0020: alta por lote con la misma política de duplicados que el alta individual. */
+  onAddUniqueProducts?: (products: Product[]) => void;
   onOpenConnection: () => void;
   onOpenQrScanner: () => void;
   deviceId: string;
@@ -34,6 +36,7 @@ export const ImportTab: React.FC<ImportTabProps> = ({
   products,
   setProducts,
   onAddUniqueProduct,
+  onAddUniqueProducts,
   onOpenConnection,
   onOpenQrScanner,
   deviceId,
@@ -245,7 +248,11 @@ export const ImportTab: React.FC<ImportTabProps> = ({
       id: `${p.id}-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`
     }));
 
-    setProducts(prev => [...prev, ...withUniqueIds]);
+    if (onAddUniqueProducts) {
+      onAddUniqueProducts(withUniqueIds);
+    } else {
+      setProducts(prev => [...prev, ...withUniqueIds]);
+    }
     setSelectedProducts({});
   };
 
@@ -261,7 +268,12 @@ export const ImportTab: React.FC<ImportTabProps> = ({
       setXlsWarnings(result.warnings);
       if (result.products.length > 0) {
         const withIds = result.products.map((p: Product) => ({ ...p, id: `${p.id}-${Date.now()}-${Math.random()}` }));
-        setProducts(prev => [...prev, ...withIds]);
+        // FIX-0020: el XLS pasa por el mismo punto de alta (y de duplicados) que el resto.
+        if (onAddUniqueProducts) {
+          onAddUniqueProducts(withIds);
+        } else {
+          setProducts(prev => [...prev, ...withIds]);
+        }
         setXlsSuccess(result.products.length);
       }
     } catch (e) {
