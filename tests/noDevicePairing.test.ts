@@ -1,5 +1,5 @@
 /**
- * tests/noCompanionFlow.test.ts — Guardas estructurales de FIX-0012
+ * tests/noDevicePairing.test.ts — Guardas estructurales de FIX-0012
  *
  * Verifica que el emparejamiento por QR de invitados (modo "Companion") fue
  * retirado de forma completa y que el único camino de alta cross-device que
@@ -87,7 +87,7 @@ interface ScannedFile {
  * Cualquier otro archivo con estos símbolos es una violación de AC-001.
  */
 const GUARD_FILES_EXCLUDED_FROM_SCAN = [
-  'tests/noCompanionFlow.test.ts',
+  'tests/noDevicePairing.test.ts',
   'components/ImportTab.noCompanion.test.tsx',
 ];
 

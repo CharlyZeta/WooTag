@@ -1,5 +1,16 @@
 # Changelog - WooTag AI Generator
 
+## [2.5.15] - 2026-10-20
+### Changed
+- **Contrato SDD-GL FIX-0027 (documentación desactualizada)**:
+  - `README.md` alineado a la realidad: badges de **versión 2.5.15** y **279 tests**, sección de IA reescrita (BYOK desde Ajustes con "Probar API Key", nunca en `.env`), conexión segura (auth sólo por header, sesión que vence en vivo), tabla de tests por grupo (27 archivos), estructura de archivos completa (34 archivos + `firestore.rules`/`firebase.json`/`tests/`), estado del proyecto y roadmap actualizados, y estado del despliegue de reglas.
+  - `memory.md` con el estado actual (12 contratos resueltos, versión, pendientes) y `ENGINEERING_CONTEXT.md` con la sección de IA corregida (sin inyección de key en build) y los conteos reales.
+  - Se eliminaron las referencias a archivos ya inexistentes (`ipLogger`, `HostRoomModal`, `MobileJoinScanner`, `realtimeSession`).
+### Added
+- `tests/docsSync.test.ts` (6 tests): la versión del README coincide con `package.json`, el badge de tests coincide con los `it(` reales de la suite, no quedan números obsoletos (97 tests / 2.2.0), la estructura lista todos los archivos de la app y no lista los eliminados, y `ENGINEERING_CONTEXT` no afirma que la key viaje en el build.
+- Renombrado `tests/noCompanionFlow.test.ts` → `tests/noDevicePairing.test.ts` (el README no puede nombrar el flujo retirado; el guard sigue activo y verificado).
+- Suite completa en **279 tests / 27 archivos** y typecheck limpio.
+
 ## [2.5.14] - 2026-10-20
 ### Fixed
 - **Contrato SDD-GL FIX-0029 (la sesión de 24 h sólo vencía al recargar)**:

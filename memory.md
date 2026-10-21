@@ -1,7 +1,15 @@
 # Memory of WooTag AI Generator
 
+## 📌 Estado actual (2026-10-20)
+- **Versión**: 2.5.15 · **279 tests / 27 archivos** · `typecheck` limpio.
+- **Contratos SDD-GL resueltos en esta etapa** (12): FIX-0011 (snapshot de precios al imprimir), FIX-0012 (retiro del emparejamiento por QR), FIX-0013 (debounce de config/perfiles), FIX-0014 (TTL de auditoría de precios), FIX-0015 (geometría del indicador de página), FIX-0016 (sin credenciales en URLs), FIX-0017 (reglas de Firestore versionadas + modelo de amenaza), FIX-0018 (IA configurable con prueba de clave), FIX-0019 (sin telemetría de IP), FIX-0020 (deduplicación consistente), FIX-0023 (sin logs con payloads), FIX-0029 (sesión que vence en vivo).
+- **Producción**: reglas de Firestore desplegadas en `wootag-cloud` y verificadas (simulador 5/5 + smoke test real de `users/{uid}/snapshots/{siteId}`).
+- **Pendiente**: 6 contratos `DRAFT` (FIX-0021 tipos estrictos, FIX-0022 lint en CI, FIX-0024 Tailwind en build, FIX-0025 code-splitting, FIX-0026 cobertura de UI, FIX-0028 service worker). Detalle en `contracts/` y mapa operativo en `graphify-out/PROJECT_MAP.md`.
+
+---
+
 ## 📌 Contexto General del Proyecto
-- **Nombre**: WooTag AI Generator (versión 2.2.7)
+- **Nombre**: WooTag AI Generator (versión 2.5.15)
 - **Propósito**: Generar e imprimir etiquetas de precio profesionales A4 conectando con WooCommerce o cargando plantillas Excel (XLS/XLSX). Permite optimización de descripciones usando Google Gemini AI (`gemini-2.0-flash`) y sincronización en tiempo real vía Firebase (Firestore y Auth) entre PC y dispositivos móviles con la misma cuenta cloud.
 - **Stack Tecnológico**: React 19, TypeScript, Vite, Firebase, SheetJS (XLSX), Lucide React, Tailwind CSS (vía CDN en `index.html`).
 

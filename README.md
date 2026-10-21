@@ -8,8 +8,8 @@ Desarrollado con la asistencia de **Antigravity** (Google DeepMind).
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.0-3178C6?style=flat-square&logo=typescript)
 ![Vite](https://img.shields.io/badge/Vite-6.0-646CFF?style=flat-square&logo=vite)
 ![Firebase](https://img.shields.io/badge/Firebase-12-FFCA28?style=flat-square&logo=firebase)
-![Version](https://img.shields.io/badge/versión-2.2.0-indigo?style=flat-square)
-![Tests](https://img.shields.io/badge/tests-97%20passing-brightgreen?style=flat-square)
+![Version](https://img.shields.io/badge/versión-2.5.15-indigo?style=flat-square)
+![Tests](https://img.shields.io/badge/tests-279%20passing-brightgreen?style=flat-square)
 
 ---
 
@@ -47,8 +47,8 @@ Desarrollado con la asistencia de **Antigravity** (Google DeepMind).
 ### 🔌 Integración WooCommerce
 
 - **Modo Invitado / Offline**: La app es completamente funcional sin credenciales. Solo se requiere conexión para importar desde la API.
-- **Conexión segura**: Credenciales ofuscadas en `localStorage` con salt + base64. La validación prioriza el endpoint de productos para esquivar bloqueos comunes (Error 401).
-- **Sesión con expiración**: Las credenciales guardadas expiran a las 24 horas automáticamente.
+- **Conexión segura**: las credenciales viajan **sólo** en el header `Authorization: Basic` (nunca en la URL) y en `localStorage` se guardan ofuscadas con base64 + salt.
+- **Sesión con expiración real**: la sesión de 24 h se cierra sola cuando vence (con aviso), sin necesidad de recargar.
 
 #### Modal de Conexión
 
@@ -107,9 +107,10 @@ El panel lateral está organizado en **5 pestañas**:
 
 ### 🧠 Inteligencia Artificial (Gemini AI)
 
-- **Optimización de descripciones**: Convierte textos largos en frases de venta concisas (≤ 15 palabras).
-- Modelo: `gemini-2.0-flash` (estable).
-- Requiere `GEMINI_API_KEY` en `.env`. Si no está configurada, retorna silenciosamente la descripción original.
+- **Optimización de descripciones**: convierte textos largos en frases de venta concisas (≤ 15 palabras). Modelo `gemini-2.0-flash`.
+- **Bring Your Own Key (BYOK)**: la API key se configura desde **Ajustes → Optimización con IA**, que abre un modal con el campo de la clave y el botón **"Probar API Key"** (hace una consulta genérica y exige una respuesta válida antes de dejar guardar).
+- La clave se guarda **sólo en ese navegador** (`localStorage`): no se sincroniza a Firestore ni viaja en el bundle de producción.
+- Sin clave (o con cuota agotada / error de red), la app **avisa** y conserva la descripción original; el botón ✨ nunca falla en silencio.
 
 ---
 
@@ -129,8 +130,8 @@ El panel lateral está organizado en **5 pestañas**:
 - Node.js v18+
 - npm
 - Credenciales de la API REST de WooCommerce (Consumer Key + Consumer Secret)
-- (Opcional) `GEMINI_API_KEY` para la optimización AI
 - (Opcional) Proyecto Firebase para autenticación y sincronización en la nube
+- (Opcional) API key de Gemini, que se configura **dentro de la app** (Ajustes → Optimización con IA), no en el build
 
 ### Pasos
 
@@ -163,10 +164,9 @@ VITE_FIREBASE_STORAGE_BUCKET="proyecto.firebasestorage.app"
 VITE_FIREBASE_MESSAGING_SENDER_ID="..."
 VITE_FIREBASE_APP_ID="..."
 VITE_FIREBASE_MEASUREMENTID="G-..."
-
-# Gemini AI (opcional)
-GEMINI_API_KEY="..."
 ```
+
+> La API key de Gemini **no** va en `.env`: se carga desde la interfaz y queda sólo en el navegador.
 
 ---
 
@@ -175,26 +175,28 @@ GEMINI_API_KEY="..."
 La aplicación cuenta con una robusta suite de pruebas unitarias y de integración que garantizan la estabilidad del sistema ante cada cambio.
 
 ```bash
-npm test               # Ejecuta los 97 tests una vez
+npm test               # Ejecuta los 279 tests una vez
 npm run test:watch     # Modo watch para desarrollo
 npm run test:coverage  # Genera reporte de cobertura en /coverage
+npm run typecheck      # Chequeo de tipos (tsc --noEmit)
 ```
 
 ### Arquitectura de Testing
 - **Motor**: [Vitest](https://vitest.dev/) (compatible con Vite, ultra rápido).
 - **DOM**: [JSDOM](https://github.com/jsdom/jsdom) para simular el navegador en Node.
 - **Componentes**: [React Testing Library](https://testing-library.com/docs/react-testing-library/intro/) para pruebas de comportamiento de usuario.
+- **Guards de regresión**: `tests/` incluye verificaciones estáticas del propio repositorio (que no vuelvan el flujo de QR retirado, la telemetría de IP, los logs con datos de producto ni reglas de Firestore inseguras).
 
-### Cobertura de la Suite (97 tests passing)
+### Cobertura de la Suite (279 tests passing, 27 archivos)
 
-| Archivo de Test | Cant. | Áreas Críticas Verificadas |
-|-----------------|-------|---------------------------|
-| `xlsImport.test.ts` | 39 | Sanitización de datos, límites de archivos (5MB), rechazo de macros VBA, mapeo de columnas y manejo de errores XLS/XLSX. |
-| `wooService.test.ts` | 26 | Handshake con API WooCommerce, fallbacks de autenticación (401), paginación de categorías y normalización de productos. |
-| `security.test.ts` | 10 | Integridad del cifrado AES-style (base64+salt), detección de manipulación de datos y persistencia de tipos. |
-| `cloudProfiles.test.ts` | 8 | Sincronización con Firestore, persistencia de perfiles de diseño y gestión de suscripciones en tiempo real. |
-| `AuthContext.test.tsx` | 8 | Flujos de autenticación Firebase (Login/Registro/Logout) y estados de carga de sesión. |
-| `geminiService.test.ts` | 6 | Integración con IA, gestión de cuotas de API y fallbacks de red para optimización de descripciones. |
+| Grupo | Tests | Qué cubre |
+|-------|-------|-----------|
+| Importación y API | 83 | `xlsImport` (39): sanitización, límites, rechazo de macros. `wooService` (44): auth por header, 401/403 vs 500, paginación, normalización y `sourceId`. |
+| Sincronización y nube | 54 | `cloudProfiles` (9), `priceSnapshotService` (13), auditoría con TTL (24), `AuthContext` (8): perfiles, snapshots, frescura y login. |
+| IA | 31 | `geminiService` (22): resultado tipado, prueba de clave y clasificación de errores. `AiKeyModal` (5) y `LayoutTab` (4): configurar, probar, guardar y eliminar la key. |
+| UI e impresión | 15 | `TagSheet` (3), `MobileScannerView` (4), `PriceAuditModal` (3), `ConnectionModal` (2) e `ImportTab` sin vinculación de dispositivos (3). |
+| Guards de regresión | 39 | `firestoreRules` (17), `docsSync` (6), `noDevicePairing` (7), `noIpLogger` (5), `noDebugLogs` (4). |
+| Utilidades | 57 | `security` (10), `crypto` (5), `cloudWriteBatcher` (15), `pageGeometry` (5), `productDuplicates` (5), `sessionTtl` (5), `sheetOptimizer` (6), `soundHapticService` (6). |
 
 ---
 
@@ -211,26 +213,47 @@ Los archivos estáticos quedan en `dist/`, listos para alojar en cualquier servi
 ## 🗂️ Estructura del Proyecto
 
 ```
-App.tsx                        ← Estado global: sesión, config, perfiles, historial, paginación
+App.tsx                        ← Estado global: sesión, config, perfiles, historial, auditoría, paginación
+types.ts                       ← Interfaces globales + DEFAULT_CONFIG + APP_VERSION
+index.tsx                      ← Bootstrap de React
+vite.config.ts                 ← Build, alias, chunks y configuración de Vitest
+firestore.rules / firebase.json ← Reglas de seguridad de Firestore y su configuración de despliegue
 ├── components/
-│   ├── ConnectionModal.tsx    ← Modal de conexión a WooCommerce
+│   ├── AiKeyModal.tsx         ← Modal "Optimización con IA": pegar, probar y guardar la API key
 │   ├── CloudLoginModal.tsx    ← Modal de autenticación Firebase (login/registro)
-│   ├── Controls.tsx           ← Panel lateral con 5 tabs
-│   ├── QrScannerModal.tsx     ← Escáner QR de productos
+│   ├── ConnectionModal.tsx    ← Modal de conexión a WooCommerce
+│   ├── Controls.tsx           ← Panel lateral con 5 tabs + punto único de alta de productos
+│   ├── MobileScannerView.tsx  ← Modo operador móvil / góndola (`#/mobile`)
+│   ├── PriceAuditModal.tsx    ← Auditoría de precios (pendientes, frescura, refresco)
+│   ├── QrScannerModal.tsx     ← Escáner QR de productos (no vincula dispositivos)
+│   ├── Tag.tsx                ← Etiqueta individual con QR y formateo de precios
 │   ├── TagSheet.tsx           ← Hoja A4 paginada
-│   └── Tag.tsx                ← Etiqueta individual con QR y formateo de precios
+│   └── controls/
+│       ├── DataTab.tsx        ← Lista de productos a imprimir
+│       ├── ImportTab.tsx      ← Importación (WooCommerce, XLS, escáner)
+│       ├── LayoutTab.tsx      ← Ajustes de layout + configuración de IA
+│       ├── DesignTab.tsx      ← Perfiles y tipografías/colores
+│       └── HistoryTab.tsx     ← Historial de impresiones
 ├── contexts/
-│   └── AuthContext.tsx        ← Contexto de autenticación Firebase (login/register/logout)
+│   └── AuthContext.tsx        ← Contexto de autenticación Firebase
 ├── services/
 │   ├── firebase.ts            ← Inicialización de Firebase (Auth + Firestore)
 │   ├── cloudProfiles.ts       ← CRUD de perfiles en Firestore (load/update/subscribe)
-│   ├── wooService.ts          ← API REST WooCommerce (SKU, nombre, categorías, paginación)
-│   └── geminiService.ts       ← Optimización de descripciones con Gemini AI
+│   ├── priceSnapshotService.ts ← Snapshot de precios, detección de cambios y TTL de auditoría
+│   ├── geminiService.ts       ← Optimización con Gemini (BYOK) + prueba de API key
+│   ├── soundHapticService.ts  ← Feedback sonoro/háptico del modo móvil
+│   └── wooService.ts          ← API REST WooCommerce (auth por header, SKU, nombre, categorías)
 ├── utils/
-│   ├── security.ts            ← Ofuscación de credenciales en localStorage (base64 + salt)
-│   ├── xlsImport.ts           ← Parseo seguro XLS (SheetJS) + generador de plantilla
-│   └── ipLogger.ts            ← Registro de auditoría silencioso
-└── types.ts                   ← Interfaces TypeScript globales + DEFAULT_CONFIG + APP_VERSION
+│   ├── aiKeyStorage.ts        ← API key de Gemini por dispositivo (localStorage)
+│   ├── cloudWriteBatcher.ts   ← Debounce de escrituras de config/perfiles + flush
+│   ├── crypto.ts              ← Ofuscación en reposo de credenciales (AES-GCM, clave = uid)
+│   ├── pageGeometry.ts        ← Geometría única de la hoja A4 + página por scroll
+│   ├── productDuplicates.ts   ← Deduplicación por SKU compartida
+│   ├── security.ts            ← Ofuscación de sesión en localStorage (base64 + salt)
+│   ├── sessionTtl.ts          ← Vencimiento en vivo de la sesión de 24 h
+│   ├── sheetOptimizer.ts      ← Cálculo de hojas completas / faltantes para la grilla
+│   └── xlsImport.ts           ← Parseo seguro XLS (SheetJS) + plantilla
+└── tests/                     ← Guards de regresión del repositorio (reglas, privacidad, logs)
 ```
 
 ---
@@ -240,7 +263,7 @@ App.tsx                        ← Estado global: sesión, config, perfiles, his
 | Aspecto | Implementación |
 |---------|----------------|
 | Credenciales WooCommerce | Cifradas con AES-GCM en Firestore usando el `uid` como clave → **ofuscación en reposo**, no confidencialidad: quien pueda leer el documento puede descifrarlas. El control real son las reglas de Firestore versionadas en `firestore.rules`. En `localStorage` se ofuscan con base64 + salt (sólo evita la inspección casual). |
-| Sesión WooCommerce | Expiración automática a las 24h. |
+| Sesión WooCommerce | Expira a las 24 h y **se cierra en vivo** (con aviso) al alcanzar el vencimiento; no hace falta recargar. |
 | API Key Gemini | Se configura desde **Ajustes → Optimización con IA** y se guarda sólo en el navegador (`localStorage`). No se sincroniza a Firestore ni viaja en el bundle. |
 | Privacidad / telemetría | No se registra la IP del usuario ni se contacta telemetría de terceros. La app sólo habla con tu WooCommerce, con Firebase (si usás cuenta) y con Gemini (si configurás tu API key). |
 | Firebase Auth | Manejo de sesión delegado al SDK de Firebase. No se almacenan contraseñas. |
@@ -263,6 +286,8 @@ npx firebase-tools deploy --only firestore:rules --project <TU_PROJECT_ID>
 
 > No hace falta instalar nada en el proyecto: `npx` baja `firebase-tools` de forma temporal. **No** commitees el id del proyecto, credenciales ni `.env`: el project id se pasa en la línea de comandos y la autenticación la resuelve tu sesión local de Firebase.
 
+> **Estado actual:** reglas desplegadas en el proyecto `wootag-cloud` y verificadas con el simulador de reglas (5/5 casos) y con un smoke test real de escritura en `users/{uid}/snapshots/{siteId}`.
+
 **Checklist de verificación (con dos cuentas, A y B):**
 
 1. Con la cuenta **A**, la app sincroniza y persiste con normalidad (perfil, sitios, productos y snapshots de precios).
@@ -275,16 +300,23 @@ npx firebase-tools deploy --only firestore:rules --project <TU_PROJECT_ID>
 
 ## 📌 Estado del Proyecto
 
-En **mejora continua** — en producción.
+En **mejora continua** — en producción (v2.5.15 · 273 tests · reglas de Firestore desplegadas y verificadas).
+
+El estado operativo del código (mapa de módulos, invariantes y contratos abiertos) vive en `contracts/` y en el mapa del grafo (`graphify-out/PROJECT_MAP.md`).
 
 ---
 
 ## 🛣 Roadmap
 
+- [ ] Backfill de `sourceId` para listas guardadas antes de 2.5.3 (hoy esos productos no actualizan el snapshot de precios).
 - [ ] Columna `quantity` en la planilla XLS para imprimir N etiquetas del mismo producto.
 - [ ] Soporte multi-hoja para importar distintos grupos de productos.
+- [ ] Tipos estrictos (`strict` + `@types/react`) y lint en CI (FIX-0021 / FIX-0022).
+- [ ] Code-splitting de `xlsx` y del escáner para aligerar la carga inicial (FIX-0025).
+- [ ] Tailwind compilado en el build (hoy CDN) y fuentes self-hosteadas (FIX-0024).
+- [ ] Accesibilidad: `aria-label` en los botones de icono de los modales.
 - [ ] Modo oscuro en la interfaz de configuración.
-- [ ] PWA / instalable como app de escritorio.
+- [ ] PWA con caché real (hoy sólo instalable, sin offline) o retiro del service worker.
 - [ ] Historial de impresiones sincronizado en la nube.
 
 ---
