@@ -4,7 +4,7 @@ import { fetchProductBySku, fetchCategories, fetchProductsByCategory, fetchProdu
 import { downloadTemplate, parseXlsFile } from '../../utils/xlsImport';
 import {
   FileSpreadsheet, Download, Upload, AlertTriangle, AlertCircle, CheckCircle2,
-  ScanLine, Smartphone, Globe, Search, Eraser, ChevronRight, ChevronDown, BookOpen, Plus, Loader2, ListTree, RefreshCw, Tag
+  ScanLine, Smartphone, Globe, Search, Eraser, ChevronRight, ChevronDown, Plus, Loader2, ListTree, RefreshCw, Tag
 } from 'lucide-react';
 
 interface ImportTabProps {
@@ -33,13 +33,11 @@ interface TreeCategory {
 
 export const ImportTab: React.FC<ImportTabProps> = ({
   wooConfig,
-  products,
   setProducts,
   onAddUniqueProduct,
   onAddUniqueProducts,
   onOpenConnection,
   onOpenQrScanner,
-  deviceId,
   pendingPriceChangesCount = 0,
   onOpenPriceAudit,
 }) => {

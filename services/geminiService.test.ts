@@ -286,7 +286,9 @@ describe('AC-006 — handleOptimizeDescription en App.tsx (FIX-0018 AC-006)', ()
     const start = appSource.indexOf('const handleOptimizeDescription');
     expect(start).toBeGreaterThan(-1);
 
-    const end = appSource.indexOf('const wrappedSetProducts', start);
+    // `wrappedSetProducts` se movió arriba (FIX-0022, deps de hooks): el corte
+    // del cuerpo pasa a ser el siguiente handler estable.
+    const end = appSource.indexOf('const handleAddProduct', start);
     expect(end).toBeGreaterThan(start);
 
     return appSource.slice(start, end);

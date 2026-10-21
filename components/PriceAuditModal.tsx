@@ -3,11 +3,8 @@ import { PricePendingItem, Product } from '../types';
 import { formatAuditAge } from '../services/priceSnapshotService';
 import {
   Tag,
-  TrendingUp,
-  Sparkles,
   Plus,
   Check,
-  CheckCheck,
   X,
   RefreshCw,
   AlertCircle,

@@ -12,12 +12,8 @@ import {
   Monitor,
   Layers,
   ShoppingBag,
-  ArrowRight,
   RefreshCw,
-  Printer,
-  ChevronRight,
-  ExternalLink,
-  Volume2
+  Printer
 } from 'lucide-react';
 import { Product, TagConfig, WooConfig, PricePendingItem } from '../types';
 import { fetchProductBySku } from '../services/wooService';

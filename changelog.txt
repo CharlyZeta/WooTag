@@ -1,5 +1,15 @@
 # Changelog - WooTag AI Generator
 
+## [2.5.17] - 2026-10-20
+### Added
+- **Contrato SDD-GL FIX-0022 (sin lint ni verificación estática en CI)**:
+  - `eslint.config.js` (ESLint 9 flat config) con `typescript-eslint` y `eslint-plugin-react-hooks`: `rules-of-hooks` y `exhaustive-deps` como **error**, variables/imports muertos como error. Excluye `dist`, `coverage`, `graphify-out`, `.sdd`, `contracts` y `.agents/**` (skills de terceros).
+  - Scripts `npm run lint` y `npm run lint:fix`; el workflow de deploy corre **lint entre typecheck y build**, así que un error de lint frena el deploy.
+  - Se corrigieron los 21 hallazgos reales del código: imports muertos en `App`, `CloudLoginModal`, `ConnectionModal`, `MobileScannerView`, `PriceAuditModal` e `ImportTab`, props sin uso, `loadEnv` sin uso en `vite.config.ts`, y **dos dependencias de hooks faltantes** en `App` (el efecto de logout ahora depende de `wrappedSetProducts` — que se movió antes para evitar TDZ — y la auditoría depende de la config activa).
+### Notes
+- Prettier/formateo se difiere a un contrato propio (FIX-0030): reformatear 7k líneas en este commit habría enterrado la señal.
+- Suite completa en **286 tests / 29 archivos**: `tests/lintConfig.test.ts` verifica config, scripts y orden de pasos en el CI.
+
 ## [2.5.16] - 2026-10-20
 ### Changed
 - **Contrato SDD-GL FIX-0021 (el JSX no estaba tipado y `strict` estaba apagado)**:

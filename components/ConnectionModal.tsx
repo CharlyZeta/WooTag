@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { WooConfig, WpUser, WooSite } from '../types';
 import { validateConnection } from '../services/wooService';
-import { ShoppingBag, Key, Lock, Globe, AlertCircle, ArrowRight, X, Trash2, Plus, CheckCircle2, Layout } from 'lucide-react';
+import { ShoppingBag, Key, Lock, Globe, AlertCircle, ArrowRight, X, Trash2, Plus, CheckCircle2 } from 'lucide-react';
 
 interface ConnectionModalProps {
     isOpen: boolean;
@@ -16,7 +16,7 @@ interface ConnectionModalProps {
 }
 
 export const ConnectionModal: React.FC<ConnectionModalProps> = ({ 
-    isOpen, onClose, onConnect, currentConfig, wooSites, activeSiteId, onSelectSite, onDeleteSite 
+    isOpen, onClose, onConnect, wooSites, activeSiteId, onSelectSite, onDeleteSite 
 }) => {
     const [view, setView] = useState<'list' | 'form'>('list');
     const [url, setUrl] = useState('');

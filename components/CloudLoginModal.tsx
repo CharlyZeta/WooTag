@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { X, Cloud, Mail, Lock, AlertCircle, Eye, EyeOff, AlertTriangle, Globe, RefreshCw, CheckCircle2, Database, Smartphone, UploadCloud } from 'lucide-react';
+import { X, Cloud, Mail, Lock, AlertCircle, Eye, EyeOff, AlertTriangle, Globe, RefreshCw, CheckCircle2, UploadCloud } from 'lucide-react';
 import { WooSite } from '../types';
 
 interface CloudLoginModalProps {

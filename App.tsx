@@ -15,7 +15,7 @@ import { createCloudWriteBatcher, attachVisibilityFlush } from './utils/cloudWri
 import { getPageFromScrollTop } from './utils/pageGeometry';
 import { msUntilExpiry } from './utils/sessionTtl';
 import { fetchAllCatalogProducts } from './services/wooService';
-import { ShoppingBag, Bell, CheckCircle2, Smartphone, Loader2, X } from 'lucide-react';
+import { CheckCircle2, Smartphone } from 'lucide-react';
 
 
 // Identificador único por dispositivo/navegador — persiste en localStorage
@@ -404,6 +404,10 @@ export default function App() {
     }
   }, [currentUser]);
 
+  const wrappedSetProducts: React.Dispatch<React.SetStateAction<Product[]>> = useCallback((val) => {
+    setProducts(val);
+  }, []);
+
   // Limpieza al cerrar sesión de Firebase (currentUser es null)
   useEffect(() => {
     if (!currentUser) {
@@ -415,7 +419,7 @@ export default function App() {
       localStorage.removeItem(SESSION_KEY);
       localStorage.removeItem(ACTIVE_SITE_KEY);
     }
-  }, [currentUser]);
+  }, [currentUser, wrappedSetProducts]);
 
   // Suscripción en tiempo real a perfil (sync entre dispositivos)
   useEffect(() => {
@@ -569,11 +573,12 @@ export default function App() {
 
   // Auditoría automática al conectar tienda y cuenta.
   // BR-006: depende de `runPriceAudit`; la frescura (TTL) evita re-descargas innecesarias.
+  const activeWooConfig = session?.config ?? null;
   useEffect(() => {
-    if (currentUser && session?.config && activeSiteId) {
+    if (currentUser && activeWooConfig && activeSiteId) {
       runPriceAudit(false);
     }
-  }, [currentUser, activeSiteId, session?.config?.url, runPriceAudit]);
+  }, [currentUser, activeSiteId, activeWooConfig, runPriceAudit]);
 
   const handleDismissPendingItem = async (item: PricePendingItem) => {
     if (!currentUser || !activeSiteId) return;
@@ -769,10 +774,6 @@ export default function App() {
       setOptimizingId(null);
     }
   };
-
-  const wrappedSetProducts: React.Dispatch<React.SetStateAction<Product[]>> = useCallback((val) => {
-    setProducts(val);
-  }, []);
 
   const handleAddProduct = useCallback((p: Product) => {
     // Generar un ID único una sola vez para ambos estados (local y nube)
