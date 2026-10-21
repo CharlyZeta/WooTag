@@ -4,7 +4,10 @@ import { TagSheet } from './components/TagSheet';
 import { Controls } from './components/Controls';
 import { ConnectionModal } from './components/ConnectionModal';
 import { PriceAuditModal } from './components/PriceAuditModal';
-import { MobileScannerView } from './components/MobileScannerView';
+// FIX-0025: el modo móvil arrastra html5-qrcode (≈327 KB); se carga sólo en `#/mobile`.
+const MobileScannerView = React.lazy(() =>
+  import('./components/MobileScannerView').then(module => ({ default: module.MobileScannerView }))
+);
 import { optimizeDescription } from './services/geminiService';
 import { encrypt, decrypt } from './utils/security';
 import { useAuth } from './contexts/AuthContext';
@@ -895,19 +898,30 @@ export default function App() {
 
       {isMobileMode ? (
         <div className="w-full h-full overflow-y-auto z-10 bg-slate-900">
-          <MobileScannerView
-            products={products}
-            config={config}
-            wooConfig={session?.config || null}
-            siteName={wooSites.find(s => s.id === activeSiteId)?.name || (session?.config ? new URL(session.config.url).hostname : 'WooTag')}
-            isCloudConnected={Boolean(currentUser)}
-            pricePendings={pricePendings}
-            onAddProduct={handleAddProduct}
-            onRemoveProduct={(id) => wrappedSetProducts(prev => prev.filter(p => p.id !== id))}
-            onClearProducts={() => wrappedSetProducts([])}
-            onSwitchToDesktopView={() => toggleMobileMode(false)}
-            onPrint={handlePrint}
-          />
+          <React.Suspense
+            fallback={
+              <div className="min-h-screen flex items-center justify-center bg-slate-900">
+                <div className="flex flex-col items-center gap-4">
+                  <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+                  <p className="text-slate-400 font-bold text-sm">Cargando modo móvil...</p>
+                </div>
+              </div>
+            }
+          >
+            <MobileScannerView
+              products={products}
+              config={config}
+              wooConfig={session?.config || null}
+              siteName={wooSites.find(s => s.id === activeSiteId)?.name || (session?.config ? new URL(session.config.url).hostname : 'WooTag')}
+              isCloudConnected={Boolean(currentUser)}
+              pricePendings={pricePendings}
+              onAddProduct={handleAddProduct}
+              onRemoveProduct={(id) => wrappedSetProducts(prev => prev.filter(p => p.id !== id))}
+              onClearProducts={() => wrappedSetProducts([])}
+              onSwitchToDesktopView={() => toggleMobileMode(false)}
+              onPrint={handlePrint}
+            />
+          </React.Suspense>
         </div>
       ) : (
         <>

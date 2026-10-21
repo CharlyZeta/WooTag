@@ -1,5 +1,18 @@
 # Changelog - WooTag AI Generator
 
+## [2.5.18] - 2026-10-20
+### Changed
+- **Contrato SDD-GL FIX-0025 (la primera pantalla descargaba `xlsx` y el escáner)**:
+  - `xlsx` (≈415 KB) se importa **bajo demanda** dentro de los handlers de `ImportTab` (parsear la planilla y descargar la plantilla).
+  - `QrScannerModal` y `MobileScannerView` (que arrastran `html5-qrcode`, ≈327 KB) pasan a `React.lazy` + `Suspense` con render condicional: el chunk se pide sólo al abrir el escáner o entrar a `#/mobile`.
+  - `dist/index.html` ya no preloadea `vendor-xlsx` ni `vendor-scanner`: sólo `vendor-react` y `vendor-icons`.
+### Impact
+- Carga inicial: **1.817 KB → 1.076 KB (−741 KB, −41%)**; chunk principal 141,4 → **120,2 KB** (gzip 35 → 31,7 KB).
+- Deuda documentada: `vendor-react` (933 KB) sigue sobre el umbral de 500 KB (React + Firebase + SDK de IA en un solo chunk).
+### Added
+- `tests/lazyChunks.test.ts` (3 tests): nadie importa `xlsImport`/`html5-qrcode` de forma estática y los componentes pesados son `lazy` con render condicional.
+- Suite completa en **289 tests / 30 archivos**.
+
 ## [2.5.17] - 2026-10-20
 ### Added
 - **Contrato SDD-GL FIX-0022 (sin lint ni verificación estática en CI)**:

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Product, WooConfig, WooCategory } from '../../types';
 import { fetchProductBySku, fetchCategories, fetchProductsByCategory, fetchProductsByName } from '../../services/wooService';
-import { downloadTemplate, parseXlsFile } from '../../utils/xlsImport';
+// FIX-0025: `xlsx` (≈415 KB) se carga bajo demanda, no en el arranque.
 import {
   FileSpreadsheet, Download, Upload, AlertTriangle, AlertCircle, CheckCircle2,
   ScanLine, Smartphone, Globe, Search, Eraser, ChevronRight, ChevronDown, Plus, Loader2, ListTree, RefreshCw, Tag
@@ -261,6 +261,7 @@ export const ImportTab: React.FC<ImportTabProps> = ({
     setXlsWarnings([]);
     setXlsSuccess(null);
     try {
+      const { parseXlsFile } = await import('../../utils/xlsImport');
       const result = await parseXlsFile(file);
       setXlsErrors(result.errors);
       setXlsWarnings(result.warnings);
@@ -663,7 +664,11 @@ export const ImportTab: React.FC<ImportTabProps> = ({
 
           {/* Botón descargar plantilla */}
           <button
-            onClick={downloadTemplate}
+            onClick={async () => {
+              // FIX-0025: la plantilla usa SheetJS; se importa recién al pedirla.
+              const { downloadTemplate } = await import('../../utils/xlsImport');
+              downloadTemplate();
+            }}
             className="w-full flex items-center justify-center gap-2 py-2.5 border-2 border-emerald-200 bg-emerald-50 text-emerald-700 rounded-xl text-xs font-black hover:bg-emerald-100 hover:border-emerald-400 transition-all"
           >
             <Download className="w-4 h-4" />

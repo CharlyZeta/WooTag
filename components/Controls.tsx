@@ -1,9 +1,13 @@
-import React, { useState } from 'react';
+import React, { Suspense, lazy, useState } from 'react';
 import { APP_VERSION, PrintRecord, TagConfig, Product, WooConfig, WpUser, DesignProfile, WooSite } from '../types';
-import { QrScannerModal } from './QrScannerModal';
 import { CloudLoginModal } from './CloudLoginModal';
 import { useAuth } from '../contexts/AuthContext';
 import { buildDuplicateNotice } from '../utils/productDuplicates';
+
+// FIX-0025: el escáner (html5-qrcode, ≈327 KB) se descarga recién al abrirlo.
+const QrScannerModal = lazy(() =>
+  import('./QrScannerModal').then(module => ({ default: module.QrScannerModal }))
+);
 
 // Subcomponents
 import { DataTab } from './controls/DataTab';
@@ -305,13 +309,15 @@ export const Controls: React.FC<ControlsProps> = ({
         <span className="text-[11px] font-bold text-slate-600 font-mono bg-slate-100 px-2 py-0.5 rounded border border-slate-200">v{APP_VERSION}</span>
       </div>
 
-      {wooConfig && (
-        <QrScannerModal
-          isOpen={isQrScannerOpen}
-          onClose={() => setIsQrScannerOpen(false)}
-          wooConfig={wooConfig}
-          onProductScanned={addUniqueProduct}
-        />
+      {wooConfig && isQrScannerOpen && (
+        <Suspense fallback={null}>
+          <QrScannerModal
+            isOpen={isQrScannerOpen}
+            onClose={() => setIsQrScannerOpen(false)}
+            wooConfig={wooConfig}
+            onProductScanned={addUniqueProduct}
+          />
+        </Suspense>
       )}
 
       <CloudLoginModal
