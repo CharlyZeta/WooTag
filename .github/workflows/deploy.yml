@@ -26,6 +26,9 @@ jobs:
       - name: 📦 Install dependencies
         run: npm ci
 
+      - name: 🏷️ Verificar versión en el título del deploy
+        run: npm run verify:version
+
       - name: 🧪 Run tests (Vitest)
         run: npm run test
 
@@ -46,6 +49,9 @@ jobs:
 
       - name: 🛠️ Build project (Vite)
         run: npm run build
+
+      - name: 🏷️ Verificar versión en el bundle
+        run: npm run verify:version -- --check-dist
 
       - name: 🚀 Deploy via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.4

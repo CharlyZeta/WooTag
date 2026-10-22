@@ -1,5 +1,15 @@
 # Changelog - WooTag AI Generator
 
+## [2.5.24] - 2026-10-22
+### Added
+- **Contrato SDD-GL FIX-0033 (el deploy no siempre decía qué versión publicaba)**:
+  - Nuevo `scripts/verify-version.mjs` + `npm run verify:version`: el pipeline **falla** si el asunto del commit (que es el título del run de GitHub Actions) no incluye `v<versión de package.json>`, si el badge del README no coincide, o si el bundle construido no contiene la versión inyectada (`--check-dist`). Los commits de merge se omiten para no bloquear PRs.
+  - El workflow corre el gate **antes de los tests** y vuelve a verificar el bundle **después del build y antes del FTP**, así nunca se publica una versión distinta a la declarada.
+  - Para validar localmente antes de commitear: `npm run verify:version -- --subject "… (vX.Y.Z)" --check-dist`.
+### Notes
+- Motivo: varios commits de documentación/capturas no llevaban la versión en el título, así que el run de deploy no permitía saber qué se estaba publicando.
+- Suite completa en **316 tests / 36 archivos**.
+
 ## [2.5.23] - 2026-10-22
 ### Fixed
 - **Contrato SDD-GL FIX-0032 (la cámara del modo góndola se veía en negro)**:
