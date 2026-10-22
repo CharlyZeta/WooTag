@@ -8,8 +8,8 @@ Desarrollado con la asistencia de **Antigravity** (Google DeepMind).
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.0-3178C6?style=flat-square&logo=typescript)
 ![Vite](https://img.shields.io/badge/Vite-6.0-646CFF?style=flat-square&logo=vite)
 ![Firebase](https://img.shields.io/badge/Firebase-12-FFCA28?style=flat-square&logo=firebase)
-![Version](https://img.shields.io/badge/versión-2.5.20-indigo?style=flat-square)
-![Tests](https://img.shields.io/badge/tests-306%20passing-brightgreen?style=flat-square)
+![Version](https://img.shields.io/badge/versión-2.5.21-indigo?style=flat-square)
+![Tests](https://img.shields.io/badge/tests-308%20passing-brightgreen?style=flat-square)
 
 ---
 
@@ -175,7 +175,7 @@ VITE_FIREBASE_MEASUREMENTID="G-..."
 La aplicación cuenta con una robusta suite de pruebas unitarias y de integración que garantizan la estabilidad del sistema ante cada cambio.
 
 ```bash
-npm test               # Ejecuta los 306 tests una vez
+npm test               # Ejecuta los 308 tests una vez
 npm run test:watch     # Modo watch para desarrollo
 npm run test:coverage  # Genera reporte de cobertura en /coverage
 npm run typecheck      # Chequeo de tipos (tsc --noEmit, strict)
@@ -188,7 +188,7 @@ npm run lint           # ESLint (hooks + imports/vars muertos); bloquea el deplo
 - **Componentes**: [React Testing Library](https://testing-library.com/docs/react-testing-library/intro/) para pruebas de comportamiento de usuario.
 - **Guards de regresión**: `tests/` incluye verificaciones estáticas del propio repositorio (que no vuelvan el flujo de QR retirado, la telemetría de IP, los logs con datos de producto ni reglas de Firestore inseguras).
 
-### Cobertura de la Suite (306 tests passing, 33 archivos)
+### Cobertura de la Suite (308 tests passing, 34 archivos)
 
 | Grupo | Tests | Qué cubre |
 |-------|-------|-----------|
@@ -196,7 +196,7 @@ npm run lint           # ESLint (hooks + imports/vars muertos); bloquea el deplo
 | Sincronización y nube | 54 | `cloudProfiles` (9), `priceSnapshotService` (13), auditoría con TTL (24), `AuthContext` (8): perfiles, snapshots, frescura y login. |
 | IA | 31 | `geminiService` (22): resultado tipado, prueba de clave y clasificación de errores. `AiKeyModal` (5) y `LayoutTab` (4): configurar, probar, guardar y eliminar la key. |
 | UI e impresión | 23 | `Tag` (8): formateo es-AR, oferta, precio especial y QR. `TagSheet` (3), `MobileScannerView` (4), `PriceAuditModal` (3), `ConnectionModal` (2) e `ImportTab` sin vinculación de dispositivos (3). |
-| Guards de regresión | 53 | `firestoreRules` (17), `docsSync` (6), `noDevicePairing` (7), `noIpLogger` (5), `noDebugLogs` (4), `typesConfig` (3), `lintConfig` (4), `lazyChunks` (3), `serviceWorker` (4). |
+| Guards de regresión | 55 | `firestoreRules` (17), `docsSync` (6), `noDevicePairing` (7), `noIpLogger` (5), `noDebugLogs` (4), `typesConfig` (3), `lintConfig` (4), `lazyChunks` (3), `serviceWorker` (4), `devServerConfig` (2). |
 | Utilidades | 62 | `aiKeyStorage` (5), `security` (10), `crypto` (5), `cloudWriteBatcher` (15), `pageGeometry` (5), `productDuplicates` (5), `sessionTtl` (5), `sheetOptimizer` (6), `soundHapticService` (6). |
 
 ---

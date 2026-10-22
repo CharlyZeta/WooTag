@@ -1,5 +1,14 @@
 # Changelog - WooTag AI Generator
 
+## [2.5.21] - 2026-10-22
+### Fixed
+- **Contrato SDD-GL FIX-0030 (el dev server se caía con `EBUSY` al vigilar capturas)**:
+  - `vite.config.ts`: `server.watch.ignored` excluye `screenshots/`, `dist/`, `coverage/`, `graphify-out/`, `.sdd/`, `.git/` y `node_modules/`. En Windows, `fs.watch` sobre un PNG que otro proceso tiene abierto devolvía `EBUSY` y **Vite 6 trataba el error como fatal**: el servidor de desarrollo moría y la app "se cerraba" (coincidió con el click en el modo operador móvil porque en ese momento se estaba escribiendo la captura).
+  - No hubo cambios de runtime: el modo móvil (`#/mobile`) ya funcionaba (verificado con las capturas 9 y 10) y el build de producción no usa el watcher.
+### Added
+- `tests/devServerConfig.test.ts` (2 tests): el watcher ignora los artefactos y se conservan puerto/host de desarrollo.
+- Suite completa en **308 tests / 34 archivos**.
+
 ## [2.5.20] - 2026-10-20
 ### Added
 - **Contrato SDD-GL FIX-0026 (la etiqueta impresa no tenía tests)**:

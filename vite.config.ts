@@ -11,6 +11,21 @@ export default defineConfig(() => {
     server: {
       port: 3000,
       host: '0.0.0.0',
+      watch: {
+        // FIX-0030: en Windows, `fs.watch` sobre un archivo bloqueado (una captura
+        // recién escrita, un build en curso, el grafo) emite EBUSY y Vite lo trata
+        // como fatal: se cae el dev server y la app "desaparece". Se excluyen los
+        // directorios que no son código fuente.
+        ignored: [
+          '**/screenshots/**',
+          '**/dist/**',
+          '**/coverage/**',
+          '**/graphify-out/**',
+          '**/.sdd/**',
+          '**/.git/**',
+          '**/node_modules/**',
+        ],
+      },
     },
     plugins: [react()],
     define: {
