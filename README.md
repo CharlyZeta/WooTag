@@ -15,17 +15,46 @@ Desarrollado con la asistencia de **Antigravity** (Google DeepMind).
 
 ## 📸 Vista Previa
 
-### Previsualización de Etiquetas
+> Capturas de la **v2.5.20** con 10 productos de una tienda real.
 
-![Vista previa de etiquetas con productos cargados](screenshots/tag_preview.png)
+### Panel + hoja A4
 
-> Panel lateral con 8 productos y hoja A4 con etiquetas mostrando nombre, SKU, precio regular, precio de oferta, precio especial y código QR.
+![Lista de productos y hoja A4 con etiquetas](screenshots/lista-y-hoja.png)
 
-### Segunda Página de Etiquetas
+> Lista de productos a la izquierda y hoja A4 a la derecha: nombre, SKU, descripción breve, precio formateado en es-AR y QR por producto. Los productos sin stock se marcan en rojo.
 
-![Vista con scroll mostrando más etiquetas](screenshots/tag_preview_scroll.png)
+### Hoja A4
 
-> Scroll en la previsualización mostrando los productos restantes con paginación automática.
+![Hoja A4 con 10 etiquetas listas para imprimir](screenshots/hoja-a4.png)
+
+### Impresión (vista previa del navegador)
+
+| 1 hoja de papel | 2 hojas de papel |
+|---|---|
+| ![Vista previa de impresión con una hoja](screenshots/print-1-hoja.png) | ![Vista previa de impresión con dos hojas](screenshots/print-2-hojas.png) |
+
+### Operador de góndola (celular)
+
+![Modo góndola en el celular](screenshots/modo-movil.png)
+
+> Escaneo continuo con cámara bajo demanda, auto-agregar, optimizador de hoja A4 y cola de etiquetas. Se entra desde `#/mobile`.
+
+### Importar, Ajustes, Diseño, Historial y Auditoría
+
+| Importar | Ajustes |
+|---|---|
+| ![Tab Importar](screenshots/importar.png) | ![Ajustes](screenshots/ajustes.png) |
+| WooCommerce, planilla XLS y escáner | Layout A4, campos visibles y **Optimización con IA** |
+
+| Diseño | Historial |
+|---|---|
+| ![Tab Diseño](screenshots/diseno.png) | ![Tab Historial](screenshots/historial.png) |
+| Perfiles, tamaños de fuente y colores | Impresiones registradas con sus etiquetas |
+
+| Auditoría de precios |
+|---|
+| ![Auditoría de precios](screenshots/auditoria-precios.png) |
+| Detección de cambios de precio y SKU nuevos desde la última auditoría |
 
 ---
 
@@ -52,8 +81,6 @@ Desarrollado con la asistencia de **Antigravity** (Google DeepMind).
 
 #### Modal de Conexión
 
-![Modal de conexión WooCommerce](screenshots/connection_modal.png)
-
 > Formulario para conectar con la API REST de WooCommerce. Acepta URL de la tienda, Consumer Key y Consumer Secret con opción de guardar localmente.
 
 #### Importación de productos — Tab "Importar"
@@ -67,8 +94,6 @@ Desarrollado con la asistencia de **Antigravity** (Google DeepMind).
 | **Por categoría** | Selector con paginación automática — obtiene **todas** las categorías, sin límite de 100. |
 
 > Todos los métodos detectan duplicados y preguntan antes de agregar etiquetas repetidas.
-
-![Tab Importar](screenshots/import_tab.png)
 
 ---
 
