@@ -1,5 +1,15 @@
 # Changelog - WooTag AI Generator
 
+## [2.5.22] - 2026-10-22
+### Fixed
+- **Contrato SDD-GL FIX-0031 (el modo operador móvil quedaba fuera de la pantalla del celular)**:
+  - `App.tsx`: el panel de PC (`Controls`) se monta **sólo** cuando no estamos en modo móvil. Antes se renderizaba siempre con `w-full h-screen` y, dentro del contenedor `h-screen overflow-hidden flex flex-col`, empujaba la vista de góndola fuera del viewport en un teléfono: el operador veía la barra lateral y no el escáner.
+  - Se eligió **no montar** el panel (en vez de ocultarlo con CSS) para no dejar efectos y listeners activos en el celular.
+  - La vuelta a la vista PC sigue por el botón "Vista PC" del operador; escritorio e impresión no cambian.
+### Added
+- `tests/mobileModeLayout.test.ts` (3 tests): `Controls` condicionado por `!isMobileMode`, un único punto de montaje y salida a la vista PC conservada.
+- Suite completa en **311 tests / 35 archivos**.
+
 ## [2.5.21] - 2026-10-22
 ### Fixed
 - **Contrato SDD-GL FIX-0030 (el dev server se caía con `EBUSY` al vigilar capturas)**:

@@ -850,9 +850,12 @@ export default function App() {
         onDeleteSite={handleDeleteSite}
       />
 
-      {/* Controles: Ocultos en impresión */}
-      <div className="no-print w-full md:w-auto z-50">
-        <Controls
+      {/* Controles: Ocultos en impresión y en modo móvil (FIX-0031).
+          En un celular el panel mide h-screen y empujaba la vista de góndola
+          fuera de la pantalla; en modo móvil debe quedar sólo el operador. */}
+      {!isMobileMode && (
+        <div className="no-print w-full md:w-auto z-50">
+          <Controls
           config={config}
           setConfig={setConfig}
           products={products}
@@ -879,8 +882,9 @@ export default function App() {
           pendingPriceChangesCount={pricePendings.length}
           onOpenPriceAudit={() => setIsPriceAuditModalOpen(true)}
           onSwitchToMobileMode={() => toggleMobileMode(true)}
-        />
-      </div>
+          />
+        </div>
+      )}
 
       <PriceAuditModal
         isOpen={isPriceAuditModalOpen}
