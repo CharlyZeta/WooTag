@@ -134,4 +134,32 @@ describe('MobileScannerView Component', () => {
     fireEvent.click(dupBtns[0]);
     expect(handleAdd).toHaveBeenCalledWith(dummyProducts[0]);
   });
+
+  it('FIX-0032-AC-001: el contenedor de la cámara está en el layout desde el inicio (no display:none)', () => {
+    render(
+      <MobileScannerView
+        products={dummyProducts}
+        config={dummyConfig}
+        wooConfig={dummyWooConfig}
+        onAddProduct={vi.fn()}
+        onRemoveProduct={vi.fn()}
+        onClearProducts={vi.fn()}
+        onSwitchToDesktopView={vi.fn()}
+      />
+    );
+
+    // html5-qrcode mide este nodo al iniciar: si está `display:none`, el video
+    // se crea en 0x0 y el visor queda negro. Debe existir siempre y sin `hidden`.
+    const viewport = document.getElementById('gondola-camera-viewport');
+    expect(viewport).not.toBeNull();
+    // Ojo: `overflow-hidden` no es la clase `hidden`; se compara clase por clase.
+    expect(viewport!.className.split(/\s+/)).not.toContain('hidden');
+    expect(viewport!.className).toContain('aspect-square');
+
+    // La UI de "cámara pausada" se superpone con un overlay, sin sacar el visor.
+    expect(screen.getByText('Activar Cámara')).toBeDefined();
+    const overlay = screen.getByText('Activar Cámara').closest('button')!.parentElement!;
+    expect(overlay.className).toContain('absolute');
+    expect(overlay.className).toContain('inset-0');
+  });
 });

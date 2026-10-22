@@ -340,15 +340,17 @@ export const MobileScannerView: React.FC<MobileScannerViewProps> = ({
             </label>
           </div>
 
-          {/* Viewport para Html5Qrcode */}
-          <div className="relative overflow-hidden rounded-xl bg-black border border-slate-700 min-h-[220px] flex flex-col items-center justify-center">
+          {/* Viewport para Html5Qrcode: SIEMPRE presente y visible.
+              FIX-0032: la librería mide el contenedor al iniciar la cámara. Con
+              `display:none` creaba el <video> en 0x0 y el visor quedaba negro. */}
+          <div className="relative overflow-hidden rounded-xl bg-black border border-slate-700 min-h-[260px] flex flex-col items-center justify-center">
             <div
               id="gondola-camera-viewport"
-              className={`w-full max-w-[280px] aspect-square ${!isCameraActive ? 'hidden' : ''}`}
+              className="w-full max-w-[280px] aspect-square mx-auto overflow-hidden rounded-lg"
             />
 
             {!isCameraActive && (
-              <div className="p-6 text-center space-y-3">
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-900/95 p-4 text-center space-y-3">
                 <div className="w-12 h-12 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center mx-auto text-slate-400">
                   <CameraOff className="w-6 h-6" />
                 </div>

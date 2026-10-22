@@ -1,5 +1,14 @@
 # Changelog - WooTag AI Generator
 
+## [2.5.23] - 2026-10-22
+### Fixed
+- **Contrato SDD-GL FIX-0032 (la cámara del modo góndola se veía en negro)**:
+  - El contenedor donde `html5-qrcode` inyecta el `<video>` (`#gondola-camera-viewport`) tenía `display:none` mientras la cámara estaba pausada, y `scanner.start()` se ejecuta en ese estado: la librería medía el contenedor en **0×0**, creaba el video sin tamaño y el visor quedaba negro aunque el permiso se concediera y no hubiera error.
+  - Ahora el visor está **siempre en el layout** (`aspect-square`, sin `hidden`) y la UI de "cámara pausada" pasa a ser un **overlay `absolute inset-0`** encima. Mismo patrón que ya usaba `QrScannerModal`.
+### Added
+- `FIX-0032-AC-001` en `components/MobileScannerView.test.tsx`: el visor existe desde el primer render, sin la clase `hidden`, y el bloque de pausa es un overlay.
+- Suite completa en **312 tests / 35 archivos**.
+
 ## [2.5.22] - 2026-10-22
 ### Fixed
 - **Contrato SDD-GL FIX-0031 (el modo operador móvil quedaba fuera de la pantalla del celular)**:
