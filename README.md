@@ -35,9 +35,9 @@ Desarrollado con la asistencia de **Antigravity** (Google DeepMind).
 
 ### Operador de góndola (celular)
 
-![Modo góndola en el celular](screenshots/modo-movil.png)
+![Modo góndola en un celular con la cámara escaneando etiquetas y 10 etiquetas en la cola](screenshots/modo-movil.png)
 
-> Escaneo continuo con cámara bajo demanda, auto-agregar, optimizador de hoja A4 y cola de etiquetas. Se entra desde `#/mobile`.
+> Operador en un celular real con la **cámara activa** (escaneando una hoja impresa), 10 etiquetas cargadas, hoja A4 completa al **100%** y la cola de impresión. Se entra desde `#/mobile`.
 
 ### Importar, Ajustes, Diseño, Historial y Auditoría
 
@@ -358,6 +358,8 @@ El estado operativo del código (mapa de módulos, invariantes y contratos abier
 **Gerardo Maidana**  
 Backend Developer | Java & Spring Boot  
 [LinkedIn](https://linkedin.com/in/gerardomaidana) · [GitHub](https://github.com/CharlyZeta/)
+
+Desarrollado con **SDD-GL** — [ver el proyecto](https://github.com/CharlyZeta/WooTag) · [contratos versionados](contracts/)
 
 ---
 
