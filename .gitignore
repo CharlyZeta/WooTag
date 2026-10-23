@@ -34,3 +34,6 @@ graphify-out/
 
 # SDD-GL Glass Box logs
 .sdd/
+
+# Artefactos
+*.zip
